@@ -9,4 +9,8 @@ data class CreateAccountData(
     val icon: String?,
     val balance: Double,
     val includeBalance: Boolean = true,
+    val isCreditCard: Boolean = false,
+    val creditLimit: Double? = null,
+    val statementDay: Int? = null,
+    val paymentDueDay: Int? = null,
 )

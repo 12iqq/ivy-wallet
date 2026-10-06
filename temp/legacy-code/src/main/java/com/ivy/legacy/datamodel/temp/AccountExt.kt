@@ -10,6 +10,10 @@ fun AccountEntity.toLegacyDomain(): Account = Account(
     icon = icon,
     orderNum = orderNum,
     includeInBalance = includeInBalance,
+    isCreditCard = accountType == AccountEntity.TYPE_CREDIT_CARD,
+    creditLimit = creditLimit,
+    statementDay = statementDay,
+    paymentDueDay = paymentDueDay,
     isSynced = isSynced,
     isDeleted = isDeleted,
     id = id

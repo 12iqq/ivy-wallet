@@ -6,6 +6,8 @@ import arrow.core.raise.either
 import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
+import com.ivy.data.model.AccountType
+import com.ivy.data.model.CreditCardDetails
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
@@ -23,6 +25,10 @@ data class Account(
     val icon: String? = null,
     val orderNum: Double = 0.0,
     val includeInBalance: Boolean = true,
+    val isCreditCard: Boolean = false,
+    val creditLimit: Double? = null,
+    val statementDay: Int? = null,
+    val paymentDueDay: Int? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -36,6 +42,10 @@ data class Account(
         icon = icon,
         orderNum = orderNum,
         includeInBalance = includeInBalance,
+        accountType = if (isCreditCard) AccountEntity.TYPE_CREDIT_CARD else null,
+        creditLimit = creditLimit,
+        statementDay = statementDay,
+        paymentDueDay = paymentDueDay,
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id
@@ -55,6 +65,16 @@ data class Account(
                 icon = icon?.let(IconAsset::from)?.getOrNull(),
                 includeInBalance = includeInBalance,
                 orderNum = orderNum,
+                type = if (isCreditCard) AccountType.CreditCard else AccountType.Regular,
+                creditCard = if (isCreditCard) {
+                    CreditCardDetails(
+                        creditLimit = creditLimit,
+                        statementDay = statementDay,
+                        paymentDueDay = paymentDueDay,
+                    )
+                } else {
+                    null
+                },
             )
         }
     }

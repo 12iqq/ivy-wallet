@@ -14,12 +14,15 @@ import com.ivy.frp.test.TestIdlingResource
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.utils.ioThread
 import com.ivy.legacy.utils.readOnly
+import com.ivy.autocapture.data.CaptureProcessor
+import com.ivy.navigation.AutoCaptureReviewScreen
 import com.ivy.navigation.DisclaimerScreen
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.MainScreen
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.OnboardingScreen
 import com.ivy.ui.R
+import com.ivy.wallet.domain.deprecated.logic.PlannedPaymentsGenerator
 import com.ivy.wallet.domain.deprecated.logic.notification.TransactionReminderLogic
 import com.ivy.wallet.migrations.MigrationsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,6 +46,7 @@ class RootViewModel @Inject constructor(
     private val transactionReminderLogic: TransactionReminderLogic,
     private val migrationsManager: MigrationsManager,
     private val legalRepo: LegalRepository,
+    private val plannedPaymentsGenerator: PlannedPaymentsGenerator,
 ) : ViewModel() {
 
     companion object {
@@ -94,6 +98,8 @@ class RootViewModel @Inject constructor(
 
         viewModelScope.launch {
             migrationsManager.executeMigrations()
+            // keep upcoming planned payments generated ahead of time
+            ioThread { plannedPaymentsGenerator.topUpAll() }
         }
     }
 
@@ -101,6 +107,9 @@ class RootViewModel @Inject constructor(
         if (!handleSpecialStart(intent)) {
             nav.navigateTo(MainScreen)
             transactionReminderLogic.scheduleReminder()
+            if (intent.getBooleanExtra(CaptureProcessor.EXTRA_OPEN_REVIEW, false)) {
+                nav.navigateTo(AutoCaptureReviewScreen)
+            }
         }
     }
 

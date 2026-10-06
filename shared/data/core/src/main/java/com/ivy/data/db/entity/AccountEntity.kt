@@ -25,6 +25,15 @@ data class AccountEntity(
     val orderNum: Double = 0.0,
     @SerialName("includeInBalance")
     val includeInBalance: Boolean = true,
+    // null / "REGULAR" = regular account, "CREDIT_CARD" = credit card
+    @SerialName("accountType")
+    val accountType: String? = null,
+    @SerialName("creditLimit")
+    val creditLimit: Double? = null,
+    @SerialName("statementDay")
+    val statementDay: Int? = null,
+    @SerialName("paymentDueDay")
+    val paymentDueDay: Int? = null,
 
     @Deprecated("Obsolete field used for cloud sync. Can't be deleted because of backwards compatibility")
     @SerialName("isSynced")
@@ -37,4 +46,8 @@ data class AccountEntity(
     @SerialName("id")
     @Serializable(with = KSerializerUUID::class)
     val id: UUID = UUID.randomUUID()
-)
+) {
+    companion object {
+        const val TYPE_CREDIT_CARD = "CREDIT_CARD"
+    }
+}

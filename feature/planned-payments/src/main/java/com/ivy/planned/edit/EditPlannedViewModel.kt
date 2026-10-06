@@ -39,6 +39,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.time.LocalDateTime
 import javax.inject.Inject
 
@@ -67,6 +68,7 @@ class EditPlannedViewModel @Inject constructor(
     private var initialTitle by mutableStateOf<String?>(null)
     private var description by mutableStateOf<String?>(null)
     private var account by mutableStateOf<Account?>(null)
+    private var toAccount by mutableStateOf<Account?>(null)
     private var category by mutableStateOf<Category?>(null)
     private var amount by mutableDoubleStateOf(0.0)
     private var currency by mutableStateOf("")
@@ -96,6 +98,7 @@ class EditPlannedViewModel @Inject constructor(
             intervalN = getIntervalN(),
             oneTime = getOneTime(),
             account = getAccount(),
+            toAccount = toAccount,
             category = getCategory(),
             amount = getAmount(),
             initialTitle = getInitialTitle(),
@@ -230,6 +233,7 @@ class EditPlannedViewModel @Inject constructor(
             is EditPlannedScreenEvent.OnCreateAccount -> createAccount(event.data)
             is EditPlannedScreenEvent.OnCreateCategory -> createCategory(event.data)
             is EditPlannedScreenEvent.OnAccountChanged -> updateAccount(event.newAccount)
+            is EditPlannedScreenEvent.OnToAccountChanged -> updateToAccount(event.newToAccount)
             is EditPlannedScreenEvent.OnAmountChanged -> updateAmount(event.newAmount)
             is EditPlannedScreenEvent.OnTitleChanged -> updateTitle(event.newTitle)
             is EditPlannedScreenEvent.OnRuleChanged ->
@@ -309,6 +313,9 @@ class EditPlannedViewModel @Inject constructor(
         description = rule.description
         val selectedAccount = ioThread { accountDao.findById(rule.accountId)!!.toLegacyDomain() }
         account = selectedAccount
+        toAccount = rule.toAccountId?.let { id ->
+            ioThread { accountDao.findById(id)?.toLegacyDomain() }
+        }
         category = rule.categoryId?.let {
             ioThread { categoryRepository.findById(CategoryId(it)) }
         }
@@ -392,6 +399,15 @@ class EditPlannedViewModel @Inject constructor(
         saveIfEditMode()
     }
 
+    private fun updateToAccount(newToAccount: Account) {
+        loadedRule = loadedRule().copy(
+            toAccountId = newToAccount.id
+        )
+        this@EditPlannedViewModel.toAccount = newToAccount
+
+        saveIfEditMode()
+    }
+
     private fun updateTransactionType(newTransactionType: TransactionType) {
         loadedRule = loadedRule().copy(
             type = newTransactionType
@@ -419,10 +435,20 @@ class EditPlannedViewModel @Inject constructor(
                         type = transactionType ?: error("no transaction type"),
                         startDate = with(timeConverter) { startDate?.toUTC() }
                             ?: error("no startDate"),
-                        intervalN = intervalN ?: error("no intervalN"),
-                        intervalType = intervalType ?: error("no intervalType"),
+                        // one-time payments don't need an interval
+                        intervalN = if (oneTime) intervalN else intervalN ?: error("no intervalN"),
+                        intervalType = if (oneTime) {
+                            intervalType
+                        } else {
+                            intervalType ?: error("no intervalType")
+                        },
                         categoryId = category?.id?.value,
                         accountId = account?.id ?: error("no accountId"),
+                        toAccountId = if (transactionType == TransactionType.TRANSFER) {
+                            toAccount?.id ?: error("no toAccountId")
+                        } else {
+                            null
+                        },
                         title = title?.trim(),
                         description = description?.trim(),
                         amount = amount ?: error("no amount"),
@@ -438,13 +464,15 @@ class EditPlannedViewModel @Inject constructor(
                     nav.back()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Timber.e(e, "Failed to save planned payment")
             }
         }
     }
 
     private fun validate(): Boolean {
-        if (transactionType == TransactionType.TRANSFER) {
+        if (transactionType == TransactionType.TRANSFER &&
+            (toAccount == null || toAccount?.id == account?.id)
+        ) {
             return false
         }
 

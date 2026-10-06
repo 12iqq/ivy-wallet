@@ -149,7 +149,41 @@ private fun BoxWithConstraintsScope.UI(
                 Spacer(Modifier.height(16.dp))
             }
         }
-        items(state.accountsData) {
+        val (creditCards, regularAccounts) = state.accountsData.partition { it.account.isCreditCard }
+        if (creditCards.isNotEmpty() && regularAccounts.isNotEmpty()) {
+            item { SectionHeader(text = stringResource(R.string.bank_accounts)) }
+        }
+        items(regularAccounts) {
+            Spacer(Modifier.height(16.dp))
+            AccountCard(
+                baseCurrency = state.baseCurrency,
+                accountData = it,
+                compactModeEnabled = state.compactAccountsModeEnabled,
+                onBalanceClick = {
+                    nav.navigateTo(
+                        TransactionsScreen(
+                            accountId = it.account.id.value,
+                            categoryId = null
+                        )
+                    )
+                }
+            ) {
+                nav.navigateTo(
+                    TransactionsScreen(
+                        accountId = it.account.id.value,
+                        categoryId = null
+                    )
+                )
+            }
+        }
+
+        if (creditCards.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(16.dp))
+                SectionHeader(text = stringResource(R.string.credit_cards))
+            }
+        }
+        items(creditCards) {
             Spacer(Modifier.height(16.dp))
             AccountCard(
                 baseCurrency = state.baseCurrency,
@@ -232,6 +266,17 @@ private fun AccountCard(
             onBalanceClick = onBalanceClick
         )
 
+        if (account.isCreditCard) {
+            CreditCardInfo(
+                balance = accountData.balance,
+                currency = currency,
+                details = account.creditCard,
+            )
+            if (compactModeEnabled) {
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+
         if (!compactModeEnabled) {
             Spacer(Modifier.height(12.dp))
 
@@ -246,6 +291,18 @@ private fun AccountCard(
             Spacer(Modifier.height(12.dp))
         }
     }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        modifier = Modifier.padding(start = 24.dp, top = 8.dp),
+        text = text.uppercase(),
+        style = UI.typo.c.style(
+            color = UI.colors.gray,
+            fontWeight = FontWeight.ExtraBold
+        )
+    )
 }
 
 @Composable

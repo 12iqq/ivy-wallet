@@ -49,6 +49,7 @@ import com.ivy.legacy.rootScreen
 import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.navigation.AttributionsScreen
 import com.ivy.navigation.ContributorsScreen
+import com.ivy.navigation.AutoCaptureSettingsScreen
 import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
 import com.ivy.navigation.ImportScreen
@@ -269,6 +270,17 @@ private fun BoxWithConstraintsScope.UI(
                         launchedFromOnboarding = false
                     )
                 )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            SettingsDefaultButton(
+                icon = R.drawable.ic_sync,
+                text = stringResource(R.string.auto_capture),
+                description = stringResource(R.string.auto_capture_description),
+                iconPadding = 6.dp
+            ) {
+                nav.navigateTo(AutoCaptureSettingsScreen)
             }
         }
 

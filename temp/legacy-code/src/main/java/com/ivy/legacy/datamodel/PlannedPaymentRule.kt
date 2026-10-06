@@ -21,6 +21,8 @@ data class PlannedPaymentRule(
     val categoryId: UUID? = null,
     val title: String? = null,
     val description: String? = null,
+    val toAccountId: UUID? = null,
+    val toAmount: Double? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -38,6 +40,8 @@ data class PlannedPaymentRule(
         categoryId = categoryId,
         title = title,
         description = description,
+        toAccountId = toAccountId,
+        toAmount = toAmount,
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id

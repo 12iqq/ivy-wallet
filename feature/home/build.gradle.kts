@@ -7,6 +7,7 @@ android {
 }
 
 dependencies {
+    implementation(projects.feature.autoCapture)
     implementation(projects.shared.base)
     implementation(projects.shared.data.core)
     implementation(projects.shared.domain)

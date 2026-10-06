@@ -6,6 +6,8 @@ import arrow.core.raise.ensure
 import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
+import com.ivy.data.model.AccountType
+import com.ivy.data.model.CreditCardDetails
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
@@ -28,6 +30,20 @@ class AccountMapper @Inject constructor(
             icon = icon?.let(IconAsset::from)?.getOrNull(),
             includeInBalance = includeInBalance,
             orderNum = orderNum,
+            type = if (accountType == AccountEntity.TYPE_CREDIT_CARD) {
+                AccountType.CreditCard
+            } else {
+                AccountType.Regular
+            },
+            creditCard = if (accountType == AccountEntity.TYPE_CREDIT_CARD) {
+                CreditCardDetails(
+                    creditLimit = creditLimit,
+                    statementDay = statementDay,
+                    paymentDueDay = paymentDueDay,
+                )
+            } else {
+                null
+            },
         )
     }
 
@@ -39,6 +55,10 @@ class AccountMapper @Inject constructor(
             icon = icon?.id,
             orderNum = orderNum,
             includeInBalance = includeInBalance,
+            accountType = if (isCreditCard) AccountEntity.TYPE_CREDIT_CARD else null,
+            creditLimit = creditCard?.creditLimit,
+            statementDay = creditCard?.statementDay,
+            paymentDueDay = creditCard?.paymentDueDay,
             id = id.value,
             isSynced = true, // TODO: Delete this
         )

@@ -1,5 +1,6 @@
 package com.ivy.home
 
+import com.ivy.autocapture.ui.AutoCaptureReviewBanner
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
@@ -72,7 +73,11 @@ fun BoxWithConstraintsScope.HomeTab() {
     val viewModel: HomeViewModel = screenScopedViewModel()
     val uiState = viewModel.uiState()
 
-    HomeUi(uiState, viewModel::onEvent)
+    HomeUi(
+        uiState = uiState,
+        onEvent = viewModel::onEvent,
+        reviewBanner = { AutoCaptureReviewBanner() }
+    )
 }
 
 @Suppress("LongMethod")
@@ -83,6 +88,7 @@ fun BoxWithConstraintsScope.HomeUi(
     uiState: HomeState,
     onEvent: (HomeEvent) -> Unit,
     modifier: Modifier = Modifier,
+    reviewBanner: @Composable () -> Unit = {},
 ) {
     val ivyContext = ivyWalletCtx()
 
@@ -156,6 +162,8 @@ fun BoxWithConstraintsScope.HomeUi(
                 onEvent(HomeEvent.SelectPreviousMonth)
             }
         )
+
+        reviewBanner()
 
         HomeLazyColumn(
             hideBalance = uiState.hideBalance,
