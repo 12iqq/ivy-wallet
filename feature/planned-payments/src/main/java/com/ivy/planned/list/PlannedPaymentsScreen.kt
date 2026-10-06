@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
@@ -29,6 +33,7 @@ import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.PlannedPaymentsScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
+import com.ivy.planned.installments.InstallmentModal
 import com.ivy.ui.R
 import com.ivy.ui.rememberScrollPositionListState
 import com.ivy.wallet.ui.theme.Green
@@ -89,6 +94,7 @@ private fun BoxWithConstraintsScope.UI(
     )
 
     val nav = navigation()
+    var installmentModalVisible by remember { mutableStateOf(false) }
     PlannedPaymentsBottomBar(
         onClose = {
             nav.back()
@@ -100,7 +106,17 @@ private fun BoxWithConstraintsScope.UI(
                     plannedPaymentRuleId = null
                 )
             )
-        }
+        },
+        onSplit = { installmentModalVisible = true }
+    )
+
+    InstallmentModal(
+        visible = installmentModalVisible,
+        currency = state.currency,
+        accounts = state.accounts,
+        categories = state.categories,
+        dismiss = { installmentModalVisible = false },
+        onCreate = { onEvent(PlannedPaymentsScreenEvent.OnCreateInstallmentPlan(it)) }
     )
 }
 

@@ -15,6 +15,7 @@ import com.ivy.data.repository.CategoryRepository
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.PlannedPaymentRule
 import com.ivy.legacy.utils.ioThread
+import com.ivy.planned.installments.InstallmentCreator
 import com.ivy.wallet.domain.action.account.AccountsAct
 import com.ivy.wallet.domain.deprecated.logic.PlannedPaymentsLogic
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +31,8 @@ class PlannedPaymentsViewModel @Inject constructor(
     private val settingsDao: SettingsDao,
     private val plannedPaymentsLogic: PlannedPaymentsLogic,
     private val categoriesRepository: CategoryRepository,
-    private val accountsAct: AccountsAct
+    private val accountsAct: AccountsAct,
+    private val installmentCreator: InstallmentCreator,
 ) : ComposeViewModel<PlannedPaymentsScreenState, PlannedPaymentsScreenEvent>() {
 
     private var currency by mutableStateOf("")
@@ -130,6 +132,12 @@ class PlannedPaymentsViewModel @Inject constructor(
             }
             is PlannedPaymentsScreenEvent.OnRecurringPaymentsExpanded -> {
                 isRecurringPaymentsExpanded = event.isExpanded
+            }
+            is PlannedPaymentsScreenEvent.OnCreateInstallmentPlan -> {
+                viewModelScope.launch {
+                    ioThread { installmentCreator.create(event.input) }
+                    start()
+                }
             }
         }
     }

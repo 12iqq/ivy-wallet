@@ -26,7 +26,8 @@ import com.ivy.wallet.ui.theme.gradientCutBackgroundTop
 fun BoxWithConstraintsScope.PlannedPaymentsBottomBar(
     bottomInset: Dp = navigationBarInset().toDensityDp(),
     onClose: () -> Unit,
-    onAdd: () -> Unit
+    onAdd: () -> Unit,
+    onSplit: () -> Unit = {},
 ) {
     ActionsRow(
         modifier = Modifier
@@ -42,6 +43,16 @@ fun BoxWithConstraintsScope.PlannedPaymentsBottomBar(
         }
 
         Spacer(Modifier.weight(1f))
+
+        IvyOutlinedButton(
+            iconStart = R.drawable.ic_custom_bills_s,
+            text = stringResource(R.string.split_payment_button),
+            solidBackground = true
+        ) {
+            onSplit()
+        }
+
+        Spacer(Modifier.width(12.dp))
 
         IvyOutlinedButton(
             iconStart = R.drawable.ic_planned_payments,

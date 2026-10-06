@@ -87,4 +87,16 @@
     <string name="card_due_today">%1$s due today</string>
     <string name="budget_almost_text">%1$s of %2$s %3$s spent: over 80%% of this budget</string>
     <string name="budget_over_text">%1$s of %2$s %3$s spent: this budget is used up</string>
+
+    <!-- Split payments (Tabby / Tamara) -->
+    <string name="split_payment">Split payment</string>
+    <string name="split_payment_button">Split</string>
+    <string name="where_did_you_buy">Where did you buy it?</string>
+    <string name="total_amount">Total amount</string>
+    <string name="n_payments">%1$d payments</string>
+    <string name="installments_monthly">Monthly</string>
+    <string name="every_two_weeks">Every 2 weeks</string>
+    <string name="first_payment_paid_today">First payment paid today</string>
+    <string name="category_label">Category</string>
+    <string name="installment_summary">%1$d payments of about %2$s · last one on %3$s</string>
 </resources>
