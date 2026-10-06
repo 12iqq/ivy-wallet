@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ivy.data.model.CreditCardCycle
 import com.ivy.data.model.CreditCardDetails
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
@@ -128,18 +129,6 @@ private fun usageColor(used: Double): Color = when {
     else -> Red
 }
 
-/**
- * The next date (today or later) falling on [dayOfMonth];
- * clamps to the last day of shorter months (e.g. 31 -> 30 Apr).
- */
-fun nextDayOfMonth(today: LocalDate, dayOfMonth: Int): LocalDate {
-    fun inMonth(month: LocalDate): LocalDate =
-        month.withDayOfMonth(dayOfMonth.coerceIn(1, month.lengthOfMonth()))
-
-    val thisMonth = inMonth(today.withDayOfMonth(1))
-    return if (!thisMonth.isBefore(today)) {
-        thisMonth
-    } else {
-        inMonth(today.withDayOfMonth(1).plusMonths(1))
-    }
-}
+/** The next date (today or later) falling on [dayOfMonth]; see [CreditCardCycle.nextDayOfMonth]. */
+fun nextDayOfMonth(today: LocalDate, dayOfMonth: Int): LocalDate =
+    CreditCardCycle.nextDayOfMonth(today, dayOfMonth)

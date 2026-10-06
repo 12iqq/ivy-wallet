@@ -16,6 +16,8 @@
     <string name="due_on_in_days">Due %1$s · in %2$d days</string>
     <string name="due_today">Due today</string>
     <string name="day_of_month_n">Day %1$d</string>
+    <string name="cycle_payments">Paid this statement</string>
+    <string name="cycle_spending">Spent this statement</string>
 
     <!-- Auto-capture -->
     <string name="auto_capture">Auto-add transactions</string>
@@ -59,4 +61,30 @@
     <string name="new_bank_transaction">New bank transaction</string>
     <string name="new_bank_transaction_text">%1$s %2$s at %3$s - tap to review</string>
     <string name="auto_capture_channel">Detected transactions</string>
+
+    <!-- Reminders & backups -->
+    <string name="reminders_and_backups">Reminders &amp; backups</string>
+    <string name="reminders_and_backups_desc">Checked once a day in the background. Nothing runs all the time.</string>
+    <string name="reminders_and_backups_settings_desc">Card due dates, budget alerts, automatic backup</string>
+    <string name="allow_notifications">Allow notifications</string>
+    <string name="card_reminders">Card payment reminders</string>
+    <string name="card_reminders_desc">Before a credit card payment is due, then the day before and on the day</string>
+    <string name="remind_days_before">Start %1$d days before</string>
+    <string name="budget_alerts">Budget alerts</string>
+    <string name="budget_alerts_desc">When a budget reaches 80% and 100%</string>
+    <string name="auto_backup">Automatic backup</string>
+    <string name="auto_backup_desc">Saves a full backup to a file you choose. Pick a location in Google Drive to keep it off your phone.</string>
+    <string name="backup_daily">Daily</string>
+    <string name="backup_weekly">Weekly</string>
+    <string name="backup_file">Backup file</string>
+    <string name="backup_now">Back up now</string>
+    <string name="last_backup_at">Last backup: %1$s</string>
+    <string name="backup_error_status">Last backup failed: %1$s. Choose the backup file again.</string>
+    <string name="backup_failed_title">Automatic backup failed</string>
+    <string name="backup_failed_text">Open Settings → Reminders &amp; backups and choose the backup file again.</string>
+    <string name="card_due_in_days">%1$s due in %2$d days</string>
+    <string name="card_due_tomorrow">%1$s due tomorrow</string>
+    <string name="card_due_today">%1$s due today</string>
+    <string name="budget_almost_text">%1$s of %2$s %3$s spent: over 80%% of this budget</string>
+    <string name="budget_over_text">%1$s of %2$s %3$s spent: this budget is used up</string>
 </resources>

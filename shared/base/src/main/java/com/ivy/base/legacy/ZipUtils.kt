@@ -11,11 +11,12 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-private const val MODE_WRITE = "w"
+// "wt" truncates, so overwriting an existing (shorter) backup never leaves stale bytes behind
+private const val ModeWriteTruncate = "wt"
 private const val MODE_READ = "r"
 
 fun zip(context: Context, zipFile: Uri, files: List<File>) {
-    context.contentResolver.openFileDescriptor(zipFile, MODE_WRITE).use { descriptor ->
+    context.contentResolver.openFileDescriptor(zipFile, ModeWriteTruncate).use { descriptor ->
         descriptor?.fileDescriptor?.let {
             ZipOutputStream(BufferedOutputStream(FileOutputStream(it))).use { outStream ->
                 zip(outStream, files)

@@ -157,3 +157,9 @@ data object AutoCaptureReviewScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }
+
+/** Card due reminders, budget alerts and automatic backups. */
+data object AssistantSettingsScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}

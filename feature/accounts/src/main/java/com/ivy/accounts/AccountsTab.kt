@@ -280,11 +280,20 @@ private fun AccountCard(
         if (!compactModeEnabled) {
             Spacer(Modifier.height(12.dp))
 
+            val showsCycle = account.isCreditCard && account.creditCard?.statementDay != null
             IncomeExpensesRow(
                 currency = currency,
-                incomeLabel = stringResource(R.string.month_income),
+                incomeLabel = if (showsCycle) {
+                    stringResource(R.string.cycle_payments)
+                } else {
+                    stringResource(R.string.month_income)
+                },
                 income = accountData.monthlyIncome,
-                expensesLabel = stringResource(R.string.month_expenses),
+                expensesLabel = if (showsCycle) {
+                    stringResource(R.string.cycle_spending)
+                } else {
+                    stringResource(R.string.month_expenses)
+                },
                 expenses = accountData.monthlyExpenses
             )
 

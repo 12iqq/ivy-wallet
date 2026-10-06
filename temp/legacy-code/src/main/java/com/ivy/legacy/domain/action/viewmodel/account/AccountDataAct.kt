@@ -1,6 +1,7 @@
 package com.ivy.wallet.domain.action.viewmodel.account
 
 import arrow.core.toOption
+import com.ivy.data.model.CreditCardCycle
 import com.ivy.frp.action.FPAction
 import com.ivy.frp.action.thenMap
 import com.ivy.frp.then
@@ -12,6 +13,8 @@ import com.ivy.wallet.domain.pure.data.ClosedTimeRange
 import com.ivy.wallet.domain.pure.exchange.ExchangeData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 
 class AccountDataAct @Inject constructor(
@@ -46,7 +49,8 @@ class AccountDataAct @Inject constructor(
         val incomeExpensePair = calcAccIncomeExpenseAct(
             CalcAccIncomeExpenseAct.Input(
                 account = acc,
-                range = range,
+                // credit cards show the current statement cycle instead of the month
+                range = acc.creditCard?.statementDay?.let { statementCycleRange(it) } ?: range,
                 includeTransfersInCalc = includeTransfersInCalc
             )
         ).incomeExpensePair
@@ -60,6 +64,16 @@ class AccountDataAct @Inject constructor(
         )
     } then {
         it.toImmutableList()
+    }
+
+    private fun statementCycleRange(statementDay: Int): ClosedTimeRange {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val start = CreditCardCycle.cycleStart(today, statementDay)
+        return ClosedTimeRange(
+            from = start.atStartOfDay(zone).toInstant(),
+            to = today.plusDays(1).atStartOfDay(zone).toInstant(),
+        )
     }
 
     data class Input(

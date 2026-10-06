@@ -3,6 +3,7 @@ package com.ivy.wallet
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.ivy.assistant.data.DailyAssistantWorker
 import com.ivy.base.legacy.appContext
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
@@ -29,5 +30,8 @@ class IvyAndroidApp : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(DebugTree())
         }
+
+        // card reminders, budget alerts and auto-backup (once a day)
+        DailyAssistantWorker.schedule(this)
     }
 }

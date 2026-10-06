@@ -27,6 +27,13 @@ enum class IvyNotificationChannel(
         description = "Bank transactions detected from SMS, waiting for your review.",
         importance = NotificationManager.IMPORTANCE_DEFAULT,
         bypassDnd = false
+    ),
+    REMINDERS(
+        channelId = "reminders",
+        channelName = "Card & budget reminders",
+        description = "Credit card due dates, budget limits and backup problems.",
+        importance = NotificationManager.IMPORTANCE_HIGH,
+        bypassDnd = false
     );
 
     @SuppressLint("WrongConstant")

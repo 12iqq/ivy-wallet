@@ -46,6 +46,7 @@ import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.rootScreen
 import com.ivy.legacy.utils.drawColoredShadow
+import com.ivy.navigation.AssistantSettingsScreen
 import com.ivy.navigation.AttributionsScreen
 import com.ivy.navigation.AutoCaptureSettingsScreen
 import com.ivy.navigation.ExchangeRatesScreen
@@ -271,6 +272,16 @@ private fun BoxWithConstraintsScope.UI(
                 iconPadding = 6.dp
             ) {
                 nav.navigateTo(AutoCaptureSettingsScreen)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            SettingsDefaultButton(
+                icon = R.drawable.ic_notification_m,
+                text = stringResource(R.string.reminders_and_backups),
+                description = stringResource(R.string.reminders_and_backups_settings_desc),
+            ) {
+                nav.navigateTo(AssistantSettingsScreen)
             }
         }
 

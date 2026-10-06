@@ -4,6 +4,7 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.Composable
+import com.ivy.assistant.ui.AssistantSettingsScreenImpl
 import com.ivy.attributions.AttributionsScreenImpl
 import com.ivy.autocapture.ui.AutoCaptureReviewScreenImpl
 import com.ivy.autocapture.ui.AutoCaptureSettingsScreenImpl
@@ -19,6 +20,7 @@ import com.ivy.importdata.csvimport.ImportCSVScreen
 import com.ivy.loans.loan.LoansScreen
 import com.ivy.loans.loandetails.LoanDetailsScreen
 import com.ivy.main.MainScreen
+import com.ivy.navigation.AssistantSettingsScreen
 import com.ivy.navigation.AttributionsScreen
 import com.ivy.navigation.AutoCaptureReviewScreen
 import com.ivy.navigation.AutoCaptureSettingsScreen
@@ -94,5 +96,6 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         PollScreen -> PollScreen()
         AutoCaptureSettingsScreen -> AutoCaptureSettingsScreenImpl()
         AutoCaptureReviewScreen -> AutoCaptureReviewScreenImpl()
+        AssistantSettingsScreen -> AssistantSettingsScreenImpl()
     }
 }
