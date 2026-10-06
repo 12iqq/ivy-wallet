@@ -222,7 +222,7 @@ private fun BoxWithConstraintsScope.UI(
         type = state.transactionType,
         accounts = state.accounts,
         selectedAccount = state.account,
-        toAccount = null,
+        toAccount = state.toAccount,
         amount = state.amount,
         currency = state.currency,
 
@@ -270,7 +270,7 @@ private fun BoxWithConstraintsScope.UI(
             }
         },
         onSelectedAccountChanged = { onEvent(EditPlannedScreenEvent.OnAccountChanged(it)) },
-        onToAccountChanged = { },
+        onToAccountChanged = { onEvent(EditPlannedScreenEvent.OnToAccountChanged(it)) },
         onAddNewAccount = {
             onEvent(
                 EditPlannedScreenEvent.OnAccountModalDataChanged(
@@ -355,7 +355,7 @@ private fun BoxWithConstraintsScope.UI(
     ChangeTransactionTypeModal(
         title = stringResource(R.string.set_payment_type),
         visible = state.transactionTypeModalVisible,
-        includeTransferType = false,
+        includeTransferType = true,
         initialType = state.transactionType,
         dismiss = {
             onEvent(EditPlannedScreenEvent.OnTransactionTypeModalVisible(false))
@@ -438,6 +438,7 @@ private fun Preview() {
                 description = null,
                 category = null,
                 account = Account(name = "phyre", Orange.toArgb()),
+                toAccount = null,
                 amount = 0.0,
                 transactionType = TransactionType.INCOME,
                 categories = persistentListOf(),

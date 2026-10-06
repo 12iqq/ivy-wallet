@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Only used when the user turns on "Bank SMS" auto-capture.
+         Messages are processed on the device and never uploaded. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- SMS is optional: the app still installs on tablets / Chromebooks without telephony -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
+    <application>
+        <receiver
+            android:name="com.ivy.autocapture.sms.BankSmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

@@ -31,6 +31,7 @@ import com.ivy.design.l0_system.style
 import com.ivy.domain.legacy.ui.IvyColorPicker
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
+import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.legacy.utils.selectEndTextFieldValue
@@ -62,6 +63,7 @@ data class AccountModalData(
 )
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
 fun BoxWithConstraintsScope.AccountModal(
     modal: AccountModalData?,
@@ -77,7 +79,9 @@ fun BoxWithConstraintsScope.AccountModal(
         mutableStateOf(account?.color?.let { Color(it) } ?: Ivy)
     }
     var amount by remember(modal) {
-        mutableStateOf(modal?.balance ?: 0.0)
+        // credit cards show the amount owed as a positive number
+        val balance = modal?.balance ?: 0.0
+        mutableStateOf(if (account?.isCreditCard == true) -balance else balance)
     }
     var currencyCode by remember(modal) {
         mutableStateOf(account?.currency ?: modal?.baseCurrency ?: "")
@@ -88,6 +92,19 @@ fun BoxWithConstraintsScope.AccountModal(
     var includeInBalance by remember(modal) {
         mutableStateOf(account?.includeInBalance ?: true)
     }
+    var isCreditCard by remember(modal) {
+        mutableStateOf(account?.isCreditCard ?: false)
+    }
+    var creditLimit by remember(modal) {
+        mutableStateOf(account?.creditLimit)
+    }
+    var statementDay by remember(modal) {
+        mutableStateOf(account?.statementDay)
+    }
+    var paymentDueDay by remember(modal) {
+        mutableStateOf(account?.paymentDueDay)
+    }
+    var creditLimitModalVisible by remember { mutableStateOf(false) }
 
     var amountModalVisible by remember { mutableStateOf(false) }
     var currencyModalVisible by remember { mutableStateOf(false) }
@@ -113,8 +130,9 @@ fun BoxWithConstraintsScope.AccountModal(
                     currency = currencyCode,
                     color = color,
                     icon = icon,
-                    amount = amount,
+                    amount = amount.toBalance(isCreditCard),
                     includeInBalance = includeInBalance,
+                    card = CardFields(isCreditCard, creditLimit, statementDay, paymentDueDay),
 
                     onCreateAccount = onCreateAccount,
                     onEditAccount = onEditAccount,
@@ -188,8 +206,52 @@ fun BoxWithConstraintsScope.AccountModal(
                 ) {
                     includeInBalance = it
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                IvyCheckboxWithText(
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .align(Alignment.Start)
+                        .testTag("account_modal_credit_card"),
+                    text = stringResource(R.string.credit_card),
+                    checked = isCreditCard
+                ) {
+                    isCreditCard = it
+                }
+
+                if (isCreditCard) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    CardSettingRow(
+                        label = stringResource(R.string.credit_limit),
+                        value = creditLimit?.let { "${it.format(currencyCode)} $currencyCode" }
+                            ?: stringResource(R.string.not_set),
+                        onClick = { creditLimitModalVisible = true }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    DayOfMonthRow(
+                        label = stringResource(R.string.statement_day),
+                        day = statementDay,
+                        onDayChange = { statementDay = it }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    DayOfMonthRow(
+                        label = stringResource(R.string.payment_due_day),
+                        day = paymentDueDay,
+                        onDayChange = { paymentDueDay = it }
+                    )
+                }
             },
-            label = stringResource(R.string.enter_account_balance).uppercase(),
+            label = if (isCreditCard) {
+                stringResource(R.string.enter_amount_owed).uppercase()
+            } else {
+                stringResource(R.string.enter_account_balance).uppercase()
+            },
             currency = currencyCode,
             amount = amount,
             amountPaddingTop = 40.dp,
@@ -219,14 +281,25 @@ fun BoxWithConstraintsScope.AccountModal(
                 currency = currencyCode,
                 color = color,
                 icon = icon,
-                amount = newAmount,
+                amount = newAmount.toBalance(isCreditCard),
                 includeInBalance = includeInBalance,
+                card = CardFields(isCreditCard, creditLimit, statementDay, paymentDueDay),
 
                 onCreateAccount = onCreateAccount,
                 onEditAccount = onEditAccount,
                 dismiss = dismiss
             )
         }
+    }
+
+    AmountModal(
+        id = remember(modal, creditLimit) { UUID.randomUUID() },
+        visible = creditLimitModalVisible,
+        currency = currencyCode,
+        initialAmount = creditLimit,
+        dismiss = { creditLimitModalVisible = false }
+    ) { newLimit ->
+        creditLimit = newLimit.takeIf { it > 0 }
     }
 
     val context = LocalContext.current
@@ -263,6 +336,7 @@ private fun save(
     icon: String?,
     amount: Double,
     includeInBalance: Boolean,
+    card: CardFields,
 
     onCreateAccount: (CreateAccountData) -> Unit,
     onEditAccount: (Account, balance: Double) -> Unit,
@@ -275,7 +349,11 @@ private fun save(
                 currency = currency,
                 includeInBalance = includeInBalance,
                 icon = icon,
-                color = color.toArgb()
+                color = color.toArgb(),
+                isCreditCard = card.isCreditCard,
+                creditLimit = card.creditLimit.takeIf { card.isCreditCard },
+                statementDay = card.statementDay.takeIf { card.isCreditCard },
+                paymentDueDay = card.paymentDueDay.takeIf { card.isCreditCard },
             ),
             amount
         )
@@ -287,12 +365,120 @@ private fun save(
                 color = color,
                 icon = icon,
                 balance = amount,
-                includeBalance = includeInBalance
+                includeBalance = includeInBalance,
+                isCreditCard = card.isCreditCard,
+                creditLimit = card.creditLimit.takeIf { card.isCreditCard },
+                statementDay = card.statementDay.takeIf { card.isCreditCard },
+                paymentDueDay = card.paymentDueDay.takeIf { card.isCreditCard },
             )
         )
     }
 
     dismiss()
+}
+
+private data class CardFields(
+    val isCreditCard: Boolean,
+    val creditLimit: Double?,
+    val statementDay: Int?,
+    val paymentDueDay: Int?,
+)
+
+/** Credit cards are edited as "amount owed" but stored as a negative balance. */
+private fun Double.toBalance(isCreditCard: Boolean): Double = if (isCreditCard) -this else this
+
+@Composable
+private fun CardSettingRow(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .background(UI.colors.medium, UI.shapes.r4)
+            .clip(UI.shapes.r4)
+            .clickable { onClick() }
+            .padding(vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(Modifier.width(24.dp))
+        Text(
+            text = label,
+            style = UI.typo.b2.style(fontWeight = FontWeight.SemiBold)
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = value,
+            style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
+        )
+        Spacer(Modifier.width(24.dp))
+    }
+}
+
+@Suppress("MagicNumber")
+@Composable
+private fun DayOfMonthRow(
+    label: String,
+    day: Int?,
+    onDayChange: (Int?) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .background(UI.colors.medium, UI.shapes.r4)
+            .clip(UI.shapes.r4)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(Modifier.width(24.dp))
+        Text(
+            text = label,
+            style = UI.typo.b2.style(fontWeight = FontWeight.SemiBold)
+        )
+        Spacer(Modifier.weight(1f))
+        StepperButton(text = "−") {
+            onDayChange(
+                when {
+                    day == null -> 28
+                    day <= 1 -> null
+                    else -> day - 1
+                }
+            )
+        }
+        Text(
+            modifier = Modifier.width(64.dp),
+            text = day?.let { stringResource(R.string.day_of_month_n, it) }
+                ?: stringResource(R.string.not_set),
+            style = UI.typo.b2.style(
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        )
+        StepperButton(text = "+") {
+            onDayChange(
+                when {
+                    day == null -> 1
+                    day >= 31 -> null
+                    else -> day + 1
+                }
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+    }
+}
+
+@Composable
+private fun StepperButton(text: String, onClick: () -> Unit) {
+    Text(
+        modifier = Modifier
+            .clip(UI.shapes.rFull)
+            .background(UI.colors.pure, UI.shapes.rFull)
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        text = text,
+        style = UI.typo.b1.style(fontWeight = FontWeight.Bold)
+    )
 }
 
 @Composable

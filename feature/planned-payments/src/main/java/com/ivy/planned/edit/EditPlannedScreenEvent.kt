@@ -24,6 +24,7 @@ sealed interface EditPlannedScreenEvent {
     data class OnDescriptionChanged(val newDescription: String?) : EditPlannedScreenEvent
     data class OnCategoryChanged(val newCategory: Category?) : EditPlannedScreenEvent
     data class OnAccountChanged(val newAccount: Account) : EditPlannedScreenEvent
+    data class OnToAccountChanged(val newToAccount: Account) : EditPlannedScreenEvent
     data class OnSetTransactionType(val newTransactionType: TransactionType) :
         EditPlannedScreenEvent
 

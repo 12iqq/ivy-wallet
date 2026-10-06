@@ -37,5 +37,7 @@ jobs:
           # Check if the lint XML report contains any error issues
           if grep -q 'severity="Error"' build/reports/lint/lint.xml; then
             echo "Lint errors found. Failing the build."
+            # print each error issue (and its location) so it shows in the CI log
+            grep -A8 'severity="Error"' build/reports/lint/lint.xml || true
             exit 1
           fi

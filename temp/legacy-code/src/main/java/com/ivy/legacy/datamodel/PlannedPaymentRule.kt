@@ -9,6 +9,7 @@ import java.util.UUID
 
 @Deprecated("Legacy data model. Will be deleted")
 @Immutable
+@Suppress("DataClassDefaultValues", "DataClassTypedIDs")
 data class PlannedPaymentRule(
     val startDate: Instant?,
     val intervalN: Int?,
@@ -21,6 +22,8 @@ data class PlannedPaymentRule(
     val categoryId: UUID? = null,
     val title: String? = null,
     val description: String? = null,
+    val toAccountId: UUID? = null,
+    val toAmount: Double? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -38,6 +41,8 @@ data class PlannedPaymentRule(
         categoryId = categoryId,
         title = title,
         description = description,
+        toAccountId = toAccountId,
+        toAmount = toAmount,
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id

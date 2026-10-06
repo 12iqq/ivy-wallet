@@ -11,6 +11,7 @@ import java.util.UUID
 @JvmInline
 value class AccountId(override val value: UUID) : UniqueId
 
+@Suppress("DataClassDefaultValues")
 data class Account(
     override val id: AccountId,
     val name: NotBlankTrimmedString,
@@ -19,4 +20,24 @@ data class Account(
     val icon: IconAsset?,
     val includeInBalance: Boolean,
     override val orderNum: Double,
-) : Identifiable<AccountId>, Reorderable
+    val type: AccountType = AccountType.Regular,
+    val creditCard: CreditCardDetails? = null,
+) : Identifiable<AccountId>, Reorderable {
+    val isCreditCard: Boolean
+        get() = type == AccountType.CreditCard
+}
+
+enum class AccountType {
+    Regular,
+    CreditCard,
+}
+
+/**
+ * Extra details of a credit card account. Days are days of the month (1-31);
+ * a day past the end of a short month means its last day.
+ */
+data class CreditCardDetails(
+    val creditLimit: Double?,
+    val statementDay: Int?,
+    val paymentDueDay: Int?,
+)

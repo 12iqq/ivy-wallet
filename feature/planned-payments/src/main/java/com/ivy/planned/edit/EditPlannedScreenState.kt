@@ -24,6 +24,7 @@ data class EditPlannedScreenState(
     val categories: ImmutableList<Category>,
     val accounts: ImmutableList<Account>,
     val account: Account?,
+    val toAccount: Account?,
     val category: Category?,
     val amount: Double,
     val categoryModalVisible: Boolean,

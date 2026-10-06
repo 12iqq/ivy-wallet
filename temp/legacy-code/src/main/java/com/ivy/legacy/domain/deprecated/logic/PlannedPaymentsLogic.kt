@@ -235,14 +235,11 @@ class PlannedPaymentsLogic @Inject constructor(
         skipTransaction: Boolean = false,
         onUpdateUI: suspend (paidTransactions: List<com.ivy.data.model.Transaction>) -> Unit
     ) {
-        val paidTransactions: List<com.ivy.data.model.Transaction> =
-            transactions.filter { it.settled }
+        val paidTransactions: List<com.ivy.data.model.Transaction> = transactions
+            .filter { !it.settled }
+            .map { it.settleNow() }
 
         if (paidTransactions.isEmpty()) return
-
-        paidTransactions.map {
-            it.settleNow()
-        }
 
         val plannedPaymentRules = ioThread {
             paidTransactions.map { transaction ->
@@ -281,18 +278,18 @@ class PlannedPaymentsLogic @Inject constructor(
         skipTransaction: Boolean = false,
         onUpdateUI: suspend (paidTransactions: List<Transaction>) -> Unit
     ) {
-        val paidTransactions =
-            transactions.filter { (it.dueDate == null || it.dateTime != null).not() }
+        val paidTransactions = transactions
+            .filter { it.dueDate != null && it.dateTime == null }
+            .map {
+                it.copy(
+                    paidFor = it.dueDate,
+                    dueDate = null,
+                    dateTime = timeProvider.utcNow(),
+                    isSynced = false
+                )
+            }
 
-        if (paidTransactions.count() == 0) return
-
-        paidTransactions.map {
-            it.copy(
-                dueDate = null,
-                dateTime = timeProvider.utcNow(),
-                isSynced = false
-            )
-        }
+        if (paidTransactions.isEmpty()) return
 
         val plannedPaymentRules = ioThread {
             paidTransactions.map { transaction ->

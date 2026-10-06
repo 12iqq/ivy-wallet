@@ -29,20 +29,30 @@ fun Transaction.getTransactionType(): TransactionType = when (this) {
 
 fun Transaction.settleNow(): Transaction {
     val timeNow = Instant.now()
+    // Remember which due date got paid so planned payments
+    // know which occurrences are already settled.
+    val settledMetadata = if (!settled && metadata.paidForDateTime == null) {
+        metadata.copy(paidForDateTime = time)
+    } else {
+        metadata
+    }
     return when (this) {
         is Income -> this.copy(
             settled = true,
-            time = timeNow
+            time = timeNow,
+            metadata = settledMetadata
         )
 
         is Expense -> this.copy(
             settled = true,
-            time = timeNow
+            time = timeNow,
+            metadata = settledMetadata
         )
 
         is Transfer -> this.copy(
             settled = true,
-            time = timeNow
+            time = timeNow,
+            metadata = settledMetadata
         )
     }
 }

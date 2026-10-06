@@ -5,6 +5,8 @@ import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
+import com.ivy.data.model.AccountType
+import com.ivy.data.model.CreditCardDetails
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
@@ -147,6 +149,43 @@ class AccountMapperTest {
         result.shouldBeRight().icon shouldBe null
     }
     // endregion
+
+    @Test
+    fun `credit card details survive entity round-trip`() = runTest {
+        // given
+        val entity = ValidEntity.copy(
+            accountType = AccountEntity.TYPE_CREDIT_CARD,
+            creditLimit = 15_000.0,
+            statementDay = 1,
+            paymentDueDay = 25,
+        )
+
+        // when
+        val domain = with(mapper) { entity.toDomain() }.shouldBeRight()
+        val back = with(mapper) { domain.toEntity() }
+
+        // then
+        domain.type shouldBe AccountType.CreditCard
+        domain.creditCard shouldBe CreditCardDetails(
+            creditLimit = 15_000.0,
+            statementDay = 1,
+            paymentDueDay = 25,
+        )
+        back.accountType shouldBe AccountEntity.TYPE_CREDIT_CARD
+        back.creditLimit shouldBe 15_000.0
+        back.statementDay shouldBe 1
+        back.paymentDueDay shouldBe 25
+    }
+
+    @Test
+    fun `old backups without account type map to regular accounts`() = runTest {
+        // when
+        val domain = with(mapper) { ValidEntity.toDomain() }.shouldBeRight()
+
+        // then
+        domain.type shouldBe AccountType.Regular
+        domain.creditCard shouldBe null
+    }
 
     companion object {
         val ValidEntity = AccountEntity(

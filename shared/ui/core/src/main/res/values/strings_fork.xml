@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Credit cards -->
+    <string name="credit_card">Credit card</string>
+    <string name="credit_cards">Credit cards</string>
+    <string name="bank_accounts">Accounts</string>
+    <string name="credit_limit">Credit limit</string>
+    <string name="statement_day">Statement day</string>
+    <string name="payment_due_day">Payment due day</string>
+    <string name="enter_amount_owed">Amount owed</string>
+    <string name="not_set">Not set</string>
+    <string name="owed">Owed</string>
+    <string name="credit_used_percent">%1$d%% used</string>
+    <string name="available_credit">Available %1$s</string>
+    <string name="due_on_in_days">Due %1$s · in %2$d days</string>
+    <string name="due_today">Due today</string>
+    <string name="day_of_month_n">Day %1$d</string>
+
+    <!-- Auto-capture -->
+    <string name="auto_capture">Auto-add transactions</string>
+    <string name="auto_capture_description">Detect transactions from your bank SMS and statements</string>
+    <string name="auto_capture_mode">How should transactions be added?</string>
+    <string name="auto_capture_mode_off">Off</string>
+    <string name="auto_capture_mode_off_desc">I\'ll keep adding everything manually</string>
+    <string name="auto_capture_mode_sms">Bank SMS</string>
+    <string name="auto_capture_mode_sms_desc">Read bank SMS alerts on this phone and queue them for review</string>
+    <string name="auto_capture_mode_statement">Statement import only</string>
+    <string name="auto_capture_mode_statement_desc">Import a CSV statement from your bank once in a while</string>
+    <string name="auto_capture_mode_both">SMS + statement import</string>
+    <string name="auto_capture_mode_both_desc">Capture SMS as they arrive and catch up with statements</string>
+    <string name="auto_add_without_review">Add without review</string>
+    <string name="auto_add_without_review_desc">Add transactions straight away when the account is known</string>
+    <string name="my_banks">My banks &amp; cards</string>
+    <string name="my_banks_desc">Only messages from selected banks are read</string>
+    <string name="link_card_to_account">Link card / account to an Ivy account</string>
+    <string name="card_ending">Card or account ending (last 4)</string>
+    <string name="any_card">Any card</string>
+    <string name="extra_sender_ids">Extra sender names (comma separated)</string>
+    <string name="test_a_message">Test a message</string>
+    <string name="test_a_message_hint">Paste a bank SMS here to see what Ivy understands</string>
+    <string name="sender">Sender</string>
+    <string name="not_recognized">Not recognized as a transaction</string>
+    <string name="review_transactions">Review transactions</string>
+    <string name="review_transactions_empty">Nothing to review. New bank transactions will show up here.</string>
+    <string name="n_to_review">%1$d to review</string>
+    <string name="add_all">Add all</string>
+    <string name="choose_account">Choose account</string>
+    <string name="possible_duplicate">Possible duplicate of a transaction you already entered</string>
+    <string name="sms_permission_needed">Allow Ivy to read SMS so it can detect bank alerts. Messages never leave your phone.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="scan_recent_sms">Scan last 30 days of SMS</string>
+    <string name="scan_result">Found %1$d new transactions</string>
+    <string name="import_statement">Import bank statement (CSV)</string>
+    <string name="new_bank_transaction">New bank transaction</string>
+    <string name="new_bank_transaction_text">%1$s %2$s at %3$s - tap to review</string>
+    <string name="auto_capture_channel">Detected transactions</string>
+</resources>
