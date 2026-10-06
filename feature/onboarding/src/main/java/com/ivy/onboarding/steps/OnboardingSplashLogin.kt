@@ -186,7 +186,7 @@ fun BoxWithConstraintsScope.OnboardingSplashLogin(
                 ivyContext = ivyContext,
                 percentTransition = percentTransition
             ),
-            text = "Ivy Wallet",
+            text = stringResource(R.string.app_display_name),
             style = UI.typo.h2.style(
                 color = UI.colors.pureInverse,
                 fontWeight = FontWeight.ExtraBold

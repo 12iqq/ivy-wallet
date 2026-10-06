@@ -1,4 +1,6 @@
-# Ivy Wallet — UAE edition
+# Ivy Wallet UAE Edition
+
+*Same Ivy. More dirhams. Fewer surprises.*
 
 [![APK](https://github.com/12iqq/ivy-wallet/actions/workflows/apk.yml/badge.svg)](https://github.com/12iqq/ivy-wallet/actions/workflows/apk.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)

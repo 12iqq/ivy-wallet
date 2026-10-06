@@ -153,7 +153,7 @@
     <string name="agreed_privacy_policy">Agreed to our Privacy Policy</string>
     <string name="terms_and_conditions">Terms and Conditions</string>
     <string name="privacy_policy">Privacy Policy</string>
-    <string name="wallet_description">Track your income, expenses, and budget with Ivy!\n\nEnjoy an intuitive interface, manage recurring and planned payments, oversee multiple accounts, categorize transactions, access powerful statistics, export to CSV, and much more.</string>
+    <string name="wallet_description">Ivy Wallet, tuned for life in the UAE.\n\nTrack your bank accounts and credit cards, see what\'s due and when, let bank SMS alerts add transactions for you, and keep your planned payments, budgets and reports in one familiar place.</string>
     <string name="enter_your_name">Enter your name\nto personalize your\nwallet</string>
     <string name="what_is_your_name">What\'s your name?</string>
     <string name="enter">Enter</string>
@@ -163,7 +163,7 @@
     <string name="add_categories">Add categories</string>
     <string name="suggestions">Suggestions</string>
     <string name="set">Set</string>
-    <string name="your_personal_money_manager">Every dirham, every card, in one place</string>
+    <string name="your_personal_money_manager">Same Ivy. More dirhams. Fewer surprises.</string>
     <string name="opensource">#opensource</string>
     <string name="google_error_try_again">Error. Try again: %1$s</string>
     <string name="google_signing_in">Signing in…</string>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Credit cards -->
+    <string name="app_display_name">Ivy Wallet UAE Edition</string>
     <string name="credit_card">Credit card</string>
     <string name="credit_cards">Credit cards</string>
     <string name="bank_accounts">Accounts</string>
