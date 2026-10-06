@@ -7,7 +7,9 @@ import com.ivy.autocapture.parser.BankMessageRouter
 import com.ivy.autocapture.parser.Direction
 import com.ivy.autocapture.parser.GenericMessageParser
 import com.ivy.autocapture.parser.ParsedMessage
+import com.ivy.autocapture.parser.GoogleWalletPackage
 import com.ivy.autocapture.parser.UaeBanks
+import com.ivy.autocapture.parser.WalletNotifications
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.dao.read.AccountDao
@@ -80,10 +82,69 @@ class CaptureProcessor @Inject constructor(
 
         val parsed = router.parse(sender, body, config.enabledBankIds, config.extraSenders)
             ?: return null
+        // already captured from Google Wallet's notification
+        if (reportedBy(CapturedTransactionEntity.SOURCE_NOTIFICATION, parsed.amount, receivedAt)) return null
+
+        return capture(
+            sender = sender,
+            body = body,
+            receivedAt = receivedAt,
+            source = source,
+            notify = notify,
+            parsed = parsed,
+            linkedAccountId = CaptureLogic.linkedAccountId(config.links, parsed.bankId, parsed.last4),
+        )
+    }
+
+    /**
+     * A Google Wallet tap-to-pay notification. Skipped when the bank's SMS
+     * for the same purchase was already captured.
+     */
+    suspend fun onWalletNotification(
+        title: String?,
+        text: String?,
+        postedAt: Instant,
+    ): CapturedTransactionEntity? {
+        val config = settingsStore.current()
+        if (config.mode == AutoCaptureMode.Off || !config.readWalletNotifications) return null
+        val body = WalletNotifications.toMessage(title, text) ?: return null
+        val parsed = WalletNotifications.parse(title, text) ?: return null
+        if (reportedBy(CapturedTransactionEntity.SOURCE_SMS, parsed.amount, postedAt)) return null
+
+        return capture(
+            sender = GoogleWalletPackage,
+            body = body,
+            receivedAt = postedAt,
+            source = CapturedTransactionEntity.SOURCE_NOTIFICATION,
+            notify = true,
+            parsed = parsed,
+            linkedAccountId = CaptureLogic.linkedAccountIdByLast4(config.links, parsed.last4),
+        )
+    }
+
+    private suspend fun reportedBy(source: String, amount: Double, at: Instant): Boolean =
+        capturedDao.countFromSourceBetween(
+            source = source,
+            amount = amount,
+            from = at.minus(SAME_PURCHASE_WINDOW),
+            to = at.plus(SAME_PURCHASE_WINDOW),
+        ) > 0
+
+    @Suppress("LongParameterList")
+    private suspend fun capture(
+        sender: String,
+        body: String,
+        receivedAt: Instant,
+        source: String,
+        notify: Boolean,
+        parsed: ParsedMessage,
+        linkedAccountId: String?,
+    ): CapturedTransactionEntity? {
+        val config = settingsStore.current()
         val fingerprint = CaptureLogic.fingerprint(sender, body)
         if (capturedDao.countByFingerprint(fingerprint) > 0) return null
 
-        val accountId = CaptureLogic.linkedAccountId(config.links, parsed.bankId, parsed.last4)
+        val accountId = linkedAccountId
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?.takeIf { accountDao.findById(it) != null }
         val merchantKey = parsed.merchant?.let(CaptureLogic::merchantKey)
@@ -249,6 +310,7 @@ class CaptureProcessor @Inject constructor(
     companion object {
         const val EXTRA_OPEN_REVIEW = "open_auto_capture_review"
         private const val NOTIFICATION_ID = 4242
+        private val SAME_PURCHASE_WINDOW: Duration = Duration.ofMinutes(15)
         private const val REVIEW_REQUEST_CODE = 4243
     }
 }

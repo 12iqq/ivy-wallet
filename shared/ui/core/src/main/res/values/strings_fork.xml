@@ -110,4 +110,11 @@
     <string name="last_month_value">Last month: %1$s</string>
     <string name="average_month">Average month</string>
     <string name="average_month_footnote">Spending, last 11 months</string>
+
+    <!-- Google Wallet notifications -->
+    <string name="wallet_listener_label">Google Wallet payments</string>
+    <string name="read_wallet_notifications">Google Wallet payments</string>
+    <string name="read_wallet_notifications_desc">Also catch tap-to-pay notifications from Google Wallet. Android only wakes the app when a Wallet notification arrives, so it doesn\'t drain the battery.</string>
+    <string name="wallet_access_needed">Allow notification access for Ivy Wallet UAE so it can see Google Wallet payments. If Android says the setting is restricted, first open App info → ⋮ → Allow restricted settings.</string>
+    <string name="open_notification_access">Open notification access</string>
 </resources>

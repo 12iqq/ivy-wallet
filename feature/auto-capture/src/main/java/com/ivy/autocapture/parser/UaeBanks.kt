@@ -7,6 +7,8 @@ package com.ivy.autocapture.parser
  * "Emirates NBD", "EmiratesNBD" and "EMIRATESNBD" are all the same.
  * Users can also add their own sender ids per bank in Settings.
  */
+const val GoogleWalletPackage = "com.google.android.apps.walletnfcrel"
+
 @Suppress("MaxLineLength", "MaximumLineLength")
 object UaeBanks {
     val ADCB = BankProfile(
@@ -126,13 +128,20 @@ object UaeBanks {
         senders = emptyList(),
     )
 
+    /** Tap-to-pay notifications from the Google Wallet app (not a bank, so not in [all]). */
+    val GOOGLE_WALLET = BankProfile(
+        id = "google_wallet",
+        displayName = "Google Wallet",
+        senders = listOf(GoogleWalletPackage),
+    )
+
     val all: List<BankProfile> = listOf(
         DIB, ADCB, EIB, TABBY,
         ENBD, LIV, FAB, MASHREQ, RAKBANK, SIB, ADIB, CBD, WIO,
         AJMAN, NBF, CBI, HSBC, CITI, TAMARA,
     )
 
-    fun byId(id: String): BankProfile? = (all + OTHER).firstOrNull { it.id == id }
+    fun byId(id: String): BankProfile? = (all + OTHER + GOOGLE_WALLET).firstOrNull { it.id == id }
 }
 
 /**

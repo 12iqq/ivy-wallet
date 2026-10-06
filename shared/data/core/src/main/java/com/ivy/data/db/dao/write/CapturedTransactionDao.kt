@@ -31,6 +31,13 @@ interface CapturedTransactionDao {
     @Query("UPDATE captured_transactions SET status = :status, transactionId = :transactionId WHERE id = :id")
     suspend fun updateStatus(id: UUID, status: String, transactionId: UUID?)
 
+    /** Same purchase reported twice (e.g. bank SMS + Google Wallet notification). */
+    @Query(
+        "SELECT COUNT(*) FROM captured_transactions " +
+            "WHERE source = :source AND amount = :amount AND receivedAt BETWEEN :from AND :to"
+    )
+    suspend fun countFromSourceBetween(source: String, amount: Double, from: Instant, to: Instant): Int
+
     /** Housekeeping: forget handled items after a while */
     @Query("DELETE FROM captured_transactions WHERE status != 'PENDING' AND receivedAt < :before")
     suspend fun deleteHandledBefore(before: Instant)

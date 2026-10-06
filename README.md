@@ -31,6 +31,19 @@ automatically from bank SMS alerts.
   - learns the category and title you pick for each merchant
   - warns about possible duplicates
   - can optionally add transactions without review
+- **Google Wallet payments** (optional): tap-to-pay notifications are captured too, and matched to your card by its
+  last 4 digits. If the bank's SMS for the same purchase also arrives, it's added only once.
+- **Card payment reminders** a few days before each card's due date, then the day before and on the day.
+- **Statement-cycle spending** on credit cards: "Spent this statement" instead of the calendar month.
+- **Budget alerts** when a budget reaches 80% and 100%.
+- **Automatic backup**, daily or weekly, to a file you choose (for example in Google Drive).
+  Reminders, alerts and backups all run from one background job once a day, so the battery cost is negligible.
+- **Split payments for Tabby / Tamara**: turn a purchase into 2–12 payments. The first one is recorded now and the
+  rest show up as planned payments.
+- **Quick-add shortcuts** on the home screen, learned from your own history. For example "Grocery · ~10 AED":
+  tap it, confirm the amount, done.
+- **Insights** with charts: income vs spending per month, total balance over time, and this month vs last month by
+  category.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
   CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
 - A cleaner Settings screen, without the original project's community, share and rating links.

@@ -33,6 +33,8 @@ data class AutoCaptureConfig(
     val extraSenders: Map<String, List<String>> = emptyMap(),
     val links: List<CardLink> = emptyList(),
     val addWithoutReview: Boolean = false,
+    /** Also read Google Wallet tap-to-pay notifications (needs notification access). */
+    val readWalletNotifications: Boolean = false,
     /** Normalized merchant -> category id, learned from what the user picked. */
     val learnedCategories: Map<String, String> = emptyMap(),
     /** Normalized merchant -> title the user prefers (e.g. "CARREFOUR MOE" -> "Groceries"). */
@@ -50,6 +52,13 @@ object CaptureLogic {
             ?: bankLinks.firstOrNull { it.last4.isNullOrBlank() }?.accountId
             ?: bankLinks.singleOrNull()?.takeIf { last4 == null }?.accountId
     }
+
+    /**
+     * Account for a Google Wallet payment: Wallet doesn't name the bank,
+     * so match the card's last 4 digits against links of any bank.
+     */
+    fun linkedAccountIdByLast4(links: List<CardLink>, last4: String?): String? =
+        last4?.let { digits -> links.firstOrNull { it.last4 == digits }?.accountId }
 
     private const val MERCHANT_KEY_WORDS = 3
 

@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
 import com.ivy.autocapture.data.AutoCaptureMode
 import com.ivy.autocapture.data.CardLink
 import com.ivy.autocapture.parser.BankProfile
@@ -191,6 +192,25 @@ private fun BoxWithConstraintsScope.UI(
                     description = stringResource(R.string.auto_add_without_review_desc),
                     checked = config.addWithoutReview,
                 ) { onEvent(AutoCaptureSettingsEvent.SetAddWithoutReview(it)) }
+
+                Spacer(Modifier.height(12.dp))
+                SwitchRow(
+                    title = stringResource(R.string.read_wallet_notifications),
+                    description = stringResource(R.string.read_wallet_notifications_desc),
+                    checked = config.readWalletNotifications,
+                ) { onEvent(AutoCaptureSettingsEvent.SetReadWalletNotifications(it)) }
+
+                // re-checked whenever the screen state refreshes (e.g. coming back from Android settings)
+                val walletAccess = remember(state) { context.hasNotificationAccess() }
+                if (config.readWalletNotifications && !walletAccess) {
+                    Spacer(Modifier.height(8.dp))
+                    InfoCard(text = stringResource(R.string.wallet_access_needed)) {
+                        IvyButton(
+                            text = stringResource(R.string.open_notification_access),
+                            iconStart = R.drawable.ic_settings,
+                        ) { context.openNotificationAccessSettings() }
+                    }
+                }
             }
         }
 
@@ -605,4 +625,13 @@ private fun Context.openAppDetailsSettings() {
         .setData(Uri.fromParts("package", packageName, null))
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     startActivity(intent)
+}
+
+private fun Context.hasNotificationAccess(): Boolean =
+    NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+
+private fun Context.openNotificationAccessSettings() {
+    startActivity(
+        Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    )
 }
