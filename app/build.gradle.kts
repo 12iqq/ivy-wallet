@@ -117,9 +117,6 @@ android {
         htmlOutput = file("${project.rootDir}/build/reports/lint/lint.html")
         xmlReport = true
         xmlOutput = file("${project.rootDir}/build/reports/lint/lint.xml")
-        // print issues in the CI log too (the HTML/XML reports are only artifacts)
-        textReport = true
-        textOutput = file("stdout")
         baseline = file("lint-baseline.xml")
     }
 }
