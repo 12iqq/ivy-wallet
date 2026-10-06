@@ -48,7 +48,7 @@ import java.util.UUID
 
 /** Splits a Tabby / Tamara purchase into planned payments. */
 // a modal like the other legacy IvyModals: it positions itself, so no modifier
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ModifierMissing")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun BoxWithConstraintsScope.InstallmentModal(
     visible: Boolean,
