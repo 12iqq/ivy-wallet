@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +25,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Theme
@@ -32,11 +35,17 @@ import com.ivy.base.legacy.stringRes
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.api.LocalTimeProvider
+import com.ivy.design.l0_system.UI
+import com.ivy.design.l0_system.style
 import com.ivy.frp.forward
 import com.ivy.frp.then2
 import com.ivy.home.Constants.SWIPE_HORIZONTAL_THRESHOLD
 import com.ivy.home.customerjourney.CustomerJourney
 import com.ivy.home.customerjourney.CustomerJourneyCardModel
+import com.ivy.home.quickadd.QuickAddChip
+import com.ivy.home.quickadd.QuickAddEvent
+import com.ivy.home.quickadd.QuickAddRow
+import com.ivy.home.quickadd.QuickAddViewModel
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.data.AppBaseData
 import com.ivy.legacy.data.BufferInfo
@@ -62,9 +71,11 @@ import com.ivy.wallet.ui.theme.modal.ChoosePeriodModal
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModalData
 import com.ivy.wallet.ui.theme.modal.CurrencyModal
 import com.ivy.wallet.ui.theme.modal.DeleteModal
+import com.ivy.wallet.ui.theme.modal.edit.AmountModal
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import java.math.BigDecimal
+import java.util.UUID
 
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
@@ -72,12 +83,43 @@ import java.math.BigDecimal
 fun BoxWithConstraintsScope.HomeTab() {
     val viewModel: HomeViewModel = screenScopedViewModel()
     val uiState = viewModel.uiState()
+    val quickAddViewModel: QuickAddViewModel = screenScopedViewModel()
+    val quickAddState = quickAddViewModel.uiState()
+    var pickedQuickAdd by remember { mutableStateOf<QuickAddChip?>(null) }
 
     HomeUi(
         uiState = uiState,
         onEvent = viewModel::onEvent,
-        reviewBanner = { AutoCaptureReviewBanner() }
+        reviewBanner = {
+            AutoCaptureReviewBanner()
+            QuickAddRow(chips = quickAddState.chips, onPick = { pickedQuickAdd = it })
+        }
     )
+
+    val picked = pickedQuickAdd
+    val quickAddModalId = remember(picked) { UUID.randomUUID() }
+    AmountModal(
+        id = quickAddModalId,
+        visible = picked != null,
+        currency = picked?.currency.orEmpty(),
+        initialAmount = picked?.template?.typicalAmount,
+        dismiss = { pickedQuickAdd = null },
+        Header = {
+            if (picked != null) {
+                Text(
+                    modifier = Modifier.padding(start = 32.dp, top = 24.dp),
+                    text = listOfNotNull(picked.template.title, picked.categoryName, picked.accountName)
+                        .joinToString(" · "),
+                    style = UI.typo.b1.style(fontWeight = FontWeight.ExtraBold)
+                )
+            }
+        },
+    ) { amount ->
+        val chip = picked ?: return@AmountModal
+        quickAddViewModel.onEvent(
+            QuickAddEvent.Add(chip = chip, amount = amount) { viewModel.onEvent(HomeEvent.Refresh) }
+        )
+    }
 }
 
 @Suppress("LongMethod")

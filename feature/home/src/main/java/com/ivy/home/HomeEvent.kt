@@ -29,4 +29,7 @@ sealed interface HomeEvent {
 
     data object SelectNextMonth : HomeEvent
     data object SelectPreviousMonth : HomeEvent
+
+    /** Reload after data changed outside this screen's own events (e.g. quick-add). */
+    data object Refresh : HomeEvent
 }
