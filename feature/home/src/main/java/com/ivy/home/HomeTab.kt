@@ -80,7 +80,7 @@ import java.util.UUID
 @ExperimentalAnimationApi
 @ExperimentalFoundationApi
 @Composable
-fun BoxWithConstraintsScope.HomeTab() {
+fun BoxWithConstraintsScope.HomeTab(modifier: Modifier = Modifier) {
     val viewModel: HomeViewModel = screenScopedViewModel()
     val uiState = viewModel.uiState()
     val quickAddViewModel: QuickAddViewModel = screenScopedViewModel()
@@ -90,6 +90,7 @@ fun BoxWithConstraintsScope.HomeTab() {
     HomeUi(
         uiState = uiState,
         onEvent = viewModel::onEvent,
+        modifier = modifier,
         reviewBanner = {
             AutoCaptureReviewBanner()
             QuickAddRow(chips = quickAddState.chips, onPick = { pickedQuickAdd = it })

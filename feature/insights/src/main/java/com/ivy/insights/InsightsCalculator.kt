@@ -88,7 +88,7 @@ object InsightsCalculator {
         val thisMonth = YearMonth.from(today)
         val lastMonth = thisMonth.minusMonths(1)
         val expenses = records.filter { it.kind == FlowKind.Expense }
-        fun spentBy(month: YearMonth) = expenses
+        fun spentBy(month: YearMonth): Map<String?, Double> = expenses
             .filter { YearMonth.from(it.date) == month }
             .groupBy { it.categoryId }
             .mapValues { (_, list) -> list.sumOf { it.amount } }

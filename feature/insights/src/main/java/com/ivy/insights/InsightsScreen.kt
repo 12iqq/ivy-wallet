@@ -48,6 +48,8 @@ import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
 import com.ivy.wallet.ui.theme.components.IvyToolbar
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -169,39 +171,41 @@ private fun ChartCard(title: String, content: @Composable () -> Unit) {
 /** Grouped green (income) / red (spending) bars for each month. */
 @Composable
 private fun MonthlyBars(months: ImmutableList<MonthTotals>) {
-    val max = months.maxOfOrNull { maxOf(it.income, it.expense) }?.takeIf { it > 0 } ?: 1.0
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp)
-    ) {
-        val slot = size.width / months.size.coerceAtLeast(1)
-        val barWidth = slot * BarFraction / 2
-        val radius = CornerRadius(barWidth / 2, barWidth / 2)
-        months.forEachIndexed { i, month ->
-            val left = i * slot + slot * (1 - BarFraction) / 2
-            val incomeHeight = (month.income / max * size.height).toFloat()
-            val expenseHeight = (month.expense / max * size.height).toFloat()
-            drawRoundRect(
-                color = Green,
-                topLeft = Offset(left, size.height - incomeHeight),
-                size = Size(barWidth, incomeHeight),
-                cornerRadius = radius,
-            )
-            drawRoundRect(
-                color = Red,
-                topLeft = Offset(left + barWidth, size.height - expenseHeight),
-                size = Size(barWidth, expenseHeight),
-                cornerRadius = radius,
-            )
+    Column {
+        val max = months.maxOfOrNull { maxOf(it.income, it.expense) }?.takeIf { it > 0 } ?: 1.0
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+        ) {
+            val slot = size.width / months.size.coerceAtLeast(1)
+            val barWidth = slot * BarFraction / 2
+            val radius = CornerRadius(barWidth / 2, barWidth / 2)
+            months.forEachIndexed { i, month ->
+                val left = i * slot + slot * (1 - BarFraction) / 2
+                val incomeHeight = (month.income / max * size.height).toFloat()
+                val expenseHeight = (month.expense / max * size.height).toFloat()
+                drawRoundRect(
+                    color = Green,
+                    topLeft = Offset(left, size.height - incomeHeight),
+                    size = Size(barWidth, incomeHeight),
+                    cornerRadius = radius,
+                )
+                drawRoundRect(
+                    color = Red,
+                    topLeft = Offset(left + barWidth, size.height - expenseHeight),
+                    size = Size(barWidth, expenseHeight),
+                    cornerRadius = radius,
+                )
+            }
         }
+        Spacer(Modifier.height(6.dp))
+        MonthLabels(narrowNames(months.map { it.month }))
     }
-    Spacer(Modifier.height(6.dp))
-    MonthLabels(months.map { it.month.month.getDisplayName(TextStyle.NARROW, Locale.getDefault()) })
 }
 
 @Composable
-private fun MonthLabels(labels: List<String>) {
+private fun MonthLabels(labels: ImmutableList<String>) {
     Row(modifier = Modifier.fillMaxWidth()) {
         labels.forEach {
             Text(
@@ -247,70 +251,74 @@ private fun Dot(color: Color) {
 /** Total balance at the end of each month. */
 @Composable
 private fun NetWorthLine(points: ImmutableList<NetWorthPoint>, currency: String) {
-    if (points.isEmpty()) return
-    val values = points.map { it.value }
-    val min = values.min()
-    val max = values.max()
-    val range = (max - min).takeIf { it > 0 } ?: 1.0
-    val gridColor = UI.colors.medium
+    Column {
+        if (points.isEmpty()) return@Column
+        val values = points.map { it.value }
+        val min = values.min()
+        val max = values.max()
+        val range = (max - min).takeIf { it > 0 } ?: 1.0
+        val gridColor = UI.colors.medium
 
-    Text(
-        text = "${values.last().format(currency)} $currency",
-        style = UI.typo.nB1.style(
-            color = if (values.last() >= 0) UI.colors.pureInverse else Red,
-            fontWeight = FontWeight.ExtraBold
+        Text(
+            text = "${values.last().format(currency)} $currency",
+            style = UI.typo.nB1.style(
+                color = if (values.last() >= 0) UI.colors.pureInverse else Red,
+                fontWeight = FontWeight.ExtraBold
+            )
         )
-    )
-    Spacer(Modifier.height(12.dp))
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-    ) {
-        val step = if (points.size > 1) size.width / (points.size - 1) else 0f
-        fun y(value: Double): Float = (size.height - (value - min) / range * size.height).toFloat()
+        Spacer(Modifier.height(12.dp))
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+        ) {
+            val step = if (points.size > 1) size.width / (points.size - 1) else 0f
+            fun y(value: Double): Float = (size.height - (value - min) / range * size.height).toFloat()
 
-        if (min < 0 && max > 0) {
-            // zero line
-            drawLine(gridColor, Offset(0f, y(0.0)), Offset(size.width, y(0.0)), strokeWidth = 2f)
+            if (min < 0 && max > 0) {
+                // zero line
+                drawLine(gridColor, Offset(0f, y(0.0)), Offset(size.width, y(0.0)), strokeWidth = 2f)
+            }
+            val path = Path()
+            values.forEachIndexed { i, value ->
+                val point = Offset(i * step, y(value))
+                if (i == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+            }
+            drawPath(path, color = Ivy, style = Stroke(width = LineWidth, cap = StrokeCap.Round))
+            values.forEachIndexed { i, value ->
+                drawCircle(color = Ivy, radius = DotRadius, center = Offset(i * step, y(value)))
+            }
         }
-        val path = Path()
-        values.forEachIndexed { i, value ->
-            val point = Offset(i * step, y(value))
-            if (i == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
-        }
-        drawPath(path, color = Ivy, style = Stroke(width = LineWidth, cap = StrokeCap.Round))
-        values.forEachIndexed { i, value ->
-            drawCircle(color = Ivy, radius = DotRadius, center = Offset(i * step, y(value)))
-        }
+        Spacer(Modifier.height(6.dp))
+        MonthLabels(narrowNames(points.map { it.month }))
     }
-    Spacer(Modifier.height(6.dp))
-    MonthLabels(points.map { it.month.month.getDisplayName(TextStyle.NARROW, Locale.getDefault()) })
 }
 
 /** Top categories this month (solid) against last month (faded). */
 @Composable
 private fun CategoryBars(categories: ImmutableList<CategoryBar>, currency: String) {
-    val max = categories.maxOf { maxOf(it.thisMonth, it.lastMonth) }.takeIf { it > 0 } ?: 1.0
-    val unspecified = stringResource(R.string.unspecified)
-    categories.forEach { category ->
-        val color = category.color?.toComposeColor() ?: UI.colors.gray
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                modifier = Modifier.weight(1f),
-                text = category.name.ifBlank { unspecified },
-                style = UI.typo.c.style(fontWeight = FontWeight.Bold)
-            )
-            Text(
-                text = "${category.thisMonth.format(currency)} / ${category.lastMonth.format(currency)}",
-                style = UI.typo.nC.style(color = UI.colors.gray, fontWeight = FontWeight.SemiBold)
-            )
+    Column {
+        val max = categories.maxOf { maxOf(it.thisMonth, it.lastMonth) }.takeIf { it > 0 } ?: 1.0
+        val unspecified = stringResource(R.string.unspecified)
+        categories.forEach { category ->
+            val color = category.color?.toComposeColor() ?: UI.colors.gray
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    text = category.name.ifBlank { unspecified },
+                    style = UI.typo.c.style(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = "${category.thisMonth.format(currency)} / ${category.lastMonth.format(currency)}",
+                    style = UI.typo.nC.style(color = UI.colors.gray, fontWeight = FontWeight.SemiBold)
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Bar(fraction = (category.thisMonth / max).toFloat(), color = color)
+            Spacer(Modifier.height(2.dp))
+            Bar(fraction = (category.lastMonth / max).toFloat(), color = color.copy(alpha = FadedAlpha))
+            Spacer(Modifier.height(12.dp))
         }
-        Spacer(Modifier.height(4.dp))
-        Bar(fraction = (category.thisMonth / max).toFloat(), color = color)
-        Spacer(Modifier.height(2.dp))
-        Bar(fraction = (category.lastMonth / max).toFloat(), color = color.copy(alpha = FadedAlpha))
-        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -332,6 +340,9 @@ private fun Bar(fraction: Float, color: Color) {
         }
     }
 }
+
+private fun narrowNames(months: List<YearMonth>): ImmutableList<String> =
+    months.map { it.month.getDisplayName(TextStyle.NARROW, Locale.getDefault()) }.toImmutableList()
 
 private const val BarFraction = 0.7f
 private const val LineWidth = 6f

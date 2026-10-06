@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,7 +47,8 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 /** Splits a Tabby / Tamara purchase into planned payments. */
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+// a modal like the other legacy IvyModals: it positions itself, so no modifier
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ModifierMissing")
 @Composable
 fun BoxWithConstraintsScope.InstallmentModal(
     visible: Boolean,
@@ -59,7 +61,7 @@ fun BoxWithConstraintsScope.InstallmentModal(
     val modalId = remember(visible) { UUID.randomUUID() }
     var provider by remember(modalId) { mutableStateOf(InstallmentProvider.Tabby) }
     var merchant by remember(modalId) { mutableStateOf(TextFieldValue("")) }
-    var total by remember(modalId) { mutableStateOf(0.0) }
+    var total by remember(modalId) { mutableDoubleStateOf(0.0) }
     var count by remember(modalId) { mutableStateOf(provider.defaultCount) }
     var interval by remember(modalId) { mutableStateOf(provider.defaultInterval) }
     var firstPaidNow by remember(modalId) { mutableStateOf(true) }
@@ -243,13 +245,11 @@ fun BoxWithConstraintsScope.InstallmentModal(
 
 @Composable
 private fun SectionLabel(text: String) {
-    Spacer(Modifier.height(16.dp))
     Text(
-        modifier = Modifier.padding(start = 32.dp),
+        modifier = Modifier.padding(start = 32.dp, top = 16.dp, bottom = 8.dp),
         text = text,
         style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Bold)
     )
-    Spacer(Modifier.height(8.dp))
 }
 
 @Composable
