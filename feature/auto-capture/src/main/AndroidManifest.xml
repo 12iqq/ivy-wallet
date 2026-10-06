@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
 
+    <!-- SMS is optional: the app still installs on tablets / Chromebooks without telephony -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+
     <application>
         <receiver
             android:name="com.ivy.autocapture.sms.BankSmsReceiver"
