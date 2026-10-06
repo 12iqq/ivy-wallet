@@ -24,6 +24,7 @@ data class CardLink(
     val accountId: String,
 )
 
+@Suppress("DataClassDefaultValues")
 @Serializable
 data class AutoCaptureConfig(
     val mode: AutoCaptureMode = AutoCaptureMode.Off,

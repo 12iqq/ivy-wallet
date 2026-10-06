@@ -66,6 +66,8 @@ import com.ivy.wallet.ui.theme.modal.IvyModal
 import com.ivy.wallet.ui.theme.modal.ModalSet
 import com.ivy.wallet.ui.theme.modal.ModalTitle
 import com.ivy.wallet.ui.theme.toComposeColor
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import java.util.UUID
 
 @Composable
@@ -200,7 +202,7 @@ private fun BoxWithConstraintsScope.UI(
                 BankRow(
                     bank = bank,
                     enabled = bank.id in config.enabledBankIds,
-                    links = config.links.filter { it.bankId == bank.id },
+                    links = config.links.filter { it.bankId == bank.id }.toImmutableList(),
                     accounts = state.accounts,
                     onEnabledChange = {
                         onEvent(AutoCaptureSettingsEvent.SetBankEnabled(bank.id, it))
@@ -234,8 +236,9 @@ private fun BoxWithConstraintsScope.UI(
 
     BankModal(
         bank = editingBank,
-        links = editingBank?.let { bank -> config.links.filter { it.bankId == bank.id } }.orEmpty(),
-        extraSenders = editingBank?.let { config.extraSenders[it.id] }.orEmpty(),
+        links = editingBank?.let { bank -> config.links.filter { it.bankId == bank.id } }
+            .orEmpty().toImmutableList(),
+        extraSenders = editingBank?.let { config.extraSenders[it.id] }.orEmpty().toImmutableList(),
         accounts = state.accounts,
         onEvent = onEvent,
         dismiss = { editingBank = null },
@@ -353,8 +356,8 @@ private fun InfoCard(text: String, action: @Composable () -> Unit) {
 private fun BankRow(
     bank: BankProfile,
     enabled: Boolean,
-    links: List<CardLink>,
-    accounts: List<Account>,
+    links: ImmutableList<CardLink>,
+    accounts: ImmutableList<Account>,
     onEnabledChange: (Boolean) -> Unit,
     onEdit: () -> Unit,
 ) {
@@ -470,9 +473,9 @@ private fun TestMessageCard(
 @Composable
 private fun BoxWithConstraintsScope.BankModal(
     bank: BankProfile?,
-    links: List<CardLink>,
-    extraSenders: List<String>,
-    accounts: List<Account>,
+    links: ImmutableList<CardLink>,
+    extraSenders: ImmutableList<String>,
+    accounts: ImmutableList<Account>,
     onEvent: (AutoCaptureSettingsEvent) -> Unit,
     dismiss: () -> Unit,
 ) {

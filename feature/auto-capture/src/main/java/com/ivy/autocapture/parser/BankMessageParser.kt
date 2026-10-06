@@ -16,6 +16,7 @@ enum class Direction {
     Credit,
 }
 
+@Suppress("DataClassTypedIDs")
 data class ParsedMessage(
     val bankId: String,
     val direction: Direction,
@@ -33,12 +34,14 @@ data class ParsedMessage(
  * A custom regex for banks whose wording the generic parser can't handle.
  * Named groups: `amount` (required), `currency`, `merchant`, `last4`.
  */
+@Suppress("DataClassDefaultValues")
 data class MessagePattern(
     val regex: Regex,
     val direction: Direction,
     val isCreditCard: Boolean? = null,
 )
 
+@Suppress("DataClassDefaultValues", "DataClassTypedIDs")
 data class BankProfile(
     val id: String,
     val displayName: String,
@@ -101,8 +104,13 @@ object GenericMessageParser {
         "available credit", "credit limit", "cr. limit", "cr limit", "card limit",
     )
     private val debitCardHints = listOf(
-        "debit card", "account", "a/c", "acct", "ac no", "current a", "savings",
-        "covered card", // islamic banks' charge card is still a card -> keep null
+        "debit card",
+        "account",
+        "a/c",
+        "acct",
+        "ac no",
+        "current a",
+        "savings",
     )
 
     private val last4Regex = Regex(

@@ -1,5 +1,6 @@
 package com.ivy.autocapture.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.ivy.base.model.TransactionType
-import com.ivy.data.model.Category
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.datamodel.Account
@@ -61,6 +61,7 @@ import com.ivy.wallet.ui.theme.modal.edit.ChooseCategoryModal
 import com.ivy.wallet.ui.theme.toComposeColor
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.collections.immutable.ImmutableList
 import java.util.UUID
 
 @Composable
@@ -71,6 +72,7 @@ fun BoxWithConstraintsScope.AutoCaptureReviewScreenImpl() {
     UI(state = state, onEvent = viewModel::onEvent)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongMethod")
 @Composable
 private fun BoxWithConstraintsScope.UI(
@@ -319,9 +321,9 @@ private fun Chip(
 @Composable
 private fun BoxWithConstraintsScope.AccountPickerModal(
     visible: Boolean,
-    accounts: List<Account>,
+    accounts: ImmutableList<Account>,
     dismiss: () -> Unit,
-    onAccountSelected: (Account) -> Unit,
+    onAccountSelect: (Account) -> Unit,
 ) {
     IvyModal(
         id = remember(visible) { UUID.randomUUID() },
@@ -340,7 +342,7 @@ private fun BoxWithConstraintsScope.AccountPickerModal(
                     .fillMaxWidth()
                     .clip(UI.shapes.r4)
                     .background(color, UI.shapes.r4)
-                    .clickable { onAccountSelected(account) }
+                    .clickable { onAccountSelect(account) }
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

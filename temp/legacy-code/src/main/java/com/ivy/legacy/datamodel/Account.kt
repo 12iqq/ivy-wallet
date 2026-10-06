@@ -18,6 +18,7 @@ import com.ivy.data.model.Account as DomainAccount
 
 @Deprecated("Legacy data model. Will be deleted")
 @Immutable
+@Suppress("DataClassDefaultValues")
 data class Account(
     val name: String,
     val color: Int,

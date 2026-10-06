@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,13 +34,14 @@ fun CreditCardInfo(
     balance: Double,
     currency: String,
     details: CreditCardDetails?,
+    modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
 ) {
     val owed = (-balance).coerceAtLeast(0.0)
     val limit = details?.creditLimit?.takeIf { it > 0 }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
     ) {
@@ -120,7 +122,7 @@ fun CreditCardInfo(
 }
 
 @Suppress("MagicNumber")
-private fun usageColor(used: Double) = when {
+private fun usageColor(used: Double): Color = when {
     used < 0.3 -> Green
     used < 0.7 -> Orange
     else -> Red

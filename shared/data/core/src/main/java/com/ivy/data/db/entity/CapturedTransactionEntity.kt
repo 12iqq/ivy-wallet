@@ -12,6 +12,7 @@ import java.util.UUID
  * that waits in the review inbox until the user adds or dismisses it.
  * Not part of backups: once added it becomes a normal transaction.
  */
+@Suppress("DataClassDefaultValues")
 @Keep
 @Entity(tableName = "captured_transactions")
 data class CapturedTransactionEntity(

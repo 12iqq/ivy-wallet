@@ -11,6 +11,7 @@ import java.util.UUID
 @JvmInline
 value class AccountId(override val value: UUID) : UniqueId
 
+@Suppress("DataClassDefaultValues")
 data class Account(
     override val id: AccountId,
     val name: NotBlankTrimmedString,

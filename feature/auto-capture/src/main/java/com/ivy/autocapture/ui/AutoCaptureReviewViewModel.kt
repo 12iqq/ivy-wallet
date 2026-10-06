@@ -40,6 +40,7 @@ data class AutoCaptureReviewState(
     val categories: ImmutableList<Category>,
 )
 
+@Suppress("DataClassTypedIDs")
 sealed interface AutoCaptureReviewEvent {
     data class Add(val item: ReviewItem) : AutoCaptureReviewEvent
     data class Skip(val item: ReviewItem) : AutoCaptureReviewEvent

@@ -9,6 +9,7 @@ import java.util.UUID
 
 @Deprecated("Legacy data model. Will be deleted")
 @Immutable
+@Suppress("DataClassDefaultValues", "DataClassTypedIDs")
 data class PlannedPaymentRule(
     val startDate: Instant?,
     val intervalN: Int?,

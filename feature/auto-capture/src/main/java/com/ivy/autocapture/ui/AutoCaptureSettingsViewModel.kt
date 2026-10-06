@@ -39,6 +39,7 @@ data class AutoCaptureSettingsState(
 @Immutable
 data class TestResult(val parsed: ParsedMessage?)
 
+@Suppress("DataClassTypedIDs")
 sealed interface AutoCaptureSettingsEvent {
     data class SetMode(val mode: AutoCaptureMode) : AutoCaptureSettingsEvent
     data class SetBankEnabled(val bankId: String, val enabled: Boolean) : AutoCaptureSettingsEvent
