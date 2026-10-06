@@ -99,4 +99,15 @@
     <string name="first_payment_paid_today">First payment paid today</string>
     <string name="category_label">Category</string>
     <string name="installment_summary">%1$d payments of about %2$s · last one on %3$s</string>
+
+    <!-- Insights -->
+    <string name="insights">Insights</string>
+    <string name="detailed_report">Report</string>
+    <string name="income_vs_spending">Income vs spending</string>
+    <string name="net_worth">Total balance over time</string>
+    <string name="this_month_vs_last">This month vs last month</string>
+    <string name="spent_this_month">Spent this month</string>
+    <string name="last_month_value">Last month: %1$s</string>
+    <string name="average_month">Average month</string>
+    <string name="average_month_footnote">Spending, last 11 months</string>
 </resources>

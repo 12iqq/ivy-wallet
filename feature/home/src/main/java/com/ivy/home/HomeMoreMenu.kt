@@ -66,10 +66,10 @@ import com.ivy.legacy.utils.verticalSwipeListener
 import com.ivy.navigation.AutoCaptureReviewScreen
 import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.CategoriesScreen
+import com.ivy.navigation.InsightsScreen
 import com.ivy.navigation.IvyPreview
 import com.ivy.navigation.LoansScreen
 import com.ivy.navigation.PlannedPaymentsScreen
-import com.ivy.navigation.ReportScreen
 import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
 import com.ivy.navigation.navigation
@@ -513,7 +513,7 @@ private fun QuickAccess(
                 icon = R.drawable.home_more_menu_reports,
                 label = stringResource(R.string.reports),
             ) {
-                nav.navigateTo(ReportScreen)
+                nav.navigateTo(InsightsScreen)
             }
 
             Spacer(Modifier.weight(1f))

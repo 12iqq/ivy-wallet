@@ -125,6 +125,7 @@ dependencies {
     implementation(projects.feature.attributions)
     implementation(projects.feature.autoCapture)
     implementation(projects.feature.assistant)
+    implementation(projects.feature.insights)
     implementation(projects.feature.balance)
     implementation(projects.feature.budgets)
     implementation(projects.feature.categories)

@@ -158,6 +158,12 @@ data object AutoCaptureReviewScreen : Screen {
         get() = true
 }
 
+/** Charts: income vs spending, total balance over time, categories. */
+data object InsightsScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}
+
 /** Card due reminders, budget alerts and automatic backups. */
 data object AssistantSettingsScreen : Screen {
     override val isLegacy: Boolean

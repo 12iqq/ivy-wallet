@@ -17,6 +17,7 @@ import com.ivy.exchangerates.ExchangeRatesScreen
 import com.ivy.features.FeaturesScreenImpl
 import com.ivy.importdata.csv.CSVScreen
 import com.ivy.importdata.csvimport.ImportCSVScreen
+import com.ivy.insights.InsightsScreenImpl
 import com.ivy.loans.loan.LoansScreen
 import com.ivy.loans.loandetails.LoanDetailsScreen
 import com.ivy.main.MainScreen
@@ -35,6 +36,7 @@ import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
 import com.ivy.navigation.ImportScreen
+import com.ivy.navigation.InsightsScreen
 import com.ivy.navigation.LoanDetailsScreen
 import com.ivy.navigation.LoansScreen
 import com.ivy.navigation.MainScreen
@@ -97,5 +99,6 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         AutoCaptureSettingsScreen -> AutoCaptureSettingsScreenImpl()
         AutoCaptureReviewScreen -> AutoCaptureReviewScreenImpl()
         AssistantSettingsScreen -> AssistantSettingsScreenImpl()
+        InsightsScreen -> InsightsScreenImpl()
     }
 }
