@@ -1,6 +1,10 @@
 package com.ivy.autocapture.ui
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -27,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -88,9 +93,15 @@ private fun BoxWithConstraintsScope.UI(
     val config = state.config
     var editingBank by remember { mutableStateOf<BankProfile?>(null) }
 
+    val context = LocalContext.current
+    // true once Android refused the permission (e.g. "restricted setting" for sideloaded apps)
+    var permissionRefused by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { onEvent(AutoCaptureSettingsEvent.PermissionChanged) }
+    ) { result ->
+        permissionRefused = result.values.any { granted -> !granted }
+        onEvent(AutoCaptureSettingsEvent.PermissionChanged)
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -139,7 +150,14 @@ private fun BoxWithConstraintsScope.UI(
         if (config.mode.readsSms) {
             item {
                 Spacer(Modifier.height(8.dp))
-                if (!state.hasSmsPermission) {
+                if (!state.hasSmsPermission && permissionRefused) {
+                    InfoCard(text = stringResource(R.string.sms_permission_restricted)) {
+                        IvyButton(
+                            text = stringResource(R.string.open_app_settings),
+                            iconStart = R.drawable.ic_settings,
+                        ) { context.openAppDetailsSettings() }
+                    }
+                } else if (!state.hasSmsPermission) {
                     InfoCard(text = stringResource(R.string.sms_permission_needed)) {
                         IvyButton(
                             text = stringResource(R.string.grant_permission),
@@ -580,4 +598,11 @@ private fun BoxWithConstraintsScope.BankModal(
         ) { senders = it }
         Spacer(Modifier.height(32.dp))
     }
+}
+
+private fun Context.openAppDetailsSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        .setData(Uri.fromParts("package", packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    startActivity(intent)
 }

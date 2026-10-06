@@ -18,6 +18,8 @@
 
     <!-- Auto-capture -->
     <string name="auto_capture">Auto-add transactions</string>
+    <string name="auto_capture_short">Auto-add</string>
+    <string name="fork_open_source">Open-source · based on Ivy Wallet</string>
     <string name="auto_capture_description">Detect transactions from your bank SMS and statements</string>
     <string name="auto_capture_mode">How should transactions be added?</string>
     <string name="auto_capture_mode_off">Off</string>
@@ -48,6 +50,8 @@
     <string name="possible_duplicate">Possible duplicate of a transaction you already entered</string>
     <string name="sms_permission_needed">Allow Ivy to read SMS so it can detect bank alerts. Messages never leave your phone.</string>
     <string name="grant_permission">Grant permission</string>
+    <string name="sms_permission_restricted">Android blocked the SMS permission. This happens for apps installed outside the Play Store. To allow it: tap Open app settings, then the ⋮ menu (top right), then Allow restricted settings. Then open Permissions and allow SMS.</string>
+    <string name="open_app_settings">Open app settings</string>
     <string name="scan_recent_sms">Scan last 30 days of SMS</string>
     <string name="scan_result">Found %1$d new transactions</string>
     <string name="import_statement">Import bank statement (CSV)</string>

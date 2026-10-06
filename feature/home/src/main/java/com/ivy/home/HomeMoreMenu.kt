@@ -52,7 +52,6 @@ import com.ivy.design.l0_system.style
 import com.ivy.design.utils.thenIf
 import com.ivy.legacy.Constants
 import com.ivy.legacy.ivyWalletCtx
-import com.ivy.legacy.rootScreen
 import com.ivy.legacy.utils.clickableNoIndication
 import com.ivy.legacy.utils.colorLerp
 import com.ivy.legacy.utils.lerp
@@ -64,6 +63,7 @@ import com.ivy.legacy.utils.springBounce
 import com.ivy.legacy.utils.statusBarInset
 import com.ivy.legacy.utils.toDensityPx
 import com.ivy.legacy.utils.verticalSwipeListener
+import com.ivy.navigation.AutoCaptureReviewScreen
 import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.CategoriesScreen
 import com.ivy.navigation.IvyPreview
@@ -332,7 +332,7 @@ private fun ColumnScope.OpenSource() {
                 .padding(start = 16.dp, end = 24.dp)
         ) {
             Text(
-                text = stringResource(R.string.ivy_wallet_open_source),
+                text = stringResource(R.string.fork_open_source),
                 style = UI.typo.b2.style(
                     fontWeight = FontWeight.ExtraBold
                 )
@@ -500,12 +500,11 @@ private fun QuickAccess(
 //            ivyContext.navigateTo(Screen.Charts)
 //        }
 
-            val rootScreen = rootScreen()
             MoreMenuButton(
-                icon = R.drawable.home_more_menu_share,
-                label = stringResource(R.string.share_ivy)
+                icon = R.drawable.ic_sync,
+                label = stringResource(R.string.auto_capture_short)
             ) {
-                rootScreen.shareIvyWallet()
+                nav.navigateTo(AutoCaptureReviewScreen)
             }
 
             Spacer(Modifier.weight(1f))
