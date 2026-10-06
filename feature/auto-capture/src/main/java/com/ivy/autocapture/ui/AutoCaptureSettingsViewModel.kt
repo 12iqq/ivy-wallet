@@ -2,6 +2,7 @@ package com.ivy.autocapture.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +57,7 @@ sealed interface AutoCaptureSettingsEvent {
 }
 
 @Suppress("MagicNumber")
+@Stable
 @HiltViewModel
 class AutoCaptureSettingsViewModel @Inject constructor(
     private val store: AutoCaptureSettingsStore,
