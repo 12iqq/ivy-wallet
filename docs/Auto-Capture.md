@@ -36,7 +36,7 @@ so it's switched off (not just ignored) whenever it isn't needed.
    Google Wallet notifications (optional, `WalletNotificationListener`) go
    through the same steps; a purchase seen in both an SMS and a Wallet
    notification within 15 minutes is captured once. It then
-   suggests a category (learned from your choices and your past transactions),
+   fills in the title and category you used last time at that shop (see *Shop names* below),
    flags possible duplicates of what you already entered manually and saves it
    for review (or adds it straight away if *Add without review* is on).
 
@@ -55,3 +55,13 @@ All banks live in
 Without code changes you can also: enable **Other bank** and add any sender name,
 or add extra sender names to an existing bank (Settings → bank → Edit), and use
 **Test a message** to see how a message is understood.
+
+## Shop names
+
+A detected transaction's description is the bank's own name for the shop
+(`GALADARI ICE CREAM CO LLC`). `MerchantNames.key` reduces it to what identifies the shop
+(`galadari ice cream`: no locations, company types or store numbers). For the next message
+from the same shop, `CaptureProcessor` takes the title and category of your most recent
+transaction with that description, so renaming one anywhere in the app (review screen or
+transaction editor) teaches it. The first time, the title is the bank's name made readable
+(`MerchantNames.tidy`: `Galadari Ice Cream`).

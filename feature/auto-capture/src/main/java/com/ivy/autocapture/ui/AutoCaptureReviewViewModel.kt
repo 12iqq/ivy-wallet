@@ -159,7 +159,7 @@ class AutoCaptureReviewViewModel @Inject constructor(
             } else {
                 categoriesNow.firstOrNull { it.id.value == categoryId }
             },
-            title = chosenTitles[id] ?: merchant,
+            title = chosenTitles[id] ?: processor.suggestedTitle(this),
             possibleDuplicate = processor.isPossibleDuplicate(this),
             missingRate = processor.missingRate(this, account?.id),
         )

@@ -126,12 +126,6 @@ class CaptureLogicTest {
     }
 
     @Test
-    fun `merchant key ignores case, punctuation and branch numbers`() {
-        CaptureLogic.merchantKey("CARREFOUR, DUBAI MALL 123") shouldBe "carrefour dubai mall"
-        CaptureLogic.merchantKey("Carrefour Dubai-Mall") shouldBe "carrefour dubai mall"
-    }
-
-    @Test
     fun `same message gives the same fingerprint`() {
         CaptureLogic.fingerprint("ADCB", "text ") shouldBe CaptureLogic.fingerprint("adcb", "text")
     }

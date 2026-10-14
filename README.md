@@ -28,7 +28,7 @@ automatically from bank SMS alerts.
   - picks up card and account alerts on your phone and puts them in a review list
   - **nothing is uploaded**, every message is processed on the device
   - you choose which banks to read, link each card (by its last 4 digits) to an account, and approve, edit or skip each one
-  - learns the category and title you pick for each merchant
+  - learns your name and category for each shop: rename "GALADARI ICE CREAM" to "Baskin Robbins" once and the next one is filled in for you
   - warns about possible duplicates
   - can optionally add transactions without review
   - checks for new messages as they arrive, or every 1–24 hours so nothing runs in the background in between

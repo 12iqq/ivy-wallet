@@ -18,6 +18,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.CapturedTransactionDao
 import com.ivy.data.db.entity.CapturedTransactionEntity
+import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.model.CardEndings
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
@@ -190,9 +191,8 @@ class CaptureProcessor @Inject constructor(
         val accountId = linkedAccountId
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?.takeIf { accountDao.findById(it) != null }
-        val merchantKey = parsed.merchant?.let(CaptureLogic::merchantKey)?.takeIf { it.isNotBlank() }
-        val categoryId = merchantKey?.let { config.learnedCategories[it] }
-            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        // the category you gave this shop last time, else one from a similarly titled transaction
+        val categoryId = lastTransactionAt(parsed.merchant)?.categoryId
             ?: parsed.merchant?.let { suggestCategoryFromHistory(it) }
 
         val captured = CapturedTransactionEntity(
@@ -250,20 +250,14 @@ class CaptureProcessor @Inject constructor(
                 toCurrency = accountCurrency
             ).toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
         }
-        val config = settingsStore.current()
-        val merchantKey = captured.merchant?.let(CaptureLogic::merchantKey)?.takeIf { it.isNotBlank() }
-        val finalTitle = title?.takeIf { it.isNotBlank() }
-            ?: merchantKey?.let { config.learnedTitles[it] }
-            ?: captured.merchant
-        val bankName = UaeBanks.byId(captured.bankId)?.displayName ?: captured.bankId
-        val description = buildString {
-            append(bankName)
-            captured.last4?.let { append(" ··").append(it) }
-            if (!captured.currency.equals(accountCurrency, ignoreCase = true)) {
-                append(" · ").append(captured.currency).append(' ')
-                    .append(captured.amount.format(captured.currency))
-            }
-        }
+        val finalTitle = title?.takeIf { it.isNotBlank() } ?: suggestedTitle(captured)
+        // the bank's own name for the shop: shown for reference and how the shop is recognised
+        // next time (the account already says which bank / card it was)
+        val foreignAmount = "${captured.currency} ${captured.amount.format(captured.currency)}"
+            .takeUnless { captured.currency.equals(accountCurrency, ignoreCase = true) }
+        val description = listOfNotNull(captured.merchant, foreignAmount)
+            .joinToString(DESCRIPTION_SEPARATOR)
+            .ifEmpty { null }
 
         val transactionId = UUID.randomUUID()
         // the item is claimed now: whatever happens, don't leave it stuck as "adding"
@@ -293,29 +287,22 @@ class CaptureProcessor @Inject constructor(
         }
 
         capturedDao.updateStatus(captured.id, CapturedTransactionEntity.STATUS_ADDED, transactionId)
-        if (merchantKey != null) rememberChoices(merchantKey, captured, categoryId, title)
         return transactionId
     }
 
-    /** Next time this merchant shows up, suggest the same category and title. */
-    private fun rememberChoices(
-        merchantKey: String,
-        captured: CapturedTransactionEntity,
-        categoryId: UUID?,
-        title: String?,
-    ) {
-        settingsStore.update { cfg ->
-            cfg.copy(
-                learnedCategories = categoryId?.let {
-                    cfg.learnedCategories + (merchantKey to it.toString())
-                } ?: cfg.learnedCategories,
-                learnedTitles = if (title != null && title.isNotBlank() && title != captured.merchant) {
-                    cfg.learnedTitles + (merchantKey to title)
-                } else {
-                    cfg.learnedTitles
-                }
-            )
-        }
+    /**
+     * What you called this shop last time - learned from your own transactions, so renaming
+     * one anywhere in the app teaches it - else the bank's name made readable.
+     */
+    suspend fun suggestedTitle(captured: CapturedTransactionEntity): String? =
+        lastTransactionAt(captured.merchant)?.title?.takeIf { it.isNotBlank() }
+            ?: captured.merchant?.let(MerchantNames::tidy)
+
+    /** Your most recent transaction at the shop the bank calls [merchant]. */
+    private suspend fun lastTransactionAt(merchant: String?): TransactionEntity? {
+        val key = MerchantNames.key(merchant) ?: return null
+        return transactionDao.findAllByDescriptionMatchingPattern("%${key.substringBefore(' ')}%")
+            .firstOrNull { MerchantNames.key(it.description?.substringBefore(DESCRIPTION_SEPARATOR)) == key }
     }
 
     /** true when the item is in a foreign currency and there's no exchange rate to convert it yet. */
@@ -344,7 +331,7 @@ class CaptureProcessor @Inject constructor(
 
     /** Most recent category used for a transaction titled like the merchant. */
     private suspend fun suggestCategoryFromHistory(merchant: String): UUID? {
-        val word = CaptureLogic.merchantKey(merchant).split(" ").firstOrNull()
+        val word = MerchantNames.key(merchant)?.substringBefore(' ')
             ?.takeIf { it.length >= 3 } ?: return null
         return transactionDao.findAllByTitleMatchingPattern("%$word%")
             .filter { it.categoryId != null }
@@ -402,5 +389,6 @@ class CaptureProcessor @Inject constructor(
         private val SAME_NOTIFICATION_WINDOW: Duration = Duration.ofMinutes(2)
         private val SAME_MESSAGE_WINDOW: Duration = Duration.ofDays(1)
         private const val REVIEW_REQUEST_CODE = 4243
+        private const val DESCRIPTION_SEPARATOR = " · "
     }
 }

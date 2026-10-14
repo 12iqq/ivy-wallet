@@ -50,10 +50,6 @@ data class AutoCaptureConfig(
     val addWithoutReview: Boolean = false,
     /** Also read Google Wallet tap-to-pay notifications (needs notification access). */
     val readWalletNotifications: Boolean = false,
-    /** Normalized merchant -> category id, learned from what the user picked. */
-    val learnedCategories: Map<String, String> = emptyMap(),
-    /** Normalized merchant -> title the user prefers (e.g. "CARREFOUR MOE" -> "Groceries"). */
-    val learnedTitles: Map<String, String> = emptyMap(),
     /** Card endings once typed on accounts were copied into [links]. */
     val accountEndingsMoved: Boolean = false,
     val smsCheck: SmsCheck = SmsCheck.OnArrival,
@@ -109,17 +105,6 @@ object CaptureLogic {
             .distinctBy { it.bankId to it.last4 }
         return config.copy(links = config.links + newLinks, accountEndingsMoved = true)
     }
-
-    private const val MERCHANT_KEY_WORDS = 3
-
-    /** "CARREFOUR, DUBAI MALL 123" -> "carrefour dubai mall" */
-    fun merchantKey(merchant: String): String = merchant.lowercase()
-        .replace(Regex("""[^a-z ]"""), " ")
-        .replace(Regex("""\s+"""), " ")
-        .trim()
-        .split(" ")
-        .take(MERCHANT_KEY_WORDS)
-        .joinToString(" ")
 
     /** Identifies the same message (banks sometimes deliver an SMS twice). */
     fun fingerprint(sender: String, body: String): String =
