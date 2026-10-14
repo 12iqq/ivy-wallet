@@ -24,6 +24,7 @@ data class Transaction(
     val toAmount: BigDecimal = amount,
     val title: String? = null,
     val description: String? = null,
+    val bankDetails: String? = null,
     val dateTime: Instant? = null,
     val categoryId: UUID? = null,
     val dueDate: Instant? = null,

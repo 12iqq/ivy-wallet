@@ -11,6 +11,7 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     toAmount = toAmount.toDouble(),
     title = title,
     description = description,
+    bankDetails = bankDetails,
     dateTime = dateTime,
     categoryId = categoryId,
     dueDate = dueDate,

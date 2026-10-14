@@ -140,7 +140,8 @@ class TransactionTest {
                 recurringRuleId = null,
                 loanId = null,
                 paidForDateTime = null,
-                loanRecordId = null
+                loanRecordId = null,
+                bankDetails = null
             ),
             tags = listOf(),
             value = PositiveValue(
@@ -161,7 +162,8 @@ class TransactionTest {
                 recurringRuleId = null,
                 loanId = null,
                 paidForDateTime = null,
-                loanRecordId = null
+                loanRecordId = null,
+                bankDetails = null
             ),
             tags = listOf(),
             value = PositiveValue(
@@ -182,7 +184,8 @@ class TransactionTest {
                 recurringRuleId = null,
                 loanId = null,
                 paidForDateTime = null,
-                loanRecordId = null
+                loanRecordId = null,
+                bankDetails = null
             ),
             tags = listOf(),
             fromAccount = AccountId,

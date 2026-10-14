@@ -22,6 +22,8 @@ data class EditTransactionViewState(
     val titleSuggestions: ImmutableSet<String>,
     val currency: String,
     val description: String?,
+    /** The shop as the bank's SMS named it (auto-add), read-only. */
+    val bankDetails: String?,
     val dateTime: Instant?,
     val dueDate: Instant?,
     val accounts: ImmutableList<Account>,

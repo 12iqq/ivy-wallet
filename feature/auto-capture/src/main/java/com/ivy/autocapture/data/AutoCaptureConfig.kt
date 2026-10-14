@@ -52,6 +52,8 @@ data class AutoCaptureConfig(
     val readWalletNotifications: Boolean = false,
     /** Card endings once typed on accounts were copied into [links]. */
     val accountEndingsMoved: Boolean = false,
+    /** Bank names auto-add used to write into descriptions were moved out (see CaptureProcessor). */
+    val bankDetailsMoved: Boolean = false,
     val smsCheck: SmsCheck = SmsCheck.OnArrival,
     /** When the inbox was last read by a scheduled check. */
     val lastSmsCheckMillis: Long? = null,

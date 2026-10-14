@@ -64,7 +64,8 @@ class TransactionMapperTest {
                 recurringRuleId = RecurringRuleId,
                 loanId = LoanId,
                 paidForDateTime = PaidForDateTime,
-                loanRecordId = LoanRecordId
+                loanRecordId = LoanRecordId,
+                bankDetails = BankDetails
             ),
             value = PositiveValue(
                 amount = PositiveDouble.unsafe(100.0),
@@ -87,6 +88,7 @@ class TransactionMapperTest {
             toAmount = null,
             title = "Income",
             description = "Income desc",
+            bankDetails = BankDetails,
             dateTime = dateTime.takeIf { settled },
             categoryId = CategoryId.value,
             dueDate = dateTime.takeIf { !settled },
@@ -117,7 +119,8 @@ class TransactionMapperTest {
                 recurringRuleId = RecurringRuleId,
                 loanId = LoanId,
                 paidForDateTime = PaidForDateTime,
-                loanRecordId = LoanRecordId
+                loanRecordId = LoanRecordId,
+                bankDetails = BankDetails
             ),
             value = PositiveValue(
                 amount = PositiveDouble.unsafe(100.0),
@@ -140,6 +143,7 @@ class TransactionMapperTest {
             toAmount = null,
             title = "Expense",
             description = "Expense desc",
+            bankDetails = BankDetails,
             dateTime = dateTime.takeIf { settled },
             categoryId = CategoryId.value,
             dueDate = dateTime.takeIf { !settled },
@@ -170,7 +174,8 @@ class TransactionMapperTest {
                 recurringRuleId = RecurringRuleId,
                 loanId = LoanId,
                 paidForDateTime = PaidForDateTime,
-                loanRecordId = LoanRecordId
+                loanRecordId = LoanRecordId,
+                bankDetails = BankDetails
             ),
             fromValue = PositiveValue(
                 amount = PositiveDouble.unsafe(100.0),
@@ -198,6 +203,7 @@ class TransactionMapperTest {
             toAmount = 100.0,
             title = "Transfer",
             description = "Transfer desc",
+            bankDetails = BankDetails,
             dateTime = dateTime.takeIf { settled },
             categoryId = CategoryId.value,
             dueDate = dateTime.takeIf { !settled },
@@ -245,7 +251,8 @@ class TransactionMapperTest {
                     recurringRuleId = RecurringRuleId,
                     loanId = LoanId,
                     paidForDateTime = PaidForDateTime,
-                    loanRecordId = LoanRecordId
+                    loanRecordId = LoanRecordId,
+                    bankDetails = BankDetails
                 ),
                 value = PositiveValue(
                     amount = PositiveDouble.unsafe(100.0),
@@ -374,7 +381,8 @@ class TransactionMapperTest {
                     recurringRuleId = RecurringRuleId,
                     loanId = LoanId,
                     paidForDateTime = PaidForDateTime,
-                    loanRecordId = LoanRecordId
+                    loanRecordId = LoanRecordId,
+                    bankDetails = BankDetails
                 ),
                 value = PositiveValue(
                     amount = PositiveDouble.unsafe(100.0),
@@ -508,7 +516,8 @@ class TransactionMapperTest {
                     recurringRuleId = RecurringRuleId,
                     loanId = LoanId,
                     paidForDateTime = PaidForDateTime,
-                    loanRecordId = LoanRecordId
+                    loanRecordId = LoanRecordId,
+                    bankDetails = BankDetails
                 ),
                 fromValue = PositiveValue(
                     amount = PositiveDouble.unsafe(50.0),
@@ -689,6 +698,7 @@ class TransactionMapperTest {
         val PaidForDateTime: Instant = Instant.now()
         val LoanId = UUID.randomUUID()
         val LoanRecordId = UUID.randomUUID()
+        const val BankDetails = "GALADARI ICE CREAM CO LLC"
         val TransactionId = TransactionId(UUID.randomUUID())
         val InstantNow = Instant.now()
 
@@ -700,6 +710,7 @@ class TransactionMapperTest {
             toAmount = null,
             title = "Income",
             description = "Income desc",
+            bankDetails = BankDetails,
             dateTime = InstantNow,
             categoryId = CategoryId.value,
             dueDate = null,
@@ -721,6 +732,7 @@ class TransactionMapperTest {
             toAmount = null,
             title = "Expense",
             description = "Expense desc",
+            bankDetails = BankDetails,
             dateTime = InstantNow,
             categoryId = CategoryId.value,
             dueDate = null,
@@ -742,6 +754,7 @@ class TransactionMapperTest {
             toAmount = 100.0,
             title = "Transfer",
             description = "Transfer desc",
+            bankDetails = BankDetails,
             dateTime = InstantNow,
             categoryId = CategoryId.value,
             dueDate = null,

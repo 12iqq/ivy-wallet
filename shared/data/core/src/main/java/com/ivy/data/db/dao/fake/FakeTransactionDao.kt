@@ -251,9 +251,9 @@ class FakeTransactionDao : TransactionDao, WriteTransactionDao {
             .sortedByDescending { it.dateTime }
     }
 
-    override suspend fun findAllByDescriptionMatchingPattern(pattern: String): List<TransactionEntity> {
+    override suspend fun findAllByBankDetailsMatchingPattern(pattern: String): List<TransactionEntity> {
         val text = pattern.trim('%')
-        return items.filter { it.description?.contains(text, ignoreCase = true) == true && !it.isDeleted }
+        return items.filter { it.bankDetails?.contains(text, ignoreCase = true) == true && !it.isDeleted }
             .sortedByDescending { it.dateTime }
     }
 

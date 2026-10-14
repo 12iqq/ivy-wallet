@@ -71,6 +71,8 @@ data class TransactionMetadata(
     val loanId: UUID? = null,
     // This refers to the loan record id that is linked with a transaction
     val loanRecordId: UUID?,
+    // The shop as the bank's SMS named it (auto-add), e.g. "GALADARI ICE CREAM CO LLC"
+    val bankDetails: String?,
 )
 
 fun Transaction.getFromValue(): PositiveValue = when (this) {

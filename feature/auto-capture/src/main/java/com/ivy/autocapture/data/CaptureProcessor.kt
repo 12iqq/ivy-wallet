@@ -17,6 +17,7 @@ import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.CapturedTransactionDao
+import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.db.entity.CapturedTransactionEntity
 import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.model.CardEndings
@@ -52,6 +53,7 @@ class CaptureProcessor @Inject constructor(
     private val settingsStore: AutoCaptureSettingsStore,
     private val capturedDao: CapturedTransactionDao,
     private val transactionDao: TransactionDao,
+    private val transactionWriter: WriteTransactionDao,
     private val accountDao: AccountDao,
     private val settingsDao: SettingsDao,
     private val transactionRepository: TransactionRepository,
@@ -251,13 +253,6 @@ class CaptureProcessor @Inject constructor(
             ).toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
         }
         val finalTitle = title?.takeIf { it.isNotBlank() } ?: suggestedTitle(captured)
-        // the bank's own name for the shop: shown for reference and how the shop is recognised
-        // next time (the account already says which bank / card it was)
-        val foreignAmount = "${captured.currency} ${captured.amount.format(captured.currency)}"
-            .takeUnless { captured.currency.equals(accountCurrency, ignoreCase = true) }
-        val description = listOfNotNull(captured.merchant, foreignAmount)
-            .joinToString(DESCRIPTION_SEPARATOR)
-            .ifEmpty { null }
 
         val transactionId = UUID.randomUUID()
         // the item is claimed now: whatever happens, don't leave it stuck as "adding"
@@ -267,7 +262,8 @@ class CaptureProcessor @Inject constructor(
                 type = captured.type,
                 amount = amount.toBigDecimal(),
                 title = finalTitle,
-                description = description,
+                // the description stays the user's own; the bank's wording goes in bank details
+                bankDetails = bankDetails(captured, accountCurrency),
                 dateTime = captured.receivedAt,
                 categoryId = categoryId,
                 isSynced = false,
@@ -301,9 +297,47 @@ class CaptureProcessor @Inject constructor(
     /** Your most recent transaction at the shop the bank calls [merchant]. */
     private suspend fun lastTransactionAt(merchant: String?): TransactionEntity? {
         val key = MerchantNames.key(merchant) ?: return null
-        return transactionDao.findAllByDescriptionMatchingPattern("%${key.substringBefore(' ')}%")
-            .firstOrNull { MerchantNames.key(it.description?.substringBefore(DESCRIPTION_SEPARATOR)) == key }
+        return transactionDao.findAllByBankDetailsMatchingPattern("%${key.substringBefore(' ')}%")
+            .firstOrNull { MerchantNames.key(it.bankDetails?.substringBefore(DETAILS_SEPARATOR)) == key }
     }
+
+    /** "GALADARI ICE CREAM CO LLC", plus the original amount when it was in another currency. */
+    private fun bankDetails(captured: CapturedTransactionEntity, accountCurrency: String): String? {
+        val foreignAmount = "${captured.currency} ${captured.amount.format(captured.currency)}"
+            .takeUnless { captured.currency.equals(accountCurrency, ignoreCase = true) }
+        return listOfNotNull(captured.merchant, foreignAmount).joinToString(DETAILS_SEPARATOR).ifEmpty { null }
+    }
+
+    /**
+     * Before v1.0.3 auto-add wrote the bank into the description ("Emirates Islamic ··1234").
+     * Moves that out, unless the user changed it, so the description is theirs again, and keeps
+     * the shop's name in bank details. Runs once.
+     */
+    suspend fun moveBankNamesOutOfDescriptions() {
+        if (settingsStore.current().bankDetailsMoved) return
+        capturedDao.findAdded().forEach { captured ->
+            val transaction = captured.transactionId?.let { transactionDao.findById(it) } ?: return@forEach
+            val accountCurrency = accountDao.findById(transaction.accountId)?.currency
+                ?: settingsDao.findFirst().currency
+            val moved = transaction.copy(
+                description = transaction.description
+                    .takeUnless { it == oldGeneratedDescription(captured, accountCurrency) },
+                bankDetails = transaction.bankDetails ?: bankDetails(captured, accountCurrency),
+            )
+            if (moved != transaction) transactionWriter.save(moved)
+        }
+        settingsStore.update { it.copy(bankDetailsMoved = true) }
+    }
+
+    private fun oldGeneratedDescription(captured: CapturedTransactionEntity, accountCurrency: String): String =
+        buildString {
+            append(UaeBanks.byId(captured.bankId)?.displayName ?: captured.bankId)
+            captured.last4?.let { append(" ··").append(it) }
+            if (!captured.currency.equals(accountCurrency, ignoreCase = true)) {
+                append(DETAILS_SEPARATOR).append(captured.currency).append(' ')
+                    .append(captured.amount.format(captured.currency))
+            }
+        }
 
     /** true when the item is in a foreign currency and there's no exchange rate to convert it yet. */
     suspend fun missingRate(captured: CapturedTransactionEntity, accountId: UUID?): Boolean {
@@ -389,6 +423,6 @@ class CaptureProcessor @Inject constructor(
         private val SAME_NOTIFICATION_WINDOW: Duration = Duration.ofMinutes(2)
         private val SAME_MESSAGE_WINDOW: Duration = Duration.ofDays(1)
         private const val REVIEW_REQUEST_CODE = 4243
-        private const val DESCRIPTION_SEPARATOR = " · "
+        private const val DETAILS_SEPARATOR = " · "
     }
 }

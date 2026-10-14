@@ -25,6 +25,9 @@ interface CapturedTransactionDao {
     @Query("SELECT * FROM captured_transactions WHERE id = :id")
     suspend fun findById(id: UUID): CapturedTransactionEntity?
 
+    @Query("SELECT * FROM captured_transactions WHERE transactionId IS NOT NULL")
+    suspend fun findAdded(): List<CapturedTransactionEntity>
+
     @Query("SELECT COUNT(*) FROM captured_transactions WHERE fingerprint = :fingerprint")
     suspend fun countByFingerprint(fingerprint: String): Int
 

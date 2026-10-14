@@ -32,6 +32,9 @@ data class TransactionEntity(
     val title: String? = null,
     @SerialName("description")
     val description: String? = null,
+    // the shop as the bank's SMS named it (auto-add): shown read-only, used to recognise the shop
+    @SerialName("bankDetails")
+    val bankDetails: String? = null,
     @SerialName("dateTime")
     @Serializable(with = KSerializerInstant::class)
     val dateTime: Instant? = null,

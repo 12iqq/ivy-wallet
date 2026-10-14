@@ -31,6 +31,7 @@ fun TransactionEntity.toLegacyDomain(
     toAmount = toAmount?.toBigDecimal() ?: amount.toBigDecimal(),
     title = title,
     description = description,
+    bankDetails = bankDetails,
     dateTime = dateTime,
     categoryId = categoryId,
     dueDate = dueDate,

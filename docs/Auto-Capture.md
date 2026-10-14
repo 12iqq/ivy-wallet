@@ -58,10 +58,11 @@ or add extra sender names to an existing bank (Settings → bank → Edit), and 
 
 ## Shop names
 
-A detected transaction's description is the bank's own name for the shop
-(`GALADARI ICE CREAM CO LLC`). `MerchantNames.key` reduces it to what identifies the shop
-(`galadari ice cream`: no locations, company types or store numbers). For the next message
-from the same shop, `CaptureProcessor` takes the title and category of your most recent
-transaction with that description, so renaming one anywhere in the app (review screen or
-transaction editor) teaches it. The first time, the title is the bank's name made readable
-(`MerchantNames.tidy`: `Galadari Ice Cream`).
+A detected transaction keeps the bank's own name for the shop (`GALADARI ICE CREAM CO LLC`)
+in its **bank details** (`transactions.bankDetails`), shown read-only in the transaction
+editor; the description stays free for your own notes. `MerchantNames.key` reduces the name
+to what identifies the shop (`galadari ice cream`: no locations, company types or store
+numbers). For the next message from the same shop, `CaptureProcessor` takes the title and
+category of your most recent transaction with matching bank details, so renaming one anywhere
+in the app (review screen or transaction editor) teaches it. The first time, the title is the
+bank's name made readable (`MerchantNames.tidy`: `Galadari Ice Cream`).

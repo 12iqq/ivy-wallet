@@ -194,9 +194,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE title LIKE :pattern AND isDeleted = 0")
     suspend fun findAllByTitleMatchingPattern(pattern: String): List<TransactionEntity>
 
-    // Auto-add: transactions whose description holds the bank's name for a shop, newest first
-    @Query("SELECT * FROM transactions WHERE description LIKE :pattern AND isDeleted = 0 ORDER BY dateTime DESC")
-    suspend fun findAllByDescriptionMatchingPattern(pattern: String): List<TransactionEntity>
+    // Auto-add: transactions at the shop the bank names like this, newest first
+    @Query("SELECT * FROM transactions WHERE bankDetails LIKE :pattern AND isDeleted = 0 ORDER BY dateTime DESC")
+    suspend fun findAllByBankDetailsMatchingPattern(pattern: String): List<TransactionEntity>
 
     @Query("SELECT COUNT(*) FROM transactions WHERE title LIKE :pattern AND isDeleted = 0")
     suspend fun countByTitleMatchingPattern(

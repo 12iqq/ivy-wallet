@@ -47,7 +47,8 @@ fun Arb.Companion.income(
             recurringRuleId = null,
             loanId = null,
             paidForDateTime = null,
-            loanRecordId = null
+            loanRecordId = null,
+            bankDetails = null
         ),
         tags = listOf(),
         value = Arb.value(amount, asset).bind(),
@@ -75,7 +76,8 @@ fun Arb.Companion.expense(
             recurringRuleId = null,
             loanId = null,
             paidForDateTime = null,
-            loanRecordId = null
+            loanRecordId = null,
+            bankDetails = null
         ),
         tags = listOf(),
         value = Arb.value(amount, asset).bind(),
@@ -107,7 +109,8 @@ fun Arb.Companion.transfer(
             recurringRuleId = null,
             loanId = null,
             paidForDateTime = null,
-            loanRecordId = null
+            loanRecordId = null,
+            bankDetails = null
         ),
         tags = listOf(),
         fromValue = Arb.value(fromAmount, fromAsset).bind(),

@@ -114,6 +114,7 @@ class EditTransactionViewModel @Inject constructor(
     private var titleSuggestions by mutableStateOf(persistentSetOf<String>())
     private var currency by mutableStateOf("")
     private var description by mutableStateOf<String?>(null)
+    private var bankDetails by mutableStateOf<String?>(null)
     private var dateTime by mutableStateOf<Instant?>(null)
     private var dueDate by mutableStateOf<Instant?>(null)
     private var accounts by mutableStateOf<ImmutableList<Account>>(persistentListOf())
@@ -194,6 +195,7 @@ class EditTransactionViewModel @Inject constructor(
             titleSuggestions = getTitleSuggestions(),
             currency = getCurrency(),
             description = getDescription(),
+            bankDetails = getBankDetails(),
             dateTime = getDateTime(),
             dueDate = getDueDate(),
             accounts = getAccounts(),
@@ -238,6 +240,11 @@ class EditTransactionViewModel @Inject constructor(
     @Composable
     private fun getDescription(): String? {
         return description
+    }
+
+    @Composable
+    private fun getBankDetails(): String? {
+        return bankDetails
     }
 
     @Composable
@@ -383,6 +390,7 @@ class EditTransactionViewModel @Inject constructor(
         initialTitle = transaction.title
         dateTime = transaction.dateTime
         description = transaction.description
+        bankDetails = transaction.bankDetails
         dueDate = transaction.dueDate
         paidHistory = transaction.paidFor
         val selectedAccount = accountByIdAct(transaction.accountId)!!
@@ -829,6 +837,7 @@ class EditTransactionViewModel @Inject constructor(
 
         initialTitle = null
         description = null
+        bankDetails = null
         dueDate = null
         category = null
         hasChanges = false

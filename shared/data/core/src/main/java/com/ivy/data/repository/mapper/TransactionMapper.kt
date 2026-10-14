@@ -37,7 +37,8 @@ class TransactionMapper @Inject constructor(
             recurringRuleId = recurringRuleId,
             paidForDateTime = paidForDateTime,
             loanId = loanId,
-            loanRecordId = loanRecordId
+            loanRecordId = loanRecordId,
+            bankDetails = bankDetails,
         )
 
         val settled = dateTime != null
@@ -153,6 +154,7 @@ class TransactionMapper @Inject constructor(
             },
             title = title?.value,
             description = description?.value,
+            bankDetails = metadata.bankDetails,
             dateTime = time.takeIf { settled },
             categoryId = category?.value,
             dueDate = time.takeIf { !settled },

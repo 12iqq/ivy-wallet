@@ -108,6 +108,7 @@ fun BoxWithConstraintsScope.EditTransactionScreen(screen: EditTransactionScreen)
         initialTitle = uiState.initialTitle,
         titleSuggestions = uiState.titleSuggestions,
         description = uiState.description,
+        bankDetails = uiState.bankDetails,
         dateTime = uiState.dateTime,
         category = uiState.category,
         account = uiState.account,
@@ -233,6 +234,7 @@ private fun BoxWithConstraintsScope.UI(
     loanData: EditTransactionDisplayLoan = EditTransactionDisplayLoan(),
     backgroundProcessing: Boolean = false,
     hasChanges: Boolean = false,
+    bankDetails: String? = null,
 
     ) {
     var chooseCategoryModalVisible by remember { mutableStateOf(false) }
@@ -376,6 +378,15 @@ private fun BoxWithConstraintsScope.UI(
             onAddDescription = { descriptionModalVisible = true },
             onEditDescription = { descriptionModalVisible = true }
         )
+
+        if (bankDetails != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                modifier = Modifier.padding(horizontal = 32.dp),
+                text = stringResource(R.string.from_your_bank, bankDetails),
+                style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.SemiBold)
+            )
+        }
 
         TransactionDateTime(
             dateTime = dateTime,

@@ -50,6 +50,7 @@ class RootViewModel @Inject constructor(
     private val legalRepo: LegalRepository,
     private val plannedPaymentsGenerator: PlannedPaymentsGenerator,
     private val backgroundCapture: BackgroundCapture,
+    private val captureProcessor: CaptureProcessor,
     private val smsInboxScanner: SmsInboxScanner,
 ) : ViewModel() {
 
@@ -108,6 +109,7 @@ class RootViewModel @Inject constructor(
 
         viewModelScope.launch {
             ioThread {
+                captureProcessor.moveBankNamesOutOfDescriptions()
                 backgroundCapture.apply()
                 // checking bank SMS on a schedule: also pick up new ones whenever the app is opened
                 if (backgroundCapture.checksSmsOnSchedule()) smsInboxScanner.checkNew()
