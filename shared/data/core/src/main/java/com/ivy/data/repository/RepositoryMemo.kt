@@ -32,9 +32,18 @@ class RepositoryMemo<T : Identifiable<TID>, TID : UniqueId> internal constructor
 ) {
 
     private val _memo = mutableMapOf<TID, T>()
-    val items: Map<TID, T> = _memo
-    var findAllMemoized = false
-        private set
+    val items: Map<TID, T>
+        get() {
+            dropIfStale()
+            return _memo
+        }
+    private var allLoaded = false
+    val findAllMemoized: Boolean
+        get() {
+            dropIfStale()
+            return allLoaded
+        }
+    private var generation = dataObserver.cacheGeneration
 
     suspend fun findAll(
         findAllOperation: suspend () -> List<T>,
@@ -44,9 +53,13 @@ class RepositoryMemo<T : Identifiable<TID>, TID : UniqueId> internal constructor
             sortMemo(_memo.values)
         } else {
             withContext(dispatchers.io) {
+                val loadedAt = dataObserver.cacheGeneration
                 findAllOperation().also {
-                    memoize(it)
-                    findAllMemoized = true
+                    // don't keep a list read while the data was being replaced
+                    if (dataObserver.cacheGeneration == loadedAt) {
+                        memoize(it)
+                        allLoaded = true
+                    }
                 }
             }
         }
@@ -116,6 +129,17 @@ class RepositoryMemo<T : Identifiable<TID>, TID : UniqueId> internal constructor
     }
 
     private fun memoize(item: T) {
+        dropIfStale()
         _memo[item.id] = item
+    }
+
+    /** Forgets everything when the data was replaced behind the repository's back (e.g. backup import). */
+    private fun dropIfStale() {
+        val current = dataObserver.cacheGeneration
+        if (current != generation) {
+            _memo.clear()
+            allLoaded = false
+            generation = current
+        }
     }
 }

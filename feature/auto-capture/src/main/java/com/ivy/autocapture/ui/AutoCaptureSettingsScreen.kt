@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,6 +38,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import com.ivy.autocapture.data.AutoCaptureMode
@@ -59,6 +62,7 @@ import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.GradientGreen
 import com.ivy.wallet.ui.theme.Ivy
 import com.ivy.wallet.ui.theme.Red
+import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.ActionsRow
 import com.ivy.wallet.ui.theme.components.CloseButton
 import com.ivy.wallet.ui.theme.components.IvyButton
@@ -507,6 +511,9 @@ private fun TestMessageCard(
     }
 }
 
+/** What a new link catches: one card / account number, or the rest of the bank's messages. */
+private enum class LinkTarget { Card, Everything }
+
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun BoxWithConstraintsScope.BankModal(
@@ -517,8 +524,28 @@ private fun BoxWithConstraintsScope.BankModal(
     onEvent: (AutoCaptureSettingsEvent) -> Unit,
     dismiss: () -> Unit,
 ) {
+    var target by remember(bank) { mutableStateOf(LinkTarget.Card) }
     var last4 by remember(bank) { mutableStateOf(TextFieldValue("")) }
+    var account by remember(bank) { mutableStateOf<Account?>(null) }
     var senders by remember(bank) { mutableStateOf(TextFieldValue(extraSenders.joinToString(", "))) }
+
+    val digits = last4.text.filter { it.isDigit() }.takeLast(CardDigits)
+    // a link is only made once both steps are complete
+    val ready = account != null && (target == LinkTarget.Everything || digits.length == CardDigits)
+    fun addLink() {
+        val chosen = account
+        if (bank == null || chosen == null || !ready) return
+        onEvent(
+            AutoCaptureSettingsEvent.AddLink(
+                bankId = bank.id,
+                last4 = digits.takeIf { target == LinkTarget.Card },
+                account = chosen,
+            )
+        )
+        target = LinkTarget.Card
+        last4 = TextFieldValue("")
+        account = null
+    }
 
     IvyModal(
         id = remember(bank) { UUID.randomUUID() },
@@ -527,88 +554,103 @@ private fun BoxWithConstraintsScope.BankModal(
         PrimaryAction = {
             ModalSet {
                 bank?.let { onEvent(AutoCaptureSettingsEvent.SetExtraSenders(it.id, senders.text)) }
+                // a finished link that wasn't added yet is saved too
+                addLink()
                 dismiss()
             }
         }
     ) {
         Spacer(Modifier.height(32.dp))
         ModalTitle(text = bank?.displayName.orEmpty())
-        Spacer(Modifier.height(16.dp))
 
-        links.forEach { link ->
-            val account = accounts.firstOrNull { it.id.toString() == link.accountId }
-            Row(
-                modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    modifier = Modifier.weight(1f),
-                    text = "${link.last4?.let { "··$it" } ?: stringResource(R.string.any_card)} → " +
-                        (account?.name ?: "?"),
-                    style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
-                )
-                Text(
-                    modifier = Modifier
-                        .clip(UI.shapes.rFull)
-                        .clickable { onEvent(AutoCaptureSettingsEvent.RemoveLink(link)) }
-                        .padding(8.dp),
-                    text = "✕",
-                    style = UI.typo.b2.style(color = Red)
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Text(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            text = stringResource(R.string.link_card_to_account),
-            style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
-        )
-        Spacer(Modifier.height(8.dp))
-        IvyOutlinedTextField(
-            modifier = Modifier
-                .padding(horizontal = 32.dp)
-                .fillMaxWidth(),
-            value = last4,
-            hint = stringResource(R.string.card_ending),
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-            ),
-        ) { last4 = it }
-        Spacer(Modifier.height(12.dp))
-        accounts.forEach { account ->
-            val color = account.color.toComposeColor()
+        ModalLabel(stringResource(R.string.linked_cards))
+        if (links.isEmpty()) {
             Text(
-                modifier = Modifier
-                    .padding(horizontal = 32.dp, vertical = 4.dp)
-                    .fillMaxWidth()
-                    .clip(UI.shapes.r4)
-                    .background(color, UI.shapes.r4)
-                    .clickable {
-                        bank?.let {
-                            onEvent(
-                                AutoCaptureSettingsEvent.AddLink(
-                                    bankId = it.id,
-                                    last4 = last4.text.takeIf { text -> text.isNotBlank() },
-                                    account = account
-                                )
-                            )
-                        }
-                        last4 = TextFieldValue("")
-                    }
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                text = account.name + if (account.isCreditCard) " · " + stringResource(R.string.credit_card) else "",
-                style = UI.typo.b2.style(color = findContrastTextColor(color), fontWeight = FontWeight.ExtraBold)
+                modifier = Modifier.padding(horizontal = 32.dp),
+                text = stringResource(R.string.no_links_yet),
+                style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Medium)
+            )
+        }
+        links.forEach { link ->
+            LinkedCardRow(
+                link = link,
+                account = accounts.firstOrNull { it.id.toString() == link.accountId },
+                onRemove = { onEvent(AutoCaptureSettingsEvent.RemoveLink(link)) },
             )
         }
 
-        Spacer(Modifier.height(24.dp))
-        Text(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            text = stringResource(R.string.extra_sender_ids),
-            style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
-        )
-        Spacer(Modifier.height(8.dp))
+        ModalLabel(stringResource(R.string.add_a_link))
+        StepTitle(stringResource(R.string.link_step_which))
+        Row(modifier = Modifier.padding(horizontal = 32.dp)) {
+            OptionChip(
+                text = stringResource(R.string.link_target_card),
+                selected = target == LinkTarget.Card,
+            ) { target = LinkTarget.Card }
+            Spacer(Modifier.width(8.dp))
+            OptionChip(
+                text = stringResource(R.string.any_card),
+                selected = target == LinkTarget.Everything,
+            ) { target = LinkTarget.Everything }
+        }
+        Spacer(Modifier.height(12.dp))
+        if (target == LinkTarget.Card) {
+            IvyOutlinedTextField(
+                modifier = Modifier
+                    .padding(horizontal = 32.dp)
+                    .fillMaxWidth(),
+                value = last4,
+                hint = stringResource(R.string.card_ending),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                ),
+            ) { last4 = it }
+            if (digits.isNotEmpty() && digits.length < CardDigits) {
+                Text(
+                    modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 4.dp),
+                    text = stringResource(R.string.enter_four_digits),
+                    style = UI.typo.c.style(color = Red, fontWeight = FontWeight.Bold)
+                )
+            }
+        } else {
+            Text(
+                modifier = Modifier.padding(horizontal = 32.dp),
+                text = stringResource(R.string.link_everything_desc, bank?.displayName.orEmpty()),
+                style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Medium)
+            )
+        }
+
+        StepTitle(stringResource(R.string.link_step_account))
+        accounts.forEach { option ->
+            AccountOption(account = option, selected = option.id == account?.id) { account = option }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        val chosen = account
+        IvyButton(
+            modifier = Modifier
+                .padding(horizontal = 32.dp)
+                .fillMaxWidth(),
+            text = if (ready && chosen != null) {
+                stringResource(
+                    R.string.add_link_preview,
+                    if (target == LinkTarget.Card) "··$digits" else stringResource(R.string.any_card),
+                    chosen.name
+                )
+            } else {
+                stringResource(R.string.add_link)
+            },
+            iconStart = R.drawable.ic_plus,
+            enabled = ready,
+        ) { addLink() }
+        if (!ready) {
+            Text(
+                modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 6.dp),
+                text = stringResource(R.string.add_link_help),
+                style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Medium)
+            )
+        }
+
+        ModalLabel(stringResource(R.string.extra_sender_ids))
         IvyOutlinedTextField(
             modifier = Modifier
                 .padding(horizontal = 32.dp)
@@ -619,6 +661,122 @@ private fun BoxWithConstraintsScope.BankModal(
         Spacer(Modifier.height(32.dp))
     }
 }
+
+@Composable
+private fun ModalLabel(text: String) {
+    Text(
+        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 8.dp),
+        text = text,
+        style = UI.typo.b2.style(fontWeight = FontWeight.ExtraBold)
+    )
+}
+
+@Composable
+private fun StepTitle(text: String) {
+    Text(
+        modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 12.dp, bottom = 8.dp),
+        text = text,
+        style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Bold)
+    )
+}
+
+/** "··1234 → Liv" with a remove button. */
+@Composable
+private fun LinkedCardRow(link: CardLink, account: Account?, onRemove: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .fillMaxWidth()
+            .clip(UI.shapes.r4)
+            .background(UI.colors.medium, UI.shapes.r4)
+            .padding(start = 16.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = link.last4?.let { "··$it" } ?: stringResource(R.string.any_card),
+            style = UI.typo.nB2.style(fontWeight = FontWeight.ExtraBold)
+        )
+        Text(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            text = "→",
+            style = UI.typo.b2.style(color = UI.colors.gray, fontWeight = FontWeight.Bold)
+        )
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(account?.color?.toComposeColor() ?: UI.colors.gray, UI.shapes.rFull)
+        )
+        Text(
+            modifier = Modifier
+                .padding(start = 6.dp)
+                .weight(1f),
+            text = account?.name ?: "?",
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
+        )
+        Text(
+            modifier = Modifier
+                .clip(UI.shapes.rFull)
+                .clickable(onClick = onRemove)
+                .padding(12.dp),
+            text = "✕",
+            style = UI.typo.b2.style(color = Red, fontWeight = FontWeight.Bold)
+        )
+    }
+}
+
+@Composable
+private fun OptionChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        modifier = Modifier
+            .clip(UI.shapes.rFull)
+            .background(if (selected) Ivy else UI.colors.medium, UI.shapes.rFull)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        text = text,
+        style = UI.typo.b2.style(
+            color = if (selected) White else UI.colors.pureInverse,
+            fontWeight = FontWeight.Bold
+        )
+    )
+}
+
+/** Picks the account (doesn't save anything by itself). */
+@Composable
+private fun AccountOption(account: Account, selected: Boolean, onClick: () -> Unit) {
+    val color = account.color.toComposeColor()
+    val textColor = if (selected) findContrastTextColor(color) else UI.colors.pureInverse
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 32.dp, vertical = 4.dp)
+            .fillMaxWidth()
+            .clip(UI.shapes.r4)
+            .background(if (selected) color else UI.colors.medium, UI.shapes.r4)
+            .border(2.dp, if (selected) color else UI.colors.medium, UI.shapes.r4)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .background(if (selected) textColor else color, UI.shapes.rFull)
+        )
+        Text(
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .weight(1f),
+            text = account.name + if (account.isCreditCard) " · " + stringResource(R.string.credit_card) else "",
+            style = UI.typo.b2.style(color = textColor, fontWeight = FontWeight.ExtraBold)
+        )
+        if (selected) {
+            Text(text = "✓", style = UI.typo.b1.style(color = textColor, fontWeight = FontWeight.ExtraBold))
+        }
+    }
+}
+
+private const val CardDigits = 4
 
 private fun Context.openAppDetailsSettings() {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)

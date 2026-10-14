@@ -39,6 +39,8 @@ data class AutoCaptureConfig(
     val learnedCategories: Map<String, String> = emptyMap(),
     /** Normalized merchant -> title the user prefers (e.g. "CARREFOUR MOE" -> "Groceries"). */
     val learnedTitles: Map<String, String> = emptyMap(),
+    /** Card endings once typed on accounts were copied into [links]. */
+    val accountEndingsMoved: Boolean = false,
 )
 
 object CaptureLogic {
@@ -59,6 +61,23 @@ object CaptureLogic {
      */
     fun linkedAccountIdByLast4(links: List<CardLink>, last4: String?): String? =
         last4?.let { digits -> links.firstOrNull { it.last4 == digits }?.accountId }
+
+    /**
+     * Card endings that used to be typed on accounts ([endings]: account id -> last 4 digits),
+     * turned into links for the banks already linked to that account, else every enabled bank.
+     * Waits (returns [config] unchanged) while there's no bank to link them to.
+     */
+    fun withAccountEndings(config: AutoCaptureConfig, endings: Map<String, List<String>>): AutoCaptureConfig {
+        if (endings.isNotEmpty() && config.enabledBankIds.isEmpty() && config.links.isEmpty()) return config
+        val newLinks = endings.flatMap { (accountId, digits) ->
+            val banks = config.links.filter { it.accountId == accountId }.map { it.bankId }.distinct()
+                .ifEmpty { config.enabledBankIds.sorted() }
+            digits.flatMap { last4 -> banks.map { bankId -> CardLink(bankId, last4, accountId) } }
+        }
+            .filterNot { new -> config.links.any { it.bankId == new.bankId && it.last4 == new.last4 } }
+            .distinctBy { it.bankId to it.last4 }
+        return config.copy(links = config.links + newLinks, accountEndingsMoved = true)
+    }
 
     private const val MERCHANT_KEY_WORDS = 3
 

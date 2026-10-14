@@ -272,10 +272,10 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
 
             SettingsDefaultButton(
-                icon = R.drawable.ic_sync,
+                icon = R.drawable.ic_vue_auto_add,
                 text = stringResource(R.string.auto_capture),
                 description = stringResource(R.string.auto_capture_description),
-                iconPadding = 6.dp
+                iconPadding = 8.dp
             ) {
                 nav.navigateTo(AutoCaptureSettingsScreen)
             }

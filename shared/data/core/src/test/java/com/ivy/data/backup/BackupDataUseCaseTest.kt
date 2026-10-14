@@ -14,9 +14,12 @@ import com.ivy.data.db.dao.fake.FakeTagAssociationDao
 import com.ivy.data.db.dao.fake.FakeTagDao
 import com.ivy.data.db.dao.fake.FakeTransactionDao
 import com.ivy.data.repository.AccountRepository
+import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.CurrencyRepository
+import com.ivy.data.repository.RepositoryMemoFactory
 import com.ivy.data.repository.fake.fakeRepositoryMemoFactory
 import com.ivy.data.repository.mapper.AccountMapper
+import com.ivy.data.repository.mapper.CategoryMapper
 import com.ivy.data.testResource
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
@@ -35,7 +38,8 @@ class BackupDataUseCaseTest {
         loanDao: FakeLoanDao = FakeLoanDao(),
         loanRecordDao: FakeLoanRecordDao = FakeLoanRecordDao(),
         tagDao: FakeTagDao = FakeTagDao(),
-        tagAssociationDao: FakeTagAssociationDao = FakeTagAssociationDao()
+        tagAssociationDao: FakeTagAssociationDao = FakeTagAssociationDao(),
+        dataObserver: DataObserver = DataObserver(),
     ): BackupDataUseCase {
         val accountMapper = AccountMapper(
             CurrencyRepository(
@@ -74,7 +78,7 @@ class BackupDataUseCaseTest {
             json = KotlinxSerializationModule.provideJson(),
             dispatchersProvider = TestDispatchersProvider,
             fileSystem = mockk(relaxed = true),
-            dataObserver = DataObserver(),
+            dataObserver = dataObserver,
             tagsReader = tagDao,
             tagsWriter = tagDao,
             tagAssociationReader = tagAssociationDao,
@@ -114,5 +118,28 @@ class BackupDataUseCaseTest {
     @Test
     fun `backup compatibility with 450 (150)`() = runTest {
         backupTestCase("450-150")
+    }
+
+    @Test
+    fun `categories read before an import show up after it`() = runTest {
+        // given: the app already looked at the (empty) categories, e.g. on a fresh install
+        val categoryDao = FakeCategoryDao()
+        val dataObserver = DataObserver()
+        val categoryRepository = CategoryRepository(
+            mapper = CategoryMapper(),
+            writeCategoryDao = categoryDao,
+            categoryDao = categoryDao,
+            dispatchersProvider = TestDispatchersProvider,
+            memoFactory = RepositoryMemoFactory(dataObserver, TestDispatchersProvider),
+        )
+        categoryRepository.findAll() shouldBe emptyList()
+        val useCase = newBackupDataUseCase(categoryDao = categoryDao, dataObserver = dataObserver)
+        val backupJsonData = testResource("backups/450-150.json").readText(Charsets.UTF_16)
+
+        // when
+        val result = useCase.importJson(backupJsonData, onProgress = {})
+
+        // then
+        categoryRepository.findAll().size shouldBe result.categoriesImported
     }
 }

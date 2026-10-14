@@ -212,6 +212,8 @@ class BackupDataUseCase @Inject constructor(
 
         onProgress(0.4)
         insertDataToDb(completeData = ivyWalletCompleteData, onProgress = onProgress)
+        // the data was written straight to the DB: cached accounts / categories / tags must reload
+        dataObserver.post(DataWriteEvent.AllDataChange)
         onProgress(1.0)
 
         if (clearCacheDir) {

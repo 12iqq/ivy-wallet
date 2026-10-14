@@ -76,7 +76,10 @@ class AutoCaptureSettingsViewModel @Inject constructor(
     private val pendingCountFlow = capturedDao.pendingCountFlow()
 
     init {
-        viewModelScope.launch { accounts = accountsAct(Unit) }
+        viewModelScope.launch {
+            processor.moveAccountEndingsToLinks()
+            accounts = accountsAct(Unit)
+        }
     }
 
     @Composable
@@ -115,12 +118,19 @@ class AutoCaptureSettingsViewModel @Inject constructor(
                 it.copy(readWalletNotifications = event.enabled)
             }
 
-            is AutoCaptureSettingsEvent.AddLink -> store.update { config ->
-                val last4 = event.last4?.filter { it.isDigit() }?.takeLast(4)?.takeIf { it.length == 4 }
-                val link = CardLink(event.bankId, last4, event.account.id.toString())
-                config.copy(
-                    links = config.links.filterNot { it.bankId == link.bankId && it.last4 == link.last4 } + link
-                )
+            is AutoCaptureSettingsEvent.AddLink -> {
+                // null = the bank's "everything else" link; anything else must be a full 4 digits
+                val last4 = event.last4?.filter { it.isDigit() }?.takeLast(4)
+                if (last4 == null || last4.length == 4) {
+                    val link = CardLink(event.bankId, last4, event.account.id.toString())
+                    store.update { config ->
+                        config.copy(
+                            links = config.links.filterNot {
+                                it.bankId == link.bankId && it.last4 == link.last4
+                            } + link
+                        )
+                    }
+                }
             }
 
             is AutoCaptureSettingsEvent.RemoveLink -> store.update {

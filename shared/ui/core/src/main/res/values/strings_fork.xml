@@ -37,9 +37,19 @@
     <string name="auto_add_without_review_desc">Add transactions straight away when the account is known</string>
     <string name="my_banks">My banks &amp; cards</string>
     <string name="my_banks_desc">Only messages from selected banks are read</string>
-    <string name="link_card_to_account">Link card / account to an Ivy account</string>
-    <string name="card_ending">Card or account ending (last 4)</string>
-    <string name="any_card">Any card</string>
+    <string name="card_ending">Last 4 digits, e.g. 1234</string>
+    <string name="any_card">Everything else</string>
+    <string name="linked_cards">Linked cards</string>
+    <string name="no_links_yet">Nothing linked yet. Transactions from this bank will ask which account to use.</string>
+    <string name="add_a_link">Add a link</string>
+    <string name="link_step_which">1. Which messages?</string>
+    <string name="link_step_account">2. Which account do they go to?</string>
+    <string name="link_target_card">One card / account</string>
+    <string name="link_everything_desc">Every %1$s message whose card isn\'t linked above, or that has no card number.</string>
+    <string name="enter_four_digits">Enter all 4 digits</string>
+    <string name="add_link">Add link</string>
+    <string name="add_link_preview">Add %1$s → %2$s</string>
+    <string name="add_link_help">Choose the messages and an account, then tap Add.</string>
     <string name="extra_sender_ids">Extra sender names (comma separated)</string>
     <string name="test_a_message">Test a message</string>
     <string name="test_a_message_hint">Paste a bank SMS here to see what Ivy understands</string>
@@ -118,8 +128,6 @@
     <string name="quick_add_shortcuts_desc">Show one-tap shortcuts on the home screen, learned from what you add often</string>
 
     <!-- Card endings -->
-    <string name="card_endings">Card / account ending</string>
-    <string name="card_endings_desc">The last 4 digits of the cards and account numbers that belong to this account, separated by commas. Bank SMS mentioning them are added to this account automatically.</string>
 
     <!-- Reports -->
     <string name="report_total">Total</string>

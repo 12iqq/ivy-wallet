@@ -87,6 +87,8 @@ class CaptureProcessor @Inject constructor(
 
         val parsed = router.parse(sender, body, config.enabledBankIds, config.extraSenders)
             ?: return null
+        moveAccountEndingsToLinks()
+        val links = settingsStore.current().links
 
         // SMS and Wallet notifications arrive on different threads: check-and-save one at a time
         return captureLock.withLock {
@@ -101,7 +103,7 @@ class CaptureProcessor @Inject constructor(
                     source = source,
                     notify = notify,
                     parsed = parsed,
-                    linkedAccountId = CaptureLogic.linkedAccountId(config.links, parsed.bankId, parsed.last4),
+                    linkedAccountId = CaptureLogic.linkedAccountId(links, parsed.bankId, parsed.last4),
                 )
             }
         }
@@ -120,6 +122,8 @@ class CaptureProcessor @Inject constructor(
         if (config.mode == AutoCaptureMode.Off || !config.readWalletNotifications) return null
         val body = WalletNotifications.toMessage(title, text) ?: return null
         val parsed = WalletNotifications.parse(title, text) ?: return null
+        moveAccountEndingsToLinks()
+        val links = settingsStore.current().links
 
         return captureLock.withLock {
             if (reportedBy(CapturedTransactionEntity.SOURCE_SMS, parsed, postedAt)) {
@@ -132,15 +136,20 @@ class CaptureProcessor @Inject constructor(
                     source = CapturedTransactionEntity.SOURCE_NOTIFICATION,
                     notify = true,
                     parsed = parsed,
-                    linkedAccountId = CaptureLogic.linkedAccountIdByLast4(config.links, parsed.last4),
+                    linkedAccountId = CaptureLogic.linkedAccountIdByLast4(links, parsed.last4),
                 )
             }
         }
     }
 
-    /** An account whose "card / account number ending" (set when editing the account) matches. */
-    private suspend fun accountWithEnding(last4: String): UUID? =
-        accountDao.findAll().firstOrNull { last4 in CardEndings.parse(it.cardEndings) }?.id
+    /** Card endings used to be typed on the account too; now they live only in the bank links. */
+    suspend fun moveAccountEndingsToLinks() {
+        if (settingsStore.current().accountEndingsMoved) return
+        val endings = accountDao.findAll()
+            .associate { it.id.toString() to CardEndings.parse(it.cardEndings) }
+            .filterValues { it.isNotEmpty() }
+        settingsStore.update { config -> CaptureLogic.withAccountEndings(config, endings) }
+    }
 
     /** The same purchase (amount, currency and card when known) already came in from [source]. */
     private suspend fun reportedBy(source: String, parsed: ParsedMessage, at: Instant): Boolean =
@@ -179,7 +188,6 @@ class CaptureProcessor @Inject constructor(
         val accountId = linkedAccountId
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?.takeIf { accountDao.findById(it) != null }
-            ?: parsed.last4?.let { accountWithEnding(it) }
         val merchantKey = parsed.merchant?.let(CaptureLogic::merchantKey)?.takeIf { it.isNotBlank() }
         val categoryId = merchantKey?.let { config.learnedCategories[it] }
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }

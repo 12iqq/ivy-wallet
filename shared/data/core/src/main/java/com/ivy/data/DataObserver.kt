@@ -9,6 +9,7 @@ import com.ivy.data.model.TagId
 import com.ivy.data.model.sync.UniqueId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,7 +18,17 @@ class DataObserver @Inject constructor() {
     private val _writeEvents = MutableSharedFlow<DataWriteEvent>()
     val writeEvents: Flow<DataWriteEvent> = _writeEvents
 
+    private val generation = AtomicLong(0)
+
+    /**
+     * Changes every time [DataWriteEvent.AllDataChange] is posted (e.g. after a backup import
+     * writes straight to the database), so in-memory caches know to reload.
+     */
+    val cacheGeneration: Long
+        get() = generation.get()
+
     suspend fun post(event: DataWriteEvent) {
+        if (event == DataWriteEvent.AllDataChange) generation.incrementAndGet()
         _writeEvents.emit(event)
     }
 }

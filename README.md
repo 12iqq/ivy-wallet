@@ -45,8 +45,6 @@ automatically from bank SMS alerts.
 - **Reports** (Cashew-style, in Ivy's look): month or year view, spending or income, a category donut you can tap
   to filter everything, spending pace vs last month, top places, the transactions behind the numbers, past months,
   and total balance over time.
-- **Card / account endings** on each account (the last 4 digits), so bank SMS land in the right account
-  automatically.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
   CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
 - A cleaner Settings screen, without the original project's community, share and rating links.
