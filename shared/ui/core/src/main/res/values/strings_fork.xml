@@ -73,6 +73,7 @@
     <string name="new_bank_transactions">%1$d new bank transactions</string>
     <string name="new_bank_transactions_text">Tap to review them</string>
     <string name="from_your_bank">From your bank: %1$s</string>
+    <string name="pay_off_card">Pay off card · %1$s</string>
     <string name="auto_capture_channel">Detected transactions</string>
 
     <!-- Reminders & backups -->

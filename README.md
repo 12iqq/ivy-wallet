@@ -35,6 +35,7 @@ automatically from bank SMS alerts.
 - **Google Wallet payments** (optional): tap-to-pay notifications are captured too, and matched to your card by its
   last 4 digits. If the bank's SMS for the same purchase also arrives, it's added only once.
 - **Card payment reminders** a few days before each card's due date, then the day before and on the day.
+- **Pay off a card in one tap**: in a transfer to a credit card, *Pay off card* fills in everything it owes.
 - **Statement-cycle spending** on credit cards: "Spent this statement" instead of the calendar month.
 - **Budget alerts** when a budget reaches 80% and 100%.
 - **Automatic backup**, daily or weekly, to a file you choose (for example in Google Drive).

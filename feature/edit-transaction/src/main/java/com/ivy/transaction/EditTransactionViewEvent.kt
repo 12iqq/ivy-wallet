@@ -37,8 +37,14 @@ data class EditTransactionViewState(
     val backgroundProcessingStarted: Boolean,
     val customExchangeRateState: CustomExchangeRateState,
     val tags: ImmutableList<Tag>,
-    val transactionAssociatedTags: ImmutableList<TagId>
+    val transactionAssociatedTags: ImmutableList<TagId>,
+    /** Set while making a new transfer to a credit card that owes money. */
+    val cardPayoff: CardPayoff?,
 )
+
+/** What a credit card owes, offered as a one-tap amount when transferring to it. */
+@Immutable
+data class CardPayoff(val owed: Double, val currency: String)
 
 sealed interface EditTransactionViewEvent {
     data class OnAmountChanged(val newAmount: Double) : EditTransactionViewEvent
@@ -47,6 +53,7 @@ sealed interface EditTransactionViewEvent {
     data class OnCategoryChanged(val newCategory: Category?) : EditTransactionViewEvent
     data class OnAccountChanged(val newAccount: Account) : EditTransactionViewEvent
     data class OnToAccountChanged(val newAccount: Account) : EditTransactionViewEvent
+    data object PayOffCard : EditTransactionViewEvent
     data class OnDueDateChanged(val newDueDate: LocalDateTime?) : EditTransactionViewEvent
     data object OnChangeDate : EditTransactionViewEvent
     data object OnChangeTime : EditTransactionViewEvent

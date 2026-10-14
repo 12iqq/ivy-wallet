@@ -48,6 +48,7 @@ import com.ivy.legacy.ui.component.edit.TransactionDateTime
 import com.ivy.legacy.ui.component.edit.core.Description
 import com.ivy.legacy.ui.component.tags.AddTagButton
 import com.ivy.legacy.ui.component.tags.ShowTagModal
+import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.EditTransactionScreen
@@ -67,6 +68,7 @@ import com.ivy.wallet.ui.edit.core.Toolbar
 import com.ivy.wallet.ui.theme.components.AddPrimaryAttributeButton
 import com.ivy.wallet.ui.theme.components.ChangeTransactionTypeModal
 import com.ivy.wallet.ui.theme.components.CustomExchangeRateCard
+import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
 import com.ivy.wallet.ui.theme.modal.DeleteModal
 import com.ivy.wallet.ui.theme.modal.ModalAdd
 import com.ivy.wallet.ui.theme.modal.ModalCheck
@@ -109,6 +111,8 @@ fun BoxWithConstraintsScope.EditTransactionScreen(screen: EditTransactionScreen)
         titleSuggestions = uiState.titleSuggestions,
         description = uiState.description,
         bankDetails = uiState.bankDetails,
+        cardPayoff = uiState.cardPayoff,
+        onPayOffCard = { viewModel.onEvent(EditTransactionViewEvent.PayOffCard) },
         dateTime = uiState.dateTime,
         category = uiState.category,
         account = uiState.account,
@@ -235,6 +239,8 @@ private fun BoxWithConstraintsScope.UI(
     backgroundProcessing: Boolean = false,
     hasChanges: Boolean = false,
     bankDetails: String? = null,
+    cardPayoff: CardPayoff? = null,
+    onPayOffCard: () -> Unit = {},
 
     ) {
     var chooseCategoryModalVisible by remember { mutableStateOf(false) }
@@ -411,6 +417,19 @@ private fun BoxWithConstraintsScope.UI(
             ) {
                 exchangeRateAmountModalShown = true
             }
+        }
+
+        if (transactionType == TransactionType.TRANSFER && cardPayoff != null) {
+            Spacer(Modifier.height(12.dp))
+            IvyOutlinedButton(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                text = stringResource(
+                    R.string.pay_off_card,
+                    "${cardPayoff.owed.format(cardPayoff.currency)} ${cardPayoff.currency}"
+                ),
+                iconStart = R.drawable.ic_vue_money_card_send,
+                onClick = onPayOffCard,
+            )
         }
 
         if (dueDate == null && transactionType != TransactionType.TRANSFER && dateTime == null) {

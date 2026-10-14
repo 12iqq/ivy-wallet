@@ -18,6 +18,7 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.LoanDao
 import com.ivy.data.db.dao.read.SettingsDao
+import com.ivy.data.model.AccountId
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.Tag
@@ -25,6 +26,7 @@ import com.ivy.data.model.TagId
 import com.ivy.data.model.TransactionId
 import com.ivy.data.model.primitive.AssociationId
 import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.TransactionRepository
@@ -47,6 +49,7 @@ import com.ivy.ui.R
 import com.ivy.ui.time.impl.DateTimePicker
 import com.ivy.wallet.domain.action.account.AccountByIdAct
 import com.ivy.wallet.domain.action.account.AccountsAct
+import com.ivy.wallet.domain.action.account.CalcAccBalanceAct
 import com.ivy.wallet.domain.action.transaction.TrnByIdAct
 import com.ivy.wallet.domain.data.CustomExchangeRateState
 import com.ivy.wallet.domain.deprecated.logic.CategoryCreator
@@ -59,6 +62,7 @@ import com.ivy.wallet.domain.deprecated.logic.model.CreateCategoryData
 import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.math.RoundingMode
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -99,6 +103,8 @@ class EditTransactionViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val trnByIdAct: TrnByIdAct,
     private val accountByIdAct: AccountByIdAct,
+    private val accountRepository: AccountRepository,
+    private val calcAccBalanceAct: CalcAccBalanceAct,
     private val transactionRepo: TransactionRepository,
     private val transactionMapper: TransactionMapper,
     private val tagRepository: TagRepository,
@@ -115,6 +121,7 @@ class EditTransactionViewModel @Inject constructor(
     private var currency by mutableStateOf("")
     private var description by mutableStateOf<String?>(null)
     private var bankDetails by mutableStateOf<String?>(null)
+    private var cardPayoff by mutableStateOf<CardPayoff?>(null)
     private var dateTime by mutableStateOf<Instant?>(null)
     private var dueDate by mutableStateOf<Instant?>(null)
     private var accounts by mutableStateOf<ImmutableList<Account>>(persistentListOf())
@@ -209,7 +216,8 @@ class EditTransactionViewModel @Inject constructor(
             backgroundProcessingStarted = getBackgroundProcessingStarted(),
             customExchangeRateState = getCustomExchangeRateState(),
             tags = getTags(),
-            transactionAssociatedTags = getTransactionAssociatedTags()
+            transactionAssociatedTags = getTransactionAssociatedTags(),
+            cardPayoff = getCardPayoff(),
         )
     }
 
@@ -245,6 +253,11 @@ class EditTransactionViewModel @Inject constructor(
     @Composable
     private fun getBankDetails(): String? {
         return bankDetails
+    }
+
+    @Composable
+    private fun getCardPayoff(): CardPayoff? {
+        return cardPayoff
     }
 
     @Composable
@@ -340,6 +353,7 @@ class EditTransactionViewModel @Inject constructor(
 
             is EditTransactionViewEvent.OnTitleChanged -> onTitleChanged(event.newTitle)
             is EditTransactionViewEvent.OnToAccountChanged -> onToAccountChanged(event.newAccount)
+            EditTransactionViewEvent.PayOffCard -> payOffCard()
             is EditTransactionViewEvent.Save -> save(event.closeScreen)
             is EditTransactionViewEvent.SetHasChanges -> setHasChanges(event.hasChangesValue)
             is EditTransactionViewEvent.UpdateExchangeRate -> updateExchangeRate(event.exRate)
@@ -532,8 +546,36 @@ class EditTransactionViewModel @Inject constructor(
             )
             toAccount = newAccount
             updateCustomExchangeRateState(toAccountValue = newAccount)
+            refreshCardPayoff()
 
             saveIfEditMode()
+        }
+    }
+
+    /** For a new transfer to a credit card: what it owes, so it can be paid off in one tap. */
+    private suspend fun refreshCardPayoff() {
+        val card = toAccount?.takeIf { it.isCreditCard && !editMode }
+        val cardAccount = card?.let { accountRepository.findById(AccountId(it.id)) }
+        cardPayoff = if (card == null || cardAccount == null) {
+            null
+        } else {
+            val owed = -calcAccBalanceAct(CalcAccBalanceAct.Input(account = cardAccount)).balance.toDouble()
+            CardPayoff(owed = owed, currency = card.currency ?: baseUserCurrency).takeIf { owed > 0.0 }
+        }
+    }
+
+    /** Sets the amount to everything the card owes, in the paying account's currency. */
+    private fun payOffCard() {
+        val payoff = cardPayoff ?: return
+        val fromCurrency = account?.currency ?: baseUserCurrency
+        viewModelScope.launch {
+            val amountToPay = exchangeRatesLogic.convertAmount(
+                baseCurrency = baseUserCurrency,
+                amount = payoff.owed,
+                fromCurrency = payoff.currency,
+                toCurrency = fromCurrency
+            )
+            onAmountChanged(amountToPay.toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble())
         }
     }
 
@@ -838,6 +880,7 @@ class EditTransactionViewModel @Inject constructor(
         initialTitle = null
         description = null
         bankDetails = null
+        cardPayoff = null
         dueDate = null
         category = null
         hasChanges = false
