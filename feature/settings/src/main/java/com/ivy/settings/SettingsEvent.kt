@@ -12,6 +12,7 @@ sealed interface SettingsEvent {
     data class SetShowNotifications(val showNotifications: Boolean) : SettingsEvent
     data class SetHideCurrentBalance(val hideCurrentBalance: Boolean) : SettingsEvent
     data class SetHideIncome(val hideIncome: Boolean) : SettingsEvent
+    data class SetShowQuickAdd(val show: Boolean) : SettingsEvent
     data class SetTransfersAsIncomeExpense(val treatTransfersAsIncomeExpense: Boolean) :
         SettingsEvent
 

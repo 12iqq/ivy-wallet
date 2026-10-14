@@ -12,16 +12,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.utils.format
+import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.ImmutableList
@@ -39,9 +43,31 @@ fun QuickAddRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item(key = "label") { QuickAddLabel() }
         items(chips, key = { it.template.key }) {
             QuickAddChipItem(chip = it, onClick = { onPick(it) })
         }
+    }
+}
+
+/** Makes it clear these are shortcuts, not detected transactions waiting for review. */
+@Composable
+private fun QuickAddLabel() {
+    Row(
+        modifier = Modifier.padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            modifier = Modifier.size(16.dp),
+            painter = painterResource(R.drawable.ic_plus),
+            contentDescription = null,
+            tint = UI.colors.gray
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = stringResource(R.string.quick_add),
+            style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Bold)
+        )
     }
 }
 

@@ -7,6 +7,7 @@ import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.AccountType
+import com.ivy.data.model.CardEndings
 import com.ivy.data.model.CreditCardDetails
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
@@ -44,6 +45,7 @@ class AccountMapper @Inject constructor(
             } else {
                 null
             },
+            cardEndings = CardEndings.parse(cardEndings),
         )
     }
 
@@ -59,6 +61,7 @@ class AccountMapper @Inject constructor(
             creditLimit = creditCard?.creditLimit,
             statementDay = creditCard?.statementDay,
             paymentDueDay = creditCard?.paymentDueDay,
+            cardEndings = CardEndings.format(cardEndings),
             id = id.value,
             isSynced = true, // TODO: Delete this
         )

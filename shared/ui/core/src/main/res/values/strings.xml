@@ -206,7 +206,7 @@
     <string name="edit_account">Edit account</string>
     <string name="new_account">New account</string>
     <string name="account_name">Account name</string>
-    <string name="include_account">Include account</string>
+    <string name="include_account">Count in total balance</string>
     <string name="enter_account_balance">Enter account balance</string>
     <string name="choose_currency">Select currency</string>
     <string name="calculator">Calculator</string>

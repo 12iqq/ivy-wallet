@@ -117,4 +117,13 @@
     <string name="read_wallet_notifications_desc">Also catch tap-to-pay notifications from Google Wallet. Android only wakes the app when a Wallet notification arrives, so it doesn\'t drain the battery.</string>
     <string name="wallet_access_needed">Allow notification access for Ivy Wallet UAE so it can see Google Wallet payments. If Android says the setting is restricted, first open App info → ⋮ → Allow restricted settings.</string>
     <string name="open_notification_access">Open notification access</string>
+
+    <!-- Quick add -->
+    <string name="quick_add">Quick add</string>
+    <string name="quick_add_shortcuts">Quick-add shortcuts</string>
+    <string name="quick_add_shortcuts_desc">Show one-tap shortcuts on the home screen, learned from what you add often</string>
+
+    <!-- Card endings -->
+    <string name="card_endings">Card / account ending</string>
+    <string name="card_endings_desc">The last 4 digits of the cards and account numbers that belong to this account, separated by commas. Bank SMS mentioning them are added to this account automatically.</string>
 </resources>

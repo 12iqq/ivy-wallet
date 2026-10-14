@@ -17,6 +17,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.CapturedTransactionDao
 import com.ivy.data.db.entity.CapturedTransactionEntity
+import com.ivy.data.model.CardEndings
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.domain.AppStarter
@@ -122,6 +123,10 @@ class CaptureProcessor @Inject constructor(
         )
     }
 
+    /** An account whose "card / account number ending" (set when editing the account) matches. */
+    private suspend fun accountWithEnding(last4: String): UUID? =
+        accountDao.findAll().firstOrNull { last4 in CardEndings.parse(it.cardEndings) }?.id
+
     private suspend fun reportedBy(source: String, amount: Double, at: Instant): Boolean =
         capturedDao.countFromSourceBetween(
             source = source,
@@ -147,6 +152,7 @@ class CaptureProcessor @Inject constructor(
         val accountId = linkedAccountId
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?.takeIf { accountDao.findById(it) != null }
+            ?: parsed.last4?.let { accountWithEnding(it) }
         val merchantKey = parsed.merchant?.let(CaptureLogic::merchantKey)
         val categoryId = merchantKey?.let { config.learnedCategories[it] }
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }

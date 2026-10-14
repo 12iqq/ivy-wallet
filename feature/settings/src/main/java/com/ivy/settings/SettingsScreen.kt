@@ -88,6 +88,7 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         showNotifications = uiState.showNotifications,
         hideCurrentBalance = uiState.hideCurrentBalance,
         hideIncome = uiState.hideIncome,
+        showQuickAdd = uiState.showQuickAdd,
         progressState = uiState.progressState,
         treatTransfersAsIncomeExpense = uiState.treatTransfersAsIncomeExpense,
         nameLocalAccount = uiState.name,
@@ -116,6 +117,9 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         },
         onSetHideIncome = {
             viewModel.onEvent(SettingsEvent.SetHideIncome(it))
+        },
+        onSetShowQuickAdd = {
+            viewModel.onEvent(SettingsEvent.SetShowQuickAdd(it))
         },
         onSetStartDateOfMonth = {
             viewModel.onEvent(SettingsEvent.SetStartDateOfMonth(it))
@@ -150,6 +154,7 @@ private fun BoxWithConstraintsScope.UI(
     showNotifications: Boolean = true,
     hideCurrentBalance: Boolean = false,
     hideIncome: Boolean = false,
+    showQuickAdd: Boolean = true,
     progressState: Boolean = false,
     treatTransfersAsIncomeExpense: Boolean = false,
     onSetName: (String) -> Unit = {},
@@ -160,6 +165,7 @@ private fun BoxWithConstraintsScope.UI(
     onSetTreatTransfersAsIncExp: (Boolean) -> Unit = {},
     onSetHideCurrentBalance: (Boolean) -> Unit = {},
     onSetHideIncome: (Boolean) -> Unit = {},
+    onSetShowQuickAdd: (Boolean) -> Unit = {},
     onSetStartDateOfMonth: (Int) -> Unit = {},
     onDeleteAllUserData: () -> Unit = {},
     onDeleteCloudUserData: () -> Unit = {},
@@ -375,6 +381,16 @@ private fun BoxWithConstraintsScope.UI(
                 text = stringResource(R.string.hide_income),
                 description = stringResource(R.string.hide_income_description),
                 icon = R.drawable.ic_hide_m
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            AppSwitch(
+                lockApp = showQuickAdd,
+                onSetLockApp = onSetShowQuickAdd,
+                text = stringResource(R.string.quick_add_shortcuts),
+                description = stringResource(R.string.quick_add_shortcuts_desc),
+                icon = R.drawable.ic_plus
             )
 
             Spacer(Modifier.height(12.dp))

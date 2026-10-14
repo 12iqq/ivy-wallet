@@ -105,6 +105,10 @@ fun BoxWithConstraintsScope.AccountModal(
         mutableStateOf(account?.paymentDueDay)
     }
     var creditLimitModalVisible by remember { mutableStateOf(false) }
+    var cardEndings by remember(modal) {
+        mutableStateOf(account?.cardEndings)
+    }
+    var cardEndingsModalVisible by remember { mutableStateOf(false) }
 
     var amountModalVisible by remember { mutableStateOf(false) }
     var currencyModalVisible by remember { mutableStateOf(false) }
@@ -132,7 +136,7 @@ fun BoxWithConstraintsScope.AccountModal(
                     icon = icon,
                     amount = amount.toBalance(isCreditCard),
                     includeInBalance = includeInBalance,
-                    card = CardFields(isCreditCard, creditLimit, statementDay, paymentDueDay),
+                    card = CardFields(isCreditCard, creditLimit, statementDay, paymentDueDay, cardEndings),
 
                     onCreateAccount = onCreateAccount,
                     onEditAccount = onEditAccount,
@@ -220,6 +224,14 @@ fun BoxWithConstraintsScope.AccountModal(
                     isCreditCard = it
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                CardSettingRow(
+                    label = stringResource(R.string.card_endings),
+                    value = cardEndings?.replace(",", ", ") ?: stringResource(R.string.not_set),
+                    onClick = { cardEndingsModalVisible = true }
+                )
+
                 if (isCreditCard) {
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -283,7 +295,7 @@ fun BoxWithConstraintsScope.AccountModal(
                 icon = icon,
                 amount = newAmount.toBalance(isCreditCard),
                 includeInBalance = includeInBalance,
-                card = CardFields(isCreditCard, creditLimit, statementDay, paymentDueDay),
+                card = CardFields(isCreditCard, creditLimit, statementDay, paymentDueDay, cardEndings),
 
                 onCreateAccount = onCreateAccount,
                 onEditAccount = onEditAccount,
@@ -291,6 +303,12 @@ fun BoxWithConstraintsScope.AccountModal(
             )
         }
     }
+
+    CardEndingsModal(
+        visible = cardEndingsModalVisible,
+        endings = cardEndings,
+        dismiss = { cardEndingsModalVisible = false },
+    ) { cardEndings = it }
 
     AmountModal(
         id = remember(modal, creditLimit) { UUID.randomUUID() },
@@ -354,6 +372,7 @@ private fun save(
                 creditLimit = card.creditLimit.takeIf { card.isCreditCard },
                 statementDay = card.statementDay.takeIf { card.isCreditCard },
                 paymentDueDay = card.paymentDueDay.takeIf { card.isCreditCard },
+                cardEndings = card.endings,
             ),
             amount
         )
@@ -370,6 +389,7 @@ private fun save(
                 creditLimit = card.creditLimit.takeIf { card.isCreditCard },
                 statementDay = card.statementDay.takeIf { card.isCreditCard },
                 paymentDueDay = card.paymentDueDay.takeIf { card.isCreditCard },
+                cardEndings = card.endings,
             )
         )
     }
@@ -382,6 +402,7 @@ private data class CardFields(
     val creditLimit: Double?,
     val statementDay: Int?,
     val paymentDueDay: Int?,
+    val endings: String?,
 )
 
 /** Credit cards are edited as "amount owed" but stored as a negative balance. */

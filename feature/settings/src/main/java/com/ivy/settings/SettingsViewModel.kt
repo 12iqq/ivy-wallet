@@ -67,6 +67,7 @@ class SettingsViewModel @Inject constructor(
     private val showNotifications = mutableStateOf(true)
     private val hideCurrentBalance = mutableStateOf(false)
     private val hideIncome = mutableStateOf(false)
+    private val showQuickAdd = mutableStateOf(true)
     private val treatTransfersAsIncomeExpense = mutableStateOf(false)
     private val startDateOfMonth = mutableIntStateOf(1)
     private val progressState = mutableStateOf(false)
@@ -88,6 +89,7 @@ class SettingsViewModel @Inject constructor(
             startDateOfMonth = getStartDateOfMonth(),
             progressState = getProgressState(),
             hideIncome = getHideIncome(),
+            showQuickAdd = showQuickAdd.value,
             languageOptionVisible = isLanguageOptionVisible()
         )
     }
@@ -100,6 +102,7 @@ class SettingsViewModel @Inject constructor(
         initializeShowNotifications()
         initializeHideCurrentBalance()
         initializeHideIncome()
+        showQuickAdd.value = sharedPrefs.getBoolean(SharedPrefs.SHOW_QUICK_ADD, true)
         initializeTransfersAsIncomeExpense()
         initializeStartDateOfMonth()
     }
@@ -223,6 +226,11 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.SetHideIncome -> setHideIncome(
                 event.hideIncome
             )
+
+            is SettingsEvent.SetShowQuickAdd -> {
+                showQuickAdd.value = event.show
+                sharedPrefs.putBoolean(SharedPrefs.SHOW_QUICK_ADD, event.show)
+            }
 
             is SettingsEvent.SetTransfersAsIncomeExpense -> setTransfersAsIncomeExpense(
                 event.treatTransfersAsIncomeExpense

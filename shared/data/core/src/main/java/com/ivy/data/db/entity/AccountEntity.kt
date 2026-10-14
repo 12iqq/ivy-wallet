@@ -34,6 +34,9 @@ data class AccountEntity(
     val statementDay: Int? = null,
     @SerialName("paymentDueDay")
     val paymentDueDay: Int? = null,
+    // comma-separated last 4 digits of the account's cards / account numbers
+    @SerialName("cardEndings")
+    val cardEndings: String? = null,
 
     @Deprecated("Obsolete field used for cloud sync. Can't be deleted because of backwards compatibility")
     @SerialName("isSynced")

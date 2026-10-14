@@ -501,7 +501,7 @@ private fun QuickAccess(
 //        }
 
             MoreMenuButton(
-                icon = R.drawable.ic_sync,
+                icon = R.drawable.home_more_menu_auto_add,
                 label = stringResource(R.string.auto_capture_short)
             ) {
                 nav.navigateTo(AutoCaptureReviewScreen)

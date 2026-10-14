@@ -14,6 +14,7 @@ fun AccountEntity.toLegacyDomain(): Account = Account(
     creditLimit = creditLimit,
     statementDay = statementDay,
     paymentDueDay = paymentDueDay,
+    cardEndings = cardEndings,
     isSynced = isSynced,
     isDeleted = isDeleted,
     id = id

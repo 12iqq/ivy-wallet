@@ -7,6 +7,7 @@ import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.AccountType
+import com.ivy.data.model.CardEndings
 import com.ivy.data.model.CreditCardDetails
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
@@ -30,6 +31,8 @@ data class Account(
     val creditLimit: Double? = null,
     val statementDay: Int? = null,
     val paymentDueDay: Int? = null,
+    /** Comma-separated last 4 digits of this account's cards / account numbers. */
+    val cardEndings: String? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -47,6 +50,7 @@ data class Account(
         creditLimit = creditLimit,
         statementDay = statementDay,
         paymentDueDay = paymentDueDay,
+        cardEndings = CardEndings.format(CardEndings.parse(cardEndings)),
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id
@@ -76,6 +80,7 @@ data class Account(
                 } else {
                     null
                 },
+                cardEndings = CardEndings.parse(cardEndings),
             )
         }
     }

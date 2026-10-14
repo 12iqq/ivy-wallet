@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
+import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
 import com.ivy.data.model.Expense
@@ -59,13 +60,10 @@ class QuickAddViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val transactionMapper: TransactionMapper,
     private val baseCurrencyAct: BaseCurrencyAct,
+    private val sharedPrefs: SharedPrefs,
 ) : ComposeViewModel<QuickAddState, QuickAddEvent>() {
 
     private var chips by mutableStateOf<ImmutableList<QuickAddChip>>(persistentListOf())
-
-    init {
-        load()
-    }
 
     @Composable
     override fun uiState(): QuickAddState = QuickAddState(chips = chips)
@@ -84,6 +82,10 @@ class QuickAddViewModel @Inject constructor(
 
     private fun load() {
         viewModelScope.launch {
+            if (!sharedPrefs.getBoolean(SharedPrefs.SHOW_QUICK_ADD, true)) {
+                chips = persistentListOf()
+                return@launch
+            }
             val now = Instant.now()
             val history = historyTrnsAct(
                 ClosedTimeRange(from = now.minus(Duration.ofDays(LOOKBACK_DAYS)), to = now)

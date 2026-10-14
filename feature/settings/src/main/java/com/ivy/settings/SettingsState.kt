@@ -10,6 +10,7 @@ data class SettingsState(
     val showNotifications: Boolean,
     val hideCurrentBalance: Boolean,
     val hideIncome: Boolean,
+    val showQuickAdd: Boolean,
     val treatTransfersAsIncomeExpense: Boolean,
     val startDateOfMonth: String,
     val progressState: Boolean,

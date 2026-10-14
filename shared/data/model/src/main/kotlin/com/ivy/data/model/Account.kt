@@ -22,6 +22,8 @@ data class Account(
     override val orderNum: Double,
     val type: AccountType = AccountType.Regular,
     val creditCard: CreditCardDetails? = null,
+    /** Last 4 digits of the cards / account numbers that belong to this account, used to match bank SMS. */
+    val cardEndings: List<String> = emptyList(),
 ) : Identifiable<AccountId>, Reorderable {
     val isCreditCard: Boolean
         get() = type == AccountType.CreditCard

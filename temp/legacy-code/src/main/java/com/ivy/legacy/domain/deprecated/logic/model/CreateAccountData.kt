@@ -14,4 +14,5 @@ data class CreateAccountData(
     val creditLimit: Double? = null,
     val statementDay: Int? = null,
     val paymentDueDay: Int? = null,
+    val cardEndings: String? = null,
 )

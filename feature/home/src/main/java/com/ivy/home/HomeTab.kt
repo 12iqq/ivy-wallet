@@ -57,6 +57,7 @@ import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.ui.component.transaction.TransactionsDividerLine
 import com.ivy.legacy.ui.component.transaction.transactions
 import com.ivy.legacy.utils.horizontalSwipeListener
+import com.ivy.legacy.utils.onScreenStart
 import com.ivy.legacy.utils.rememberSwipeListenerState
 import com.ivy.legacy.utils.verticalSwipeListener
 import com.ivy.navigation.IvyPreview
@@ -86,6 +87,8 @@ fun BoxWithConstraintsScope.HomeTab(modifier: Modifier = Modifier) {
     val quickAddViewModel: QuickAddViewModel = screenScopedViewModel()
     val quickAddState = quickAddViewModel.uiState()
     var pickedQuickAdd by remember { mutableStateOf<QuickAddChip?>(null) }
+    // reload when coming back (new transactions, or the setting was switched off)
+    onScreenStart { quickAddViewModel.onEvent(QuickAddEvent.Refresh) }
 
     HomeUi(
         uiState = uiState,
