@@ -64,7 +64,6 @@ class SettingsViewModel @Inject constructor(
     private val name = mutableStateOf("")
     private val currentTheme = mutableStateOf<Theme>(Theme.AUTO)
     private val lockApp = mutableStateOf(false)
-    private val showNotifications = mutableStateOf(true)
     private val hideCurrentBalance = mutableStateOf(false)
     private val hideIncome = mutableStateOf(false)
     private val showQuickAdd = mutableStateOf(true)
@@ -83,7 +82,6 @@ class SettingsViewModel @Inject constructor(
             name = getName(),
             currentTheme = getCurrentTheme(),
             lockApp = getLockApp(),
-            showNotifications = getShowNotifications(),
             hideCurrentBalance = getHideCurrentBalance(),
             treatTransfersAsIncomeExpense = getTreatTransfersAsIncomeExpense(),
             startDateOfMonth = getStartDateOfMonth(),
@@ -99,7 +97,6 @@ class SettingsViewModel @Inject constructor(
         initializeName()
         initializeCurrentTheme()
         initializeLockApp()
-        initializeShowNotifications()
         initializeHideCurrentBalance()
         initializeHideIncome()
         showQuickAdd.value = sharedPrefs.getBoolean(SharedPrefs.SHOW_QUICK_ADD, true)
@@ -129,12 +126,6 @@ class SettingsViewModel @Inject constructor(
 
     private fun initializeLockApp() {
         lockApp.value = sharedPrefs.getBoolean(SharedPrefs.APP_LOCK_ENABLED, false)
-    }
-
-    private fun initializeShowNotifications() {
-        showNotifications.value = sharedPrefs.getBoolean(
-            SharedPrefs.SHOW_NOTIFICATIONS, true
-        )
     }
 
     private fun initializeHideCurrentBalance() {
@@ -177,11 +168,6 @@ class SettingsViewModel @Inject constructor(
     }
 
     @Composable
-    private fun getShowNotifications(): Boolean {
-        return showNotifications.value
-    }
-
-    @Composable
     private fun getHideCurrentBalance(): Boolean {
         return hideCurrentBalance.value
     }
@@ -218,7 +204,6 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.BackupData -> exportToZip(event.rootScreen)
             SettingsEvent.SwitchTheme -> switchTheme()
             is SettingsEvent.SetLockApp -> setLockApp(event.lockApp)
-            is SettingsEvent.SetShowNotifications -> setShowNotifications(event.showNotifications)
             is SettingsEvent.SetHideCurrentBalance -> setHideCurrentBalance(
                 event.hideCurrentBalance
             )
@@ -332,14 +317,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             sharedPrefs.putBoolean(SharedPrefs.APP_LOCK_ENABLED, lock)
             refreshWidget(WalletBalanceWidgetReceiver::class.java)
-        }
-    }
-
-    private fun setShowNotifications(notificationsShow: Boolean) {
-        showNotifications.value = notificationsShow
-
-        viewModelScope.launch {
-            sharedPrefs.putBoolean(SharedPrefs.SHOW_NOTIFICATIONS, notificationsShow)
         }
     }
 

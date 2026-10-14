@@ -17,6 +17,8 @@ data class AssistantSettings(
     /** Remind this many days before a card payment is due (and again the day before / on the day). */
     val reminderDaysBefore: Int = 3,
     val budgetAlerts: Boolean = true,
+    /** Tell the user when an automatic backup fails. */
+    val backupAlerts: Boolean = true,
     val backupFrequency: BackupFrequency = BackupFrequency.Off,
     /** content:// URI of the backup file the user picked (can live in Google Drive). */
     val backupUri: String? = null,

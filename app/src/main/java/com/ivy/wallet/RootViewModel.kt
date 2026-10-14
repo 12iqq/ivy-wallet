@@ -14,7 +14,9 @@ import com.ivy.frp.test.TestIdlingResource
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.utils.ioThread
 import com.ivy.legacy.utils.readOnly
+import com.ivy.autocapture.data.BackgroundCapture
 import com.ivy.autocapture.data.CaptureProcessor
+import com.ivy.autocapture.sms.SmsInboxScanner
 import com.ivy.navigation.AutoCaptureReviewScreen
 import com.ivy.navigation.DisclaimerScreen
 import com.ivy.navigation.EditTransactionScreen
@@ -47,6 +49,8 @@ class RootViewModel @Inject constructor(
     private val migrationsManager: MigrationsManager,
     private val legalRepo: LegalRepository,
     private val plannedPaymentsGenerator: PlannedPaymentsGenerator,
+    private val backgroundCapture: BackgroundCapture,
+    private val smsInboxScanner: SmsInboxScanner,
 ) : ViewModel() {
 
     companion object {
@@ -100,6 +104,14 @@ class RootViewModel @Inject constructor(
             migrationsManager.executeMigrations()
             // keep upcoming planned payments generated ahead of time
             ioThread { plannedPaymentsGenerator.topUpAll() }
+        }
+
+        viewModelScope.launch {
+            ioThread {
+                backgroundCapture.apply()
+                // checking bank SMS on a schedule: also pick up new ones whenever the app is opened
+                if (backgroundCapture.checksSmsOnSchedule()) smsInboxScanner.checkNew()
+            }
         }
     }
 

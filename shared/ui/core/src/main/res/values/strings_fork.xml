@@ -70,13 +70,24 @@
     <string name="import_statement">Import bank statement (CSV)</string>
     <string name="new_bank_transaction">New bank transaction</string>
     <string name="new_bank_transaction_text">%1$s %2$s at %3$s - tap to review</string>
+    <string name="new_bank_transactions">%1$d new bank transactions</string>
+    <string name="new_bank_transactions_text">Tap to review them</string>
     <string name="auto_capture_channel">Detected transactions</string>
 
     <!-- Reminders & backups -->
-    <string name="reminders_and_backups">Reminders &amp; backups</string>
-    <string name="reminders_and_backups_desc">Checked once a day in the background. Nothing runs all the time.</string>
-    <string name="reminders_and_backups_settings_desc">Card due dates, budget alerts, automatic backup</string>
     <string name="allow_notifications">Allow notifications</string>
+    <string name="notification_settings">Notifications</string>
+    <string name="notification_settings_desc">Choose which notifications you get. Reminders and alerts are checked once a day.</string>
+    <string name="notification_settings_button_desc">Choose which ones you get</string>
+    <string name="notify_detected">Detected bank transactions</string>
+    <string name="notify_detected_desc">When auto-add finds a bank SMS or Wallet payment that needs your review</string>
+    <string name="daily_reminder">\"Did you spend today?\" reminder</string>
+    <string name="daily_reminder_desc">At 8 PM, only on days you haven\'t added anything</string>
+    <string name="backup_alerts">Backup problems</string>
+    <string name="backup_alerts_desc">If an automatic backup can\'t be saved</string>
+    <string name="android_notification_settings">Sound &amp; vibration</string>
+    <string name="android_notification_settings_desc">Android\'s notification settings for this app</string>
+    <string name="auto_backup_settings_desc">Daily or weekly, to a file you choose</string>
     <string name="card_reminders">Card payment reminders</string>
     <string name="card_reminders_desc">Before a credit card payment is due, then the day before and on the day</string>
     <string name="remind_days_before">Start %1$d days before</string>
@@ -118,7 +129,14 @@
     <!-- Google Wallet notifications -->
     <string name="wallet_listener_label">Google Wallet payments</string>
     <string name="read_wallet_notifications">Google Wallet payments</string>
-    <string name="read_wallet_notifications_desc">Also catch tap-to-pay notifications from Google Wallet. Android only wakes the app when a Wallet notification arrives, so it doesn\'t drain the battery.</string>
+    <string name="read_wallet_notifications_desc">Also catch tap-to-pay notifications from Google Wallet. To see them, Android keeps the app connected in the background, which uses some battery. Bank SMS usually cover the same payments.</string>
+    <string name="read_wallet_notifications_paused">Paused while checking on a schedule: Google Wallet notifications can only be caught as they arrive.</string>
+    <string name="sms_check_title">Check for new messages</string>
+    <string name="sms_check_on_arrival">As they arrive</string>
+    <string name="sms_check_hours">Every %1$dh</string>
+    <string name="sms_check_daily">Once a day</string>
+    <string name="sms_check_on_arrival_desc">Android wakes the app for a moment whenever an SMS arrives, so transactions show up right away.</string>
+    <string name="sms_check_scheduled_desc">The app stays closed in the background. It reads new bank SMS from your inbox on this schedule, and whenever you open it.</string>
     <string name="wallet_access_needed">Allow notification access for Ivy Wallet UAE so it can see Google Wallet payments. If Android says the setting is restricted, first open App info → ⋮ → Allow restricted settings.</string>
     <string name="open_notification_access">Open notification access</string>
 

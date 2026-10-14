@@ -67,6 +67,10 @@ class TransactionReminderLogic @Inject constructor(
             )
     }
 
+    fun cancelReminder() {
+        WorkManager.getInstance(appContext).cancelUniqueWork(UNIQUE_WORK_NAME_V2)
+    }
+
     private fun fetchShowNotifications(): Boolean =
         sharedPrefs.getBoolean(SharedPrefs.SHOW_NOTIFICATIONS, true)
 }

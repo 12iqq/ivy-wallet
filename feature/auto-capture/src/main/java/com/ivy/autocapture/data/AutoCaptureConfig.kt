@@ -13,6 +13,21 @@ enum class AutoCaptureMode {
     val importsStatements: Boolean get() = this == Statement || this == Both
 }
 
+/** How new bank SMS are picked up. */
+@Serializable
+enum class SmsCheck(val hours: Int) {
+    /** Android wakes the app briefly for each incoming SMS. */
+    OnArrival(hours = 0),
+    Hourly(hours = 1),
+    Every3Hours(hours = 3),
+    Every6Hours(hours = 6),
+    Every12Hours(hours = 12),
+    Daily(hours = 24);
+
+    /** The app stays closed and reads new SMS from the inbox every [hours]. */
+    val scheduled: Boolean get() = this != OnArrival
+}
+
 /**
  * Links messages of a bank (optionally a specific card/account by its last 4 digits)
  * to an Ivy Wallet account.
@@ -41,9 +56,25 @@ data class AutoCaptureConfig(
     val learnedTitles: Map<String, String> = emptyMap(),
     /** Card endings once typed on accounts were copied into [links]. */
     val accountEndingsMoved: Boolean = false,
+    val smsCheck: SmsCheck = SmsCheck.OnArrival,
+    /** When the inbox was last read by a scheduled check. */
+    val lastSmsCheckMillis: Long? = null,
 )
 
 object CaptureLogic {
+    /** The SMS receiver only exists while new messages are picked up as they arrive. */
+    fun receivesSms(config: AutoCaptureConfig): Boolean = config.mode.readsSms && !config.smsCheck.scheduled
+
+    /** The inbox is read every few hours instead. */
+    fun checksSmsOnSchedule(config: AutoCaptureConfig): Boolean = config.mode.readsSms && config.smsCheck.scheduled
+
+    /**
+     * The Google Wallet listener only exists while it's needed. Wallet notifications can
+     * only be caught as they arrive, so they pause while SMS are checked on a schedule.
+     */
+    fun listensToWallet(config: AutoCaptureConfig): Boolean =
+        config.mode.readsSms && config.readWalletNotifications && !config.smsCheck.scheduled
+
     /**
      * Best account for a message: exact card match, then the bank's catch-all link,
      * then (if the bank has exactly one link) that one.

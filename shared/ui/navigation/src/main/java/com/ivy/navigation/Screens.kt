@@ -164,8 +164,14 @@ data object InsightsScreen : Screen {
         get() = true
 }
 
-/** Card due reminders, budget alerts and automatic backups. */
+/** Automatic backups. */
 data object AssistantSettingsScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}
+
+/** Which notifications the app may show. */
+data object NotificationSettingsScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }

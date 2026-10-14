@@ -107,7 +107,7 @@ class DailyAssistant @Inject constructor(
             Timber.e(e, "Automatic backup failed")
             val firstFailure = store.current().lastBackupError == null
             store.update { it.copy(lastBackupError = e.message ?: e.javaClass.simpleName) }
-            if (firstFailure) {
+            if (firstFailure && store.current().backupAlerts) {
                 notify(
                     id = BACKUP_NOTIFICATION_ID,
                     title = context.getString(R.string.backup_failed_title),

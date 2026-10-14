@@ -31,6 +31,7 @@ automatically from bank SMS alerts.
   - learns the category and title you pick for each merchant
   - warns about possible duplicates
   - can optionally add transactions without review
+  - checks for new messages as they arrive, or every 1–24 hours so nothing runs in the background in between
 - **Google Wallet payments** (optional): tap-to-pay notifications are captured too, and matched to your card by its
   last 4 digits. If the bank's SMS for the same purchase also arrives, it's added only once.
 - **Card payment reminders** a few days before each card's due date, then the day before and on the day.
@@ -38,6 +39,8 @@ automatically from bank SMS alerts.
 - **Budget alerts** when a budget reaches 80% and 100%.
 - **Automatic backup**, daily or weekly, to a file you choose (for example in Google Drive).
   Reminders, alerts and backups all run from one background job once a day, so the battery cost is negligible.
+- **Notification settings**: turn each kind of notification on or off (detected transactions, card reminders,
+  budget alerts, the daily "Did you spend today?" reminder, backup problems).
 - **Split payments for Tabby / Tamara**: turn a purchase into 2–12 payments. The first one is recorded now and the
   rest show up as planned payments.
 - **Quick-add shortcuts** on the home screen, learned from your own history. For example "Grocery · ~10 AED":

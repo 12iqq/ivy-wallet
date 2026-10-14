@@ -11,8 +11,10 @@ import androidx.lifecycle.viewModelScope
 import com.ivy.autocapture.data.AutoCaptureConfig
 import com.ivy.autocapture.data.AutoCaptureMode
 import com.ivy.autocapture.data.AutoCaptureSettingsStore
+import com.ivy.autocapture.data.BackgroundCapture
 import com.ivy.autocapture.data.CaptureProcessor
 import com.ivy.autocapture.data.CardLink
+import com.ivy.autocapture.data.SmsCheck
 import com.ivy.autocapture.parser.ParsedMessage
 import com.ivy.autocapture.sms.SmsInboxScanner
 import com.ivy.data.db.dao.write.CapturedTransactionDao
@@ -43,6 +45,7 @@ data class TestResult(val parsed: ParsedMessage?)
 @Suppress("DataClassTypedIDs")
 sealed interface AutoCaptureSettingsEvent {
     data class SetMode(val mode: AutoCaptureMode) : AutoCaptureSettingsEvent
+    data class SetSmsCheck(val check: SmsCheck) : AutoCaptureSettingsEvent
     data class SetBankEnabled(val bankId: String, val enabled: Boolean) : AutoCaptureSettingsEvent
     data class SetAddWithoutReview(val enabled: Boolean) : AutoCaptureSettingsEvent
     data class SetReadWalletNotifications(val enabled: Boolean) : AutoCaptureSettingsEvent
@@ -66,6 +69,7 @@ class AutoCaptureSettingsViewModel @Inject constructor(
     private val scanner: SmsInboxScanner,
     private val accountsAct: AccountsAct,
     private val capturedDao: CapturedTransactionDao,
+    private val backgroundCapture: BackgroundCapture,
 ) : ComposeViewModel<AutoCaptureSettingsState, AutoCaptureSettingsEvent>() {
 
     private var accounts by mutableStateOf<ImmutableList<Account>>(persistentListOf())
@@ -99,7 +103,22 @@ class AutoCaptureSettingsViewModel @Inject constructor(
 
     override fun onEvent(event: AutoCaptureSettingsEvent) {
         when (event) {
-            is AutoCaptureSettingsEvent.SetMode -> store.update { it.copy(mode = event.mode) }
+            is AutoCaptureSettingsEvent.SetMode -> {
+                store.update { config ->
+                    config.copy(
+                        mode = event.mode,
+                        // a schedule starts from now, it doesn't pick up older messages
+                        lastSmsCheckMillis = if (!config.mode.readsSms && event.mode.readsSms) {
+                            System.currentTimeMillis()
+                        } else {
+                            config.lastSmsCheckMillis
+                        },
+                    )
+                }
+                backgroundCapture.apply()
+            }
+
+            is AutoCaptureSettingsEvent.SetSmsCheck -> viewModelScope.launch { setSmsCheck(event.check) }
             is AutoCaptureSettingsEvent.SetBankEnabled -> store.update {
                 it.copy(
                     enabledBankIds = if (event.enabled) {
@@ -114,8 +133,9 @@ class AutoCaptureSettingsViewModel @Inject constructor(
                 it.copy(addWithoutReview = event.enabled)
             }
 
-            is AutoCaptureSettingsEvent.SetReadWalletNotifications -> store.update {
-                it.copy(readWalletNotifications = event.enabled)
+            is AutoCaptureSettingsEvent.SetReadWalletNotifications -> {
+                store.update { it.copy(readWalletNotifications = event.enabled) }
+                backgroundCapture.apply()
             }
 
             is AutoCaptureSettingsEvent.AddLink -> {
@@ -159,5 +179,25 @@ class AutoCaptureSettingsViewModel @Inject constructor(
                 scanning = false
             }
         }
+    }
+
+    private suspend fun setSmsCheck(check: SmsCheck) {
+        val previous = store.current().smsCheck
+        if (previous.scheduled && !check.scheduled) {
+            // pick up what arrived since the last scheduled check before switching
+            scanner.checkNew()
+        }
+        store.update { config ->
+            config.copy(
+                smsCheck = check,
+                // until now every SMS was picked up as it arrived
+                lastSmsCheckMillis = if (!previous.scheduled && check.scheduled) {
+                    System.currentTimeMillis()
+                } else {
+                    config.lastSmsCheckMillis
+                },
+            )
+        }
+        backgroundCapture.apply()
     }
 }

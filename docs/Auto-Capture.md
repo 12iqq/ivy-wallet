@@ -11,6 +11,17 @@ Settings → **Auto-add transactions** lets you pick how transactions get in:
 
 Nothing leaves the phone - SMS are parsed locally.
 
+**Check for new messages** decides what runs in the background (`BackgroundCapture`):
+
+| Choice | What runs |
+|--------|-----------|
+| As they arrive (default) | `BankSmsReceiver` - Android wakes the app briefly for each SMS |
+| Every 1 / 3 / 6 / 12 / 24 h | The receiver is switched off; `SmsCheckWorker` reads new SMS from the inbox on that schedule, and again whenever the app is opened |
+
+The Google Wallet listener is only enabled while *Google Wallet payments* is on and SMS are
+picked up as they arrive. Android keeps an enabled notification listener connected all the time,
+so it's switched off (not just ignored) whenever it isn't needed.
+
 ## How it works
 
 1. `BankSmsReceiver` gets every incoming SMS.

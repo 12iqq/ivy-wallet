@@ -10,6 +10,7 @@ import com.ivy.autocapture.parser.ParsedMessage
 import com.ivy.autocapture.parser.GoogleWalletPackage
 import com.ivy.autocapture.parser.UaeBanks
 import com.ivy.autocapture.parser.WalletNotifications
+import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.dao.read.AccountDao
@@ -57,6 +58,7 @@ class CaptureProcessor @Inject constructor(
     private val exchangeRatesLogic: ExchangeRatesLogic,
     private val notificationService: NotificationService,
     private val appStarter: AppStarter,
+    private val sharedPrefs: SharedPrefs,
 ) {
     private val router = BankMessageRouter()
     private val captureLock = Mutex()
@@ -350,18 +352,37 @@ class CaptureProcessor @Inject constructor(
             ?.categoryId
     }
 
+    /** One notification for what a scheduled check found that still needs a look. */
+    suspend fun notifyFound(found: List<CapturedTransactionEntity>) {
+        val waiting = found.filter { capturedDao.findById(it.id)?.status == CapturedTransactionEntity.STATUS_PENDING }
+        when {
+            waiting.size == 1 -> notifyNew(waiting.first())
+            waiting.size > 1 -> showReviewNotification(
+                title = context.getString(R.string.new_bank_transactions, waiting.size),
+                text = context.getString(R.string.new_bank_transactions_text),
+            )
+        }
+    }
+
     private fun notifyNew(captured: CapturedTransactionEntity) {
+        showReviewNotification(
+            title = context.getString(R.string.new_bank_transaction),
+            text = context.getString(
+                R.string.new_bank_transaction_text,
+                captured.currency,
+                captured.amount.format(captured.currency),
+                captured.merchant ?: UaeBanks.byId(captured.bankId)?.displayName.orEmpty()
+            ),
+        )
+    }
+
+    private fun showReviewNotification(title: String, text: String) {
+        // the user can turn these off in Settings -> Notifications
+        if (!sharedPrefs.getBoolean(SharedPrefs.NOTIFY_DETECTED_TRANSACTIONS, true)) return
         val notification = notificationService
             .defaultIvyNotification(channel = IvyNotificationChannel.AUTO_CAPTURE)
-            .setContentTitle(context.getString(R.string.new_bank_transaction))
-            .setContentText(
-                context.getString(
-                    R.string.new_bank_transaction_text,
-                    captured.currency,
-                    captured.amount.format(captured.currency),
-                    captured.merchant ?: UaeBanks.byId(captured.bankId)?.displayName.orEmpty()
-                )
-            )
+            .setContentTitle(title)
+            .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(
                 PendingIntent.getActivity(

@@ -29,9 +29,6 @@ data class AssistantSettingsState(
 )
 
 sealed interface AssistantSettingsEvent {
-    data class SetCardReminders(val enabled: Boolean) : AssistantSettingsEvent
-    data class SetReminderDaysBefore(val days: Int) : AssistantSettingsEvent
-    data class SetBudgetAlerts(val enabled: Boolean) : AssistantSettingsEvent
     data class SetBackupFrequency(val frequency: BackupFrequency) : AssistantSettingsEvent
 
     /** The user picked (or created) the backup file with the system file picker. */
@@ -57,12 +54,6 @@ class AssistantSettingsViewModel @Inject constructor(
 
     override fun onEvent(event: AssistantSettingsEvent) {
         when (event) {
-            is AssistantSettingsEvent.SetCardReminders -> store.update { it.copy(cardReminders = event.enabled) }
-            is AssistantSettingsEvent.SetReminderDaysBefore -> store.update {
-                it.copy(reminderDaysBefore = event.days.coerceIn(MIN_DAYS_BEFORE, MAX_DAYS_BEFORE))
-            }
-
-            is AssistantSettingsEvent.SetBudgetAlerts -> store.update { it.copy(budgetAlerts = event.enabled) }
             is AssistantSettingsEvent.SetBackupFrequency -> store.update {
                 it.copy(backupFrequency = event.frequency)
             }
@@ -108,10 +99,5 @@ class AssistantSettingsViewModel @Inject constructor(
         } catch (e: SecurityException) {
             Timber.w(e, "Backup location doesn't support persistent access")
         }
-    }
-
-    companion object {
-        const val MIN_DAYS_BEFORE = 2
-        const val MAX_DAYS_BEFORE = 10
     }
 }

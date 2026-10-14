@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.Composable
 import com.ivy.assistant.ui.AssistantSettingsScreenImpl
+import com.ivy.assistant.ui.NotificationSettingsScreenImpl
 import com.ivy.attributions.AttributionsScreenImpl
 import com.ivy.autocapture.ui.AutoCaptureReviewScreenImpl
 import com.ivy.autocapture.ui.AutoCaptureSettingsScreenImpl
@@ -40,6 +41,7 @@ import com.ivy.navigation.InsightsScreen
 import com.ivy.navigation.LoanDetailsScreen
 import com.ivy.navigation.LoansScreen
 import com.ivy.navigation.MainScreen
+import com.ivy.navigation.NotificationSettingsScreen
 import com.ivy.navigation.OnboardingScreen
 import com.ivy.navigation.PieChartStatisticScreen
 import com.ivy.navigation.PlannedPaymentsScreen
@@ -99,6 +101,7 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         AutoCaptureSettingsScreen -> AutoCaptureSettingsScreenImpl()
         AutoCaptureReviewScreen -> AutoCaptureReviewScreenImpl()
         AssistantSettingsScreen -> AssistantSettingsScreenImpl()
+        NotificationSettingsScreen -> NotificationSettingsScreenImpl()
         InsightsScreen -> InsightsScreenImpl()
     }
 }

@@ -39,6 +39,50 @@ class CaptureLogicTest {
     }
 
     @Test
+    fun `sms are received as they arrive by default`() {
+        val config = AutoCaptureConfig(mode = AutoCaptureMode.Sms)
+
+        CaptureLogic.receivesSms(config) shouldBe true
+        CaptureLogic.checksSmsOnSchedule(config) shouldBe false
+    }
+
+    @Test
+    fun `checking on a schedule switches the sms receiver and wallet listener off`() {
+        val config = AutoCaptureConfig(
+            mode = AutoCaptureMode.Both,
+            smsCheck = SmsCheck.Every6Hours,
+            readWalletNotifications = true,
+        )
+
+        CaptureLogic.receivesSms(config) shouldBe false
+        CaptureLogic.checksSmsOnSchedule(config) shouldBe true
+        CaptureLogic.listensToWallet(config) shouldBe false
+    }
+
+    @Test
+    fun `nothing runs in the background when auto-add doesn't read sms`() {
+        listOf(AutoCaptureMode.Off, AutoCaptureMode.Statement).forEach { mode ->
+            val config = AutoCaptureConfig(
+                mode = mode,
+                smsCheck = SmsCheck.Daily,
+                readWalletNotifications = true,
+            )
+
+            CaptureLogic.receivesSms(config) shouldBe false
+            CaptureLogic.checksSmsOnSchedule(config) shouldBe false
+            CaptureLogic.listensToWallet(config) shouldBe false
+        }
+    }
+
+    @Test
+    fun `wallet listener only runs while wallet capture is on`() {
+        val config = AutoCaptureConfig(mode = AutoCaptureMode.Sms)
+
+        CaptureLogic.listensToWallet(config) shouldBe false
+        CaptureLogic.listensToWallet(config.copy(readWalletNotifications = true)) shouldBe true
+    }
+
+    @Test
     fun `account endings move to the bank already linked to that account`() {
         val config = AutoCaptureConfig(
             enabledBankIds = setOf("dib", "adcb"),

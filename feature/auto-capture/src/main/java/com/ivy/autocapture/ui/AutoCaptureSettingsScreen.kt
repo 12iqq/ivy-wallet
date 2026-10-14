@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import com.ivy.autocapture.data.AutoCaptureMode
 import com.ivy.autocapture.data.CardLink
+import com.ivy.autocapture.data.SmsCheck
 import com.ivy.autocapture.parser.BankProfile
 import com.ivy.autocapture.parser.Direction
 import com.ivy.autocapture.parser.UaeBanks
@@ -191,6 +194,9 @@ private fun BoxWithConstraintsScope.UI(
                 }
 
                 Spacer(Modifier.height(12.dp))
+                SmsCheckCard(check = config.smsCheck) { onEvent(AutoCaptureSettingsEvent.SetSmsCheck(it)) }
+
+                Spacer(Modifier.height(12.dp))
                 SwitchRow(
                     title = stringResource(R.string.auto_add_without_review),
                     description = stringResource(R.string.auto_add_without_review_desc),
@@ -200,13 +206,19 @@ private fun BoxWithConstraintsScope.UI(
                 Spacer(Modifier.height(12.dp))
                 SwitchRow(
                     title = stringResource(R.string.read_wallet_notifications),
-                    description = stringResource(R.string.read_wallet_notifications_desc),
+                    description = stringResource(
+                        if (config.smsCheck.scheduled) {
+                            R.string.read_wallet_notifications_paused
+                        } else {
+                            R.string.read_wallet_notifications_desc
+                        }
+                    ),
                     checked = config.readWalletNotifications,
                 ) { onEvent(AutoCaptureSettingsEvent.SetReadWalletNotifications(it)) }
 
                 // re-checked whenever the screen state refreshes (e.g. coming back from Android settings)
                 val walletAccess = remember(state) { context.hasNotificationAccess() }
-                if (config.readWalletNotifications && !walletAccess) {
+                if (config.readWalletNotifications && !config.smsCheck.scheduled && !walletAccess) {
                     Spacer(Modifier.height(8.dp))
                     InfoCard(text = stringResource(R.string.wallet_access_needed)) {
                         IvyButton(
@@ -375,6 +387,51 @@ private fun SwitchRow(
         }
         Spacer(Modifier.width(12.dp))
         IvySwitch(enabled = checked) { onCheckedChange(it) }
+    }
+}
+
+/** As messages arrive (instant) or every few hours (the app stays closed in between). */
+@Composable
+private fun SmsCheckCard(check: SmsCheck, onChange: (SmsCheck) -> Unit) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .border(2.dp, UI.colors.medium, UI.shapes.r4)
+            .padding(vertical = 16.dp)
+    ) {
+        Text(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            text = stringResource(R.string.sms_check_title),
+            style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+            SmsCheck.entries.forEach { option ->
+                OptionChip(
+                    text = when (option) {
+                        SmsCheck.OnArrival -> stringResource(R.string.sms_check_on_arrival)
+                        SmsCheck.Daily -> stringResource(R.string.sms_check_daily)
+                        else -> stringResource(R.string.sms_check_hours, option.hours)
+                    },
+                    selected = option == check,
+                ) { onChange(option) }
+                Spacer(Modifier.width(8.dp))
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            text = stringResource(
+                if (check.scheduled) R.string.sms_check_scheduled_desc else R.string.sms_check_on_arrival_desc
+            ),
+            style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Medium)
+        )
     }
 }
 

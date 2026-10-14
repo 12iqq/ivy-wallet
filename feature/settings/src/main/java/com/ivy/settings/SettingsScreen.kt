@@ -52,6 +52,7 @@ import com.ivy.navigation.AutoCaptureSettingsScreen
 import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
 import com.ivy.navigation.ImportScreen
+import com.ivy.navigation.NotificationSettingsScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
@@ -85,7 +86,6 @@ fun BoxWithConstraintsScope.SettingsScreen() {
             viewModel.onEvent(SettingsEvent.SwitchTheme)
         },
         lockApp = uiState.lockApp,
-        showNotifications = uiState.showNotifications,
         hideCurrentBalance = uiState.hideCurrentBalance,
         hideIncome = uiState.hideIncome,
         showQuickAdd = uiState.showQuickAdd,
@@ -108,9 +108,6 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         },
         onSetLockApp = {
             viewModel.onEvent(SettingsEvent.SetLockApp(it))
-        },
-        onSetShowNotifications = {
-            viewModel.onEvent(SettingsEvent.SetShowNotifications(it))
         },
         onSetHideCurrentBalance = {
             viewModel.onEvent(SettingsEvent.SetHideCurrentBalance(it))
@@ -151,7 +148,6 @@ private fun BoxWithConstraintsScope.UI(
     languageOptionVisible: Boolean,
     onSetCurrency: (String) -> Unit,
     startDateOfMonth: Int = 1,
-    showNotifications: Boolean = true,
     hideCurrentBalance: Boolean = false,
     hideIncome: Boolean = false,
     showQuickAdd: Boolean = true,
@@ -161,7 +157,6 @@ private fun BoxWithConstraintsScope.UI(
     onBackupData: () -> Unit = {},
     onExportToCSV: () -> Unit = {},
     onSetLockApp: (Boolean) -> Unit = {},
-    onSetShowNotifications: (Boolean) -> Unit = {},
     onSetTreatTransfersAsIncExp: (Boolean) -> Unit = {},
     onSetHideCurrentBalance: (Boolean) -> Unit = {},
     onSetHideIncome: (Boolean) -> Unit = {},
@@ -283,9 +278,10 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
 
             SettingsDefaultButton(
-                icon = R.drawable.ic_notification_m,
-                text = stringResource(R.string.reminders_and_backups),
-                description = stringResource(R.string.reminders_and_backups_settings_desc),
+                icon = R.drawable.ic_vue_security_shield,
+                text = stringResource(R.string.auto_backup),
+                description = stringResource(R.string.auto_backup_settings_desc),
+                iconPadding = 8.dp
             ) {
                 nav.navigateTo(AssistantSettingsScreen)
             }
@@ -356,12 +352,13 @@ private fun BoxWithConstraintsScope.UI(
 
             Spacer(Modifier.height(12.dp))
 
-            AppSwitch(
-                lockApp = showNotifications,
-                onSetLockApp = onSetShowNotifications,
-                text = stringResource(R.string.show_notifications),
-                icon = R.drawable.ic_notification_m
-            )
+            SettingsDefaultButton(
+                icon = R.drawable.ic_notification_m,
+                text = stringResource(R.string.notification_settings),
+                description = stringResource(R.string.notification_settings_button_desc),
+            ) {
+                nav.navigateTo(NotificationSettingsScreen)
+            }
 
             Spacer(Modifier.height(12.dp))
 

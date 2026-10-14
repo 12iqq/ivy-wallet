@@ -26,6 +26,7 @@ class SharedPrefs @Inject constructor(
         const val HIDE_INCOME = "hide_income"
         const val TRANSFERS_AS_INCOME_EXPENSE = "transfers_as_inc_exp"
         const val SHOW_QUICK_ADD = "show_quick_add"
+        const val NOTIFY_DETECTED_TRANSACTIONS = "notify_detected_transactions"
         // ----------------------------- App Settings -----------------------------------------------
 
         // -------------------------------- Customer Journey ----------------------------------------
