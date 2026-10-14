@@ -101,15 +101,9 @@
     <string name="installment_summary">%1$d payments of about %2$s · last one on %3$s</string>
 
     <!-- Insights -->
-    <string name="insights">Insights</string>
-    <string name="detailed_report">Report</string>
+    <string name="detailed_report">Detailed</string>
     <string name="income_vs_spending">Income vs spending</string>
     <string name="net_worth">Total balance over time</string>
-    <string name="this_month_vs_last">This month vs last month</string>
-    <string name="spent_this_month">Spent this month</string>
-    <string name="last_month_value">Last month: %1$s</string>
-    <string name="average_month">Average month</string>
-    <string name="average_month_footnote">Spending, last 11 months</string>
 
     <!-- Google Wallet notifications -->
     <string name="wallet_listener_label">Google Wallet payments</string>
@@ -126,4 +120,27 @@
     <!-- Card endings -->
     <string name="card_endings">Card / account ending</string>
     <string name="card_endings_desc">The last 4 digits of the cards and account numbers that belong to this account, separated by commas. Bank SMS mentioning them are added to this account automatically.</string>
+
+    <!-- Reports -->
+    <string name="report_total">Total</string>
+    <string name="report_transactions">Transactions</string>
+    <string name="this_month">This month</string>
+    <string name="last_month">Last month</string>
+    <string name="n_transactions">%1$d transactions</string>
+    <string name="show_more">Show more</string>
+    <string name="by_category">By category</string>
+    <string name="spending_pace">Through the month</string>
+    <string name="by_month">By month</string>
+    <string name="top_places">Where it went</string>
+    <string name="top_sources">Where it came from</string>
+    <string name="past_months">Past months</string>
+    <string name="month_short">Month</string>
+    <string name="year_short">Year</string>
+    <string name="total_spent">Total spent</string>
+    <string name="total_received">Total received</string>
+    <string name="show_all_categories">All categories ✕</string>
+    <string name="change_up_vs_previous">▲ %1$d%% vs previous period (%2$s)</string>
+    <string name="change_down_vs_previous">▼ %1$d%% vs previous period (%2$s)</string>
+    <string name="daily_average_and_count">%1$s a day on average · %2$d transactions</string>
+    <string name="nothing_in_this_period">Nothing here for this period.</string>
 </resources>

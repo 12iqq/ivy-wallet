@@ -6,12 +6,17 @@ import java.time.YearMonth
 enum class FlowKind { Income, Expense }
 
 /** An income or expense, already converted to the base currency. */
-@Suppress("DataClassTypedIDs")
+@Suppress("DataClassTypedIDs", "DataClassDefaultValues")
 data class FlowRecord(
     val date: LocalDate,
     val kind: FlowKind,
     val amount: Double,
     val categoryId: String?,
+    val title: String? = null,
+    /** Transaction id, so a report row can open the transaction. */
+    val id: String? = null,
+    /** For ordering transactions within the same day. */
+    val epochMillis: Long = 0,
 )
 
 /** A change to the total balance (net worth) on [date]. */
