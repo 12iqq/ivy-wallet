@@ -75,12 +75,12 @@ class NotificationSettingsViewModel @Inject constructor(
             }
 
             is NotificationSettingsEvent.SetBudgetAlerts -> store.update { it.copy(budgetAlerts = event.enabled) }
-            is NotificationSettingsEvent.SetDailyReminder -> setDailyReminder(event.enabled)
+            is NotificationSettingsEvent.SetDailyReminder -> updateDailyReminder(event.enabled)
             is NotificationSettingsEvent.SetBackupAlerts -> store.update { it.copy(backupAlerts = event.enabled) }
         }
     }
 
-    private fun setDailyReminder(enabled: Boolean) {
+    private fun updateDailyReminder(enabled: Boolean) {
         dailyReminder = enabled
         sharedPrefs.putBoolean(SharedPrefs.SHOW_NOTIFICATIONS, enabled)
         // switched off = no background job at all, not just a silent one
