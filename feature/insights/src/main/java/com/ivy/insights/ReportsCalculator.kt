@@ -11,8 +11,6 @@ data class ReportPeriod(
     val start: LocalDate,
     val end: LocalDate,
 ) {
-    operator fun contains(date: LocalDate): Boolean = !date.isBefore(start) && !date.isAfter(end)
-
     companion object {
         fun month(month: YearMonth): ReportPeriod = ReportPeriod(month.atDay(1), month.atEndOfMonth())
         fun year(year: Int): ReportPeriod {
@@ -21,6 +19,8 @@ data class ReportPeriod(
         }
     }
 }
+
+operator fun ReportPeriod.contains(date: LocalDate): Boolean = !date.isBefore(start) && !date.isAfter(end)
 
 data class ReportSummary(
     val total: Double,

@@ -34,6 +34,7 @@ import java.time.ZoneId
 import javax.inject.Inject
 
 /** A category slice ready to draw: [name] is null for "no category". */
+@Suppress("DataClassTypedIDs")
 @Immutable
 data class CategorySlice(
     val key: String,
@@ -45,6 +46,7 @@ data class CategorySlice(
 )
 
 /** A transaction row in the report. */
+@Suppress("DataClassTypedIDs")
 @Immutable
 data class ReportRow(
     val id: String?,
