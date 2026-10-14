@@ -321,6 +321,10 @@ class FakeTransactionDao : TransactionDao, WriteTransactionDao {
         items.removeIf { it.accountId == accountId }
     }
 
+    override suspend fun deleteUnpaidTransfersTo(accountId: UUID) {
+        items.removeIf { it.toAccountId == accountId && it.dateTime == null }
+    }
+
     override suspend fun deleteAll() {
         items.clear()
     }

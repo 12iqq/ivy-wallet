@@ -32,6 +32,8 @@ data class ReviewItem(
     val category: Category?,
     val title: String?,
     val possibleDuplicate: Boolean,
+    /** Foreign currency without an exchange rate yet: adding would use a wrong amount. */
+    val missingRate: Boolean,
 )
 
 @Immutable
@@ -95,7 +97,10 @@ class AutoCaptureReviewViewModel @Inject constructor(
             }
 
             AutoCaptureReviewEvent.AddAll -> viewModelScope.launch {
-                items.filter { it.account != null && !it.possibleDuplicate }.forEach { add(it) }
+                items.filter { it.account != null && !it.possibleDuplicate && !it.missingRate }.forEach {
+                    // re-check: an item added a moment ago may duplicate this one (SMS + Wallet)
+                    if (!processor.isPossibleDuplicate(it.captured)) add(it)
+                }
             }
 
             is AutoCaptureReviewEvent.SetAccount -> {
@@ -144,10 +149,11 @@ class AutoCaptureReviewViewModel @Inject constructor(
         val categoriesNow = categories.ifEmpty {
             categoryRepository.findAll().toImmutableList().also { categories = it }
         }
+        val account = chosenAccounts[id] ?: accountsNow.firstOrNull { it.id == accountId }
         return ReviewItem(
             captured = this,
             bankName = UaeBanks.byId(bankId)?.displayName ?: bankId,
-            account = chosenAccounts[id] ?: accountsNow.firstOrNull { it.id == accountId },
+            account = account,
             category = if (chosenCategories.containsKey(id)) {
                 chosenCategories[id]
             } else {
@@ -155,6 +161,7 @@ class AutoCaptureReviewViewModel @Inject constructor(
             },
             title = chosenTitles[id] ?: merchant,
             possibleDuplicate = processor.isPossibleDuplicate(this),
+            missingRate = processor.missingRate(this, account?.id),
         )
     }
 }

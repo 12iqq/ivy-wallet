@@ -3,7 +3,6 @@ package com.ivy.wallet.domain.deprecated.logic.notification
 import android.app.PendingIntent
 import android.content.Context
 import androidx.core.app.NotificationCompat
-import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.ivy.base.legacy.SharedPrefs
@@ -16,22 +15,44 @@ import com.ivy.legacy.utils.atEndOfDay
 import com.ivy.ui.R
 import com.ivy.wallet.android.notification.IvyNotificationChannel
 import com.ivy.wallet.android.notification.NotificationService
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@HiltWorker
-class TransactionReminderWorker @AssistedInject constructor(
-    @Assisted appContext: Context,
-    @Assisted params: WorkerParameters,
-    private val transactionDao: TransactionDao,
-    private val notificationService: NotificationService,
-    private val sharedPrefs: SharedPrefs,
-    private val appStarter: AppStarter,
-    private val timeProvider: TimeProvider,
-    private val timeConverter: TimeConverter,
+/**
+ * Daily "don't forget to log today's transactions" reminder.
+ *
+ * Dependencies come from a Hilt entry point: the project doesn't run the androidx
+ * hilt-compiler, so an @HiltWorker could never be created (the reminder silently failed).
+ */
+class TransactionReminderWorker(
+    appContext: Context,
+    params: WorkerParameters,
 ) : CoroutineWorker(appContext, params) {
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface Deps {
+        fun transactionDao(): TransactionDao
+        fun notificationService(): NotificationService
+        fun sharedPrefs(): SharedPrefs
+        fun appStarter(): AppStarter
+        fun timeProvider(): TimeProvider
+        fun timeConverter(): TimeConverter
+    }
+
+    private val deps: Deps by lazy {
+        EntryPointAccessors.fromApplication(applicationContext, Deps::class.java)
+    }
+    private val transactionDao: TransactionDao get() = deps.transactionDao()
+    private val notificationService: NotificationService get() = deps.notificationService()
+    private val sharedPrefs: SharedPrefs get() = deps.sharedPrefs()
+    private val appStarter: AppStarter get() = deps.appStarter()
+    private val timeProvider: TimeProvider get() = deps.timeProvider()
+    private val timeConverter: TimeConverter get() = deps.timeConverter()
 
     companion object {
         const val MINIMUM_TRANSACTIONS_PER_DAY = 1
@@ -56,7 +77,7 @@ class TransactionReminderWorker @AssistedInject constructor(
                     channel = IvyNotificationChannel.TRANSACTION_REMINDER,
                     priority = NotificationCompat.PRIORITY_HIGH
                 )
-                .setContentTitle("Ivy Wallet")
+                .setContentTitle(applicationContext.getString(R.string.app_display_name))
                 .setContentText(randomText())
                 .setContentIntent(
                     PendingIntent.getActivity(

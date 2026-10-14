@@ -140,7 +140,7 @@ private fun BoxWithConstraintsScope.UI(
         Spacer(Modifier.width(20.dp))
         CloseButton { nav.back() }
         Spacer(Modifier.weight(1f))
-        if (state.items.any { it.account != null && !it.possibleDuplicate }) {
+        if (state.items.any { it.account != null && !it.possibleDuplicate && !it.missingRate }) {
             IvyButton(
                 text = stringResource(R.string.add_all),
                 iconStart = R.drawable.ic_check,
@@ -266,6 +266,14 @@ private fun CapturedCard(
             )
         }
 
+        if (item.missingRate) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.missing_exchange_rate, captured.currency),
+                style = UI.typo.c.style(color = Red, fontWeight = FontWeight.Bold)
+            )
+        }
+
         if (showRaw) {
             Spacer(Modifier.height(10.dp))
             Text(
@@ -291,7 +299,7 @@ private fun CapturedCard(
             IvyButton(
                 text = stringResource(R.string.add),
                 iconStart = R.drawable.ic_check,
-                enabled = item.account != null,
+                enabled = item.account != null && !item.missingRate,
             ) { onAdd() }
         }
     }

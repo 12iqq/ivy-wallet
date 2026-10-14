@@ -197,4 +197,23 @@ class BankMessageParserTest {
         router.bankFor("ADCBAlerts", allBanks)?.id shouldBe "adcb"
         router.bankFor("adib", allBanks)?.id shouldBe "adib"
     }
+
+    @Test
+    fun `thank you for a bill payment is still a debit`() {
+        val parsed = GenericMessageParser.parse(
+            UaeBanks.DIB,
+            "Thank you. Your payment of AED 300.00 to DEWA from account XXXX1234 has been processed."
+        )!!
+        parsed.direction shouldBe Direction.Debit
+        parsed.amount shouldBe 300.0
+    }
+
+    @Test
+    fun `thank you for your card payment is a credit`() {
+        val parsed = GenericMessageParser.parse(
+            UaeBanks.EIB,
+            "Thank you for your payment of AED 1,500.00 towards your credit card ending 4321."
+        )!!
+        parsed.direction shouldBe Direction.Credit
+    }
 }

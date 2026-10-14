@@ -87,11 +87,19 @@ object GenericMessageParser {
         "inward remittance", "incoming transfer",
     )
 
+    private val thankYouForPayment = listOf(
+        "thank you for your payment",
+        "thank you for the payment",
+        "thanks for your payment",
+    )
+
     private val debitPhrases = listOf(
         "purchase", "purchased", "spent", "used for", "used at", "was used", "paid",
         "debited", "withdrawn", "withdrawal", "transaction of", "trxn", "txn of", "trx of",
         "charged", "payment to", "transfer to", "transferred to", "sent to", "pos ",
         "atm", "bill payment", "direct debit",
+        // "payment of ... received" is handled as a credit before these are checked
+        "payment of",
     )
 
     private val balanceKeywords = Regex(
@@ -184,8 +192,10 @@ object GenericMessageParser {
     }
 
     fun direction(lower: String): Direction? {
+        // "Payment of AED 2,000 received towards your card" / "Thank you for your payment"
+        // but not "Thank you. Your payment of AED 300 to DEWA has been processed"
         val paymentReceived = (lower.contains("payment") || lower.contains("paid")) &&
-            (lower.contains("received") || lower.contains("thank you"))
+            (lower.contains("received") || thankYouForPayment.any { lower.contains(it) })
         if (paymentReceived) return Direction.Credit
 
         val creditIndex = creditFirstPhrases

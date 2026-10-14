@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -196,8 +197,11 @@ class InsightsViewModel @Inject constructor(
                 val zone = ZoneId.systemDefault()
                 val flows = mutableListOf<FlowRecord>()
                 val balanceDeltas = mutableListOf<BalanceDelta>()
+                val now = Instant.now()
                 transactions.forEach { trn ->
                     val date = trn.time.atZone(zone).toLocalDate()
+                    // like account balances: future-dated transactions don't count yet
+                    val countsForBalance = !trn.time.isAfter(now)
                     fun record(kind: FlowKind, amount: Double): FlowRecord = FlowRecord(
                         date = date,
                         kind = kind,
@@ -211,7 +215,7 @@ class InsightsViewModel @Inject constructor(
                         is Income -> {
                             val amount = toBase(trn.value.amount.value, trn.value.asset.code)
                             flows += record(FlowKind.Income, amount)
-                            if (accounts[trn.account]?.includeInBalance != false) {
+                            if (countsForBalance && accounts[trn.account]?.includeInBalance != false) {
                                 balanceDeltas += BalanceDelta(date, amount)
                             }
                         }
@@ -219,18 +223,18 @@ class InsightsViewModel @Inject constructor(
                         is Expense -> {
                             val amount = toBase(trn.value.amount.value, trn.value.asset.code)
                             flows += record(FlowKind.Expense, amount)
-                            if (accounts[trn.account]?.includeInBalance != false) {
+                            if (countsForBalance && accounts[trn.account]?.includeInBalance != false) {
                                 balanceDeltas += BalanceDelta(date, -amount)
                             }
                         }
 
                         is Transfer -> {
                             // moving money between counted accounts doesn't change the total
-                            if (accounts[trn.fromAccount]?.includeInBalance != false) {
+                            if (countsForBalance && accounts[trn.fromAccount]?.includeInBalance != false) {
                                 val amount = toBase(trn.fromValue.amount.value, trn.fromValue.asset.code)
                                 balanceDeltas += BalanceDelta(date, -amount)
                             }
-                            if (accounts[trn.toAccount]?.includeInBalance != false) {
+                            if (countsForBalance && accounts[trn.toAccount]?.includeInBalance != false) {
                                 val amount = toBase(trn.toValue.amount.value, trn.toValue.asset.code)
                                 balanceDeltas += BalanceDelta(date, amount)
                             }

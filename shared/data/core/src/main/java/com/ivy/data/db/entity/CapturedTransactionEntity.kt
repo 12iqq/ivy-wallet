@@ -44,6 +44,9 @@ data class CapturedTransactionEntity(
     companion object {
         const val STATUS_PENDING = "PENDING"
         const val STATUS_ADDED = "ADDED"
+
+        /** Being turned into a transaction right now. */
+        const val STATUS_ADDING = "ADDING"
         const val STATUS_DISMISSED = "DISMISSED"
 
         const val SOURCE_SMS = "SMS"

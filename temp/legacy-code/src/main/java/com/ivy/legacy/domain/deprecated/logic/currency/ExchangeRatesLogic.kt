@@ -99,6 +99,16 @@ class ExchangeRatesLogic @Inject constructor(
         return amountBaseCurrency * exchangeRate(baseCurrency = baseCurrency, currency = toCurrency)
     }
 
+    /** false when converting [fromCurrency] to [toCurrency] would silently use a made-up 1:1 rate. */
+    suspend fun canConvert(baseCurrency: String, fromCurrency: String, toCurrency: String): Boolean {
+        if (fromCurrency.equals(toCurrency, ignoreCase = true)) return true
+        return listOf(fromCurrency, toCurrency)
+            .filterNot { it.equals(baseCurrency, ignoreCase = true) }
+            .all { currency ->
+                (exchangeRatesDao.findByBaseCurrencyAndCurrency(baseCurrency, currency)?.rate ?: 0.0) > 0
+            }
+    }
+
     /**
      * base = BGN, currency = EUR => rate = 0.51
      */

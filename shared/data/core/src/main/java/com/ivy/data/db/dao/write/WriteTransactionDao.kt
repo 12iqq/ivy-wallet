@@ -23,6 +23,10 @@ interface WriteTransactionDao {
     @Query("DELETE FROM transactions WHERE accountId = :accountId")
     suspend fun deleteAllByAccountId(accountId: UUID)
 
+    /** Upcoming (unpaid) transfers into an account that's being deleted. */
+    @Query("DELETE FROM transactions WHERE toAccountId = :accountId AND dateTime IS NULL")
+    suspend fun deleteUnpaidTransfersTo(accountId: UUID)
+
     @Query("DELETE FROM transactions")
     suspend fun deleteAll()
 }

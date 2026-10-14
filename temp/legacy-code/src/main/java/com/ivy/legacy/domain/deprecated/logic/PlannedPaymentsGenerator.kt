@@ -57,13 +57,17 @@ class PlannedPaymentsGenerator @Inject constructor(
      * the existing ones. Safe to call repeatedly.
      */
     suspend fun topUpAll() {
-        plannedPaymentRuleDao.findAll().forEach { entity ->
-            try {
-                fill(entity.toLegacyDomain())
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to top-up planned payment ${entity.id}")
+        plannedPaymentRuleDao.findAll()
+            // one-time rules get their single payment when they're created; re-creating it here
+            // would bring back a payment the user deleted
+            .filterNot { it.oneTime }
+            .forEach { entity ->
+                try {
+                    fill(entity.toLegacyDomain())
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to top-up planned payment ${entity.id}")
+                }
             }
-        }
     }
 
     private suspend fun fill(rule: PlannedPaymentRule) {

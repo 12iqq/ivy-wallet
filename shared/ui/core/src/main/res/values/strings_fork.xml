@@ -143,4 +143,5 @@
     <string name="change_down_vs_previous">▼ %1$d%% vs previous period (%2$s)</string>
     <string name="daily_average_and_count">%1$s a day on average · %2$d transactions</string>
     <string name="nothing_in_this_period">Nothing here for this period.</string>
+    <string name="missing_exchange_rate">No %1$s exchange rate yet, so the amount can\'t be converted. Add one in Settings → Exchange rates, or pick an account in that currency.</string>
 </resources>

@@ -4,10 +4,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.app.NotificationManagerCompat
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.backup.BackupDataUseCase
+import com.ivy.data.db.dao.write.CapturedTransactionDao
 import com.ivy.data.model.Expense
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.temp.migration.getAccountId
@@ -32,6 +34,7 @@ import com.ivy.wallet.domain.pure.exchange.ExchangeData
 import com.ivy.wallet.domain.pure.transaction.trnCurrency
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -62,19 +65,25 @@ class DailyAssistant @Inject constructor(
     private val backupDataUseCase: BackupDataUseCase,
     private val notificationService: NotificationService,
     private val appStarter: AppStarter,
+    private val capturedDao: CapturedTransactionDao,
 ) {
 
     suspend fun runDailyChecks() {
         val today = LocalDate.now(ZoneId.systemDefault())
         store.update { it.copy(sentKeys = ReminderRules.pruneKeys(it.sentKeys, today)) }
         val settings = store.current()
+        // a reminder is only marked as sent when it can actually be shown
+        val canNotify = NotificationManagerCompat.from(context).areNotificationsEnabled()
 
-        if (settings.cardReminders) {
+        if (settings.cardReminders && canNotify) {
             runCatching { checkCards(today, settings) }.onFailure { Timber.e(it, "Card reminders failed") }
         }
-        if (settings.budgetAlerts) {
+        if (settings.budgetAlerts && canNotify) {
             runCatching { checkBudgets() }.onFailure { Timber.e(it, "Budget alerts failed") }
         }
+        // forget auto-captured items that were added / skipped long ago
+        runCatching { capturedDao.deleteHandledBefore(Instant.now().minus(CAPTURED_HISTORY)) }
+            .onFailure { Timber.e(it, "Captured cleanup failed") }
         if (ReminderRules.isBackupDue(
                 now = Instant.now(),
                 lastBackup = settings.lastBackupAtMillis?.let(Instant::ofEpochMilli),
@@ -234,5 +243,6 @@ class DailyAssistant @Inject constructor(
         const val CARD_NOTIFICATION_BASE = 5200
         const val BUDGET_NOTIFICATION_BASE = 5400
         const val NOTIFICATION_SPREAD = 100
+        val CAPTURED_HISTORY: Duration = Duration.ofDays(90)
     }
 }

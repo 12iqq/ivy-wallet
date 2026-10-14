@@ -28,7 +28,10 @@ import com.ivy.wallet.android.notification.IvyNotificationChannel
 import com.ivy.wallet.android.notification.NotificationService
 import com.ivy.wallet.domain.deprecated.logic.currency.ExchangeRatesLogic
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import java.math.RoundingMode
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -56,6 +59,7 @@ class CaptureProcessor @Inject constructor(
     private val appStarter: AppStarter,
 ) {
     private val router = BankMessageRouter()
+    private val captureLock = Mutex()
 
     /**
      * Parses without saving anything - used by "Test a message" in settings.
@@ -83,18 +87,24 @@ class CaptureProcessor @Inject constructor(
 
         val parsed = router.parse(sender, body, config.enabledBankIds, config.extraSenders)
             ?: return null
-        // already captured from Google Wallet's notification
-        if (reportedBy(CapturedTransactionEntity.SOURCE_NOTIFICATION, parsed.amount, receivedAt)) return null
 
-        return capture(
-            sender = sender,
-            body = body,
-            receivedAt = receivedAt,
-            source = source,
-            notify = notify,
-            parsed = parsed,
-            linkedAccountId = CaptureLogic.linkedAccountId(config.links, parsed.bankId, parsed.last4),
-        )
+        // SMS and Wallet notifications arrive on different threads: check-and-save one at a time
+        return captureLock.withLock {
+            // already captured from Google Wallet's notification
+            if (reportedBy(CapturedTransactionEntity.SOURCE_NOTIFICATION, parsed, receivedAt)) {
+                null
+            } else {
+                capture(
+                    sender = sender,
+                    body = body,
+                    receivedAt = receivedAt,
+                    source = source,
+                    notify = notify,
+                    parsed = parsed,
+                    linkedAccountId = CaptureLogic.linkedAccountId(config.links, parsed.bankId, parsed.last4),
+                )
+            }
+        }
     }
 
     /**
@@ -110,27 +120,35 @@ class CaptureProcessor @Inject constructor(
         if (config.mode == AutoCaptureMode.Off || !config.readWalletNotifications) return null
         val body = WalletNotifications.toMessage(title, text) ?: return null
         val parsed = WalletNotifications.parse(title, text) ?: return null
-        if (reportedBy(CapturedTransactionEntity.SOURCE_SMS, parsed.amount, postedAt)) return null
 
-        return capture(
-            sender = GoogleWalletPackage,
-            body = body,
-            receivedAt = postedAt,
-            source = CapturedTransactionEntity.SOURCE_NOTIFICATION,
-            notify = true,
-            parsed = parsed,
-            linkedAccountId = CaptureLogic.linkedAccountIdByLast4(config.links, parsed.last4),
-        )
+        return captureLock.withLock {
+            if (reportedBy(CapturedTransactionEntity.SOURCE_SMS, parsed, postedAt)) {
+                null
+            } else {
+                capture(
+                    sender = GoogleWalletPackage,
+                    body = body,
+                    receivedAt = postedAt,
+                    source = CapturedTransactionEntity.SOURCE_NOTIFICATION,
+                    notify = true,
+                    parsed = parsed,
+                    linkedAccountId = CaptureLogic.linkedAccountIdByLast4(config.links, parsed.last4),
+                )
+            }
+        }
     }
 
     /** An account whose "card / account number ending" (set when editing the account) matches. */
     private suspend fun accountWithEnding(last4: String): UUID? =
         accountDao.findAll().firstOrNull { last4 in CardEndings.parse(it.cardEndings) }?.id
 
-    private suspend fun reportedBy(source: String, amount: Double, at: Instant): Boolean =
+    /** The same purchase (amount, currency and card when known) already came in from [source]. */
+    private suspend fun reportedBy(source: String, parsed: ParsedMessage, at: Instant): Boolean =
         capturedDao.countFromSourceBetween(
             source = source,
-            amount = amount,
+            amount = parsed.amount,
+            currency = parsed.currency,
+            last4 = parsed.last4,
             from = at.minus(SAME_PURCHASE_WINDOW),
             to = at.plus(SAME_PURCHASE_WINDOW),
         ) > 0
@@ -147,13 +165,22 @@ class CaptureProcessor @Inject constructor(
     ): CapturedTransactionEntity? {
         val config = settingsStore.current()
         val fingerprint = CaptureLogic.fingerprint(sender, body)
-        if (capturedDao.countByFingerprint(fingerprint) > 0) return null
+        // Wallet texts have no date or balance, so an identical one later is a new purchase;
+        // bank SMS are only re-delivered / re-scanned within a short time
+        val window = if (source == CapturedTransactionEntity.SOURCE_NOTIFICATION) {
+            SAME_NOTIFICATION_WINDOW
+        } else {
+            SAME_MESSAGE_WINDOW
+        }
+        if (capturedDao.countByFingerprintBetween(fingerprint, receivedAt.minus(window), receivedAt.plus(window)) > 0) {
+            return null
+        }
 
         val accountId = linkedAccountId
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?.takeIf { accountDao.findById(it) != null }
             ?: parsed.last4?.let { accountWithEnding(it) }
-        val merchantKey = parsed.merchant?.let(CaptureLogic::merchantKey)
+        val merchantKey = parsed.merchant?.let(CaptureLogic::merchantKey)?.takeIf { it.isNotBlank() }
         val categoryId = merchantKey?.let { config.learnedCategories[it] }
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
             ?: parsed.merchant?.let { suggestCategoryFromHistory(it) }
@@ -178,9 +205,9 @@ class CaptureProcessor @Inject constructor(
         )
         capturedDao.save(captured)
 
-        if (config.addWithoutReview && accountId != null && !isPossibleDuplicate(captured)) {
-            add(captured, accountId = accountId, categoryId = categoryId, title = null)
-        } else if (notify) {
+        val addedRightAway = config.addWithoutReview && accountId != null && !isPossibleDuplicate(captured) &&
+            add(captured, accountId = accountId, categoryId = categoryId, title = null) != null
+        if (!addedRightAway && notify) {
             notifyNew(captured)
         }
         return captured
@@ -199,6 +226,10 @@ class CaptureProcessor @Inject constructor(
         val account = accountDao.findById(accountId) ?: return null
         val baseCurrency = settingsDao.findFirst().currency
         val accountCurrency = account.currency ?: baseCurrency
+        // without a rate the amount would be copied 1:1 (USD 100 -> AED 100): keep it for review
+        if (!exchangeRatesLogic.canConvert(baseCurrency, captured.currency, accountCurrency)) return null
+        // a double tap or "Add all" twice must not create two transactions
+        if (capturedDao.claimPending(captured.id, CapturedTransactionEntity.STATUS_ADDING) == 0) return null
         val amount = if (captured.currency.equals(accountCurrency, ignoreCase = true)) {
             captured.amount
         } else {
@@ -207,10 +238,10 @@ class CaptureProcessor @Inject constructor(
                 amount = captured.amount,
                 fromCurrency = captured.currency,
                 toCurrency = accountCurrency
-            )
+            ).toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
         }
         val config = settingsStore.current()
-        val merchantKey = captured.merchant?.let(CaptureLogic::merchantKey)
+        val merchantKey = captured.merchant?.let(CaptureLogic::merchantKey)?.takeIf { it.isNotBlank() }
         val finalTitle = title?.takeIf { it.isNotBlank() }
             ?: merchantKey?.let { config.learnedTitles[it] }
             ?: captured.merchant
@@ -225,41 +256,63 @@ class CaptureProcessor @Inject constructor(
         }
 
         val transactionId = UUID.randomUUID()
-        val saved = Transaction(
-            accountId = accountId,
-            type = captured.type,
-            amount = amount.toBigDecimal(),
-            title = finalTitle,
-            description = description,
-            dateTime = captured.receivedAt,
-            categoryId = categoryId,
-            isSynced = false,
-            id = transactionId,
-        ).toDomain(transactionMapper)?.let {
-            transactionRepository.save(it)
-            true
-        } ?: false
+        // the item is claimed now: whatever happens, don't leave it stuck as "adding"
+        val saved = runCatching {
+            Transaction(
+                accountId = accountId,
+                type = captured.type,
+                amount = amount.toBigDecimal(),
+                title = finalTitle,
+                description = description,
+                dateTime = captured.receivedAt,
+                categoryId = categoryId,
+                isSynced = false,
+                id = transactionId,
+            ).toDomain(transactionMapper)?.let {
+                transactionRepository.save(it)
+                true
+            } ?: false
+        }.getOrElse {
+            Timber.e(it, "Saving captured ${captured.id} failed")
+            false
+        }
         if (!saved) {
             Timber.e("Couldn't create transaction from captured ${captured.id}")
+            capturedDao.updateStatus(captured.id, CapturedTransactionEntity.STATUS_PENDING, null)
             return null
         }
 
         capturedDao.updateStatus(captured.id, CapturedTransactionEntity.STATUS_ADDED, transactionId)
-        if (merchantKey != null) {
-            settingsStore.update { cfg ->
-                cfg.copy(
-                    learnedCategories = categoryId?.let {
-                        cfg.learnedCategories + (merchantKey to it.toString())
-                    } ?: cfg.learnedCategories,
-                    learnedTitles = if (title != null && title.isNotBlank() && title != captured.merchant) {
-                        cfg.learnedTitles + (merchantKey to title)
-                    } else {
-                        cfg.learnedTitles
-                    }
-                )
-            }
-        }
+        if (merchantKey != null) rememberChoices(merchantKey, captured, categoryId, title)
         return transactionId
+    }
+
+    /** Next time this merchant shows up, suggest the same category and title. */
+    private fun rememberChoices(
+        merchantKey: String,
+        captured: CapturedTransactionEntity,
+        categoryId: UUID?,
+        title: String?,
+    ) {
+        settingsStore.update { cfg ->
+            cfg.copy(
+                learnedCategories = categoryId?.let {
+                    cfg.learnedCategories + (merchantKey to it.toString())
+                } ?: cfg.learnedCategories,
+                learnedTitles = if (title != null && title.isNotBlank() && title != captured.merchant) {
+                    cfg.learnedTitles + (merchantKey to title)
+                } else {
+                    cfg.learnedTitles
+                }
+            )
+        }
+    }
+
+    /** true when the item is in a foreign currency and there's no exchange rate to convert it yet. */
+    suspend fun missingRate(captured: CapturedTransactionEntity, accountId: UUID?): Boolean {
+        val account = accountId?.let { accountDao.findById(it) } ?: return false
+        val baseCurrency = settingsDao.findFirst().currency
+        return !exchangeRatesLogic.canConvert(baseCurrency, captured.currency, account.currency ?: baseCurrency)
     }
 
     suspend fun dismiss(capturedId: UUID) {
@@ -317,6 +370,8 @@ class CaptureProcessor @Inject constructor(
         const val EXTRA_OPEN_REVIEW = "open_auto_capture_review"
         private const val NOTIFICATION_ID = 4242
         private val SAME_PURCHASE_WINDOW: Duration = Duration.ofMinutes(15)
+        private val SAME_NOTIFICATION_WINDOW: Duration = Duration.ofMinutes(2)
+        private val SAME_MESSAGE_WINDOW: Duration = Duration.ofDays(1)
         private const val REVIEW_REQUEST_CODE = 4243
     }
 }

@@ -282,6 +282,7 @@ class TransactionRepository @Inject constructor(
     suspend fun deleteAllByAccountId(accountId: AccountId) {
         withContext(dispatchersProvider.io) {
             writeTransactionDao.deleteAllByAccountId(accountId.value)
+            writeTransactionDao.deleteUnpaidTransfersTo(accountId.value)
         }
     }
 
