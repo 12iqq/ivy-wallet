@@ -17,7 +17,12 @@ Nothing leaves the phone - SMS are parsed locally.
 2. `BankMessageRouter` finds the bank by sender id (only banks you selected).
 3. `GenericMessageParser` extracts amount, currency, merchant, card last 4 digits,
    debit/credit and ignores OTPs, declines, reminders and promos.
-4. `CaptureProcessor` links it to an Ivy account (Settings → bank → *Link card*),
+4. `CaptureProcessor` links it to an Ivy account: first a link made in
+   Settings → Auto-add → bank → *Link card*, otherwise the account whose
+   *Card / account ending* (edit the account) contains the message's last 4 digits.
+   Google Wallet notifications (optional, `WalletNotificationListener`) go
+   through the same steps; a purchase seen in both an SMS and a Wallet
+   notification within 15 minutes is captured once. It then
    suggests a category (learned from your choices and your past transactions),
    flags possible duplicates of what you already entered manually and saves it
    for review (or adds it straight away if *Add without review* is on).

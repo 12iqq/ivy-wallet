@@ -42,8 +42,11 @@ automatically from bank SMS alerts.
   rest show up as planned payments.
 - **Quick-add shortcuts** on the home screen, learned from your own history. For example "Grocery · ~10 AED":
   tap it, confirm the amount, done.
-- **Insights** with charts: income vs spending per month, total balance over time, and this month vs last month by
-  category.
+- **Reports** (Cashew-style, in Ivy's look): month or year view, spending or income, a category donut you can tap
+  to filter everything, spending pace vs last month, top places, the transactions behind the numbers, past months,
+  and total balance over time.
+- **Card / account endings** on each account (the last 4 digits), so bank SMS land in the right account
+  automatically.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
   CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
 - A cleaner Settings screen, without the original project's community, share and rating links.
@@ -52,8 +55,8 @@ Your existing Ivy Wallet backups (`.zip`) import as-is.
 
 ## Install
 
-1. Open the latest successful [APK workflow run](https://github.com/12iqq/ivy-wallet/actions/workflows/apk.yml) and download
-   the `Ivy-Wallet-Demo.apk` artifact. You need to be signed in to GitHub.
+1. Download the APK from the latest [release](https://github.com/12iqq/ivy-wallet/releases/latest)
+   (`IvyWalletUAE-vX.Y.Z.apk`). Newer versions install over older ones and keep your data.
 2. Android's Play Protect may block the install because the app isn't from the Play Store. Choose **More details →
    Install anyway**. If there's no such option, temporarily turn off **Play Store → Play Protect → ⚙ → Scan apps with
    Play Protect**, then turn it back on afterwards.
@@ -67,6 +70,12 @@ Your existing Ivy Wallet backups (`.zip`) import as-is.
 - The latest stable Android Studio
 
 Clone the repo, open it in Android Studio, and run the `app` configuration. Use `./gradlew assembleDemo` for a debug APK.
+
+### Publishing a release
+
+Bump `version-name` (and `version-code`) in `gradle/libs.versions.toml` and push to `main`. The **Release** workflow
+builds the APK and publishes it on the Releases page. Notes are taken from `docs/release-notes/v<version>.md` if it
+exists, otherwise from the commit messages.
 Contribution guidelines from the original project are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Tech Stack
