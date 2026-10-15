@@ -5,6 +5,8 @@ on:
     branches:
       - main
   pull_request:
+  # lets checks be re-run on main without a new commit
+  workflow_dispatch:
 
 jobs:
   integration_test:
