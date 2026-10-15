@@ -115,6 +115,8 @@ fun BoxWithConstraintsScope.EditBottomSheet(
     modifier: Modifier = Modifier, // Modifier comes after other parameters
     convertedAmount: Double? = null,
     convertedAmountCurrencyCode: String? = null,
+    // shown under the amount of a transfer, e.g. what a credit card still owes
+    transferNote: (@Composable () -> Unit)? = null,
 ) {
     val rootView = LocalView.current
     var keyboardShown by remember { mutableStateOf(false) }
@@ -245,6 +247,11 @@ fun BoxWithConstraintsScope.EditBottomSheet(
                 internalExpanded = true
             },
         )
+
+        if (type == TransactionType.TRANSFER && transferNote != null) {
+            Spacer(Modifier.height(12.dp))
+            transferNote()
+        }
 
         val lastSpacer = lerp(20f, 8f, percentCollapsed)
         if (lastSpacer > 0) {

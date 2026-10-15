@@ -48,7 +48,6 @@ import com.ivy.legacy.ui.component.edit.TransactionDateTime
 import com.ivy.legacy.ui.component.edit.core.Description
 import com.ivy.legacy.ui.component.tags.AddTagButton
 import com.ivy.legacy.ui.component.tags.ShowTagModal
-import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.EditTransactionScreen
@@ -68,7 +67,6 @@ import com.ivy.wallet.ui.edit.core.Toolbar
 import com.ivy.wallet.ui.theme.components.AddPrimaryAttributeButton
 import com.ivy.wallet.ui.theme.components.ChangeTransactionTypeModal
 import com.ivy.wallet.ui.theme.components.CustomExchangeRateCard
-import com.ivy.wallet.ui.theme.components.IvyOutlinedButton
 import com.ivy.wallet.ui.theme.modal.DeleteModal
 import com.ivy.wallet.ui.theme.modal.ModalAdd
 import com.ivy.wallet.ui.theme.modal.ModalCheck
@@ -350,17 +348,21 @@ private fun BoxWithConstraintsScope.UI(
 
         Spacer(Modifier.height(32.dp))
 
-        Category(category = category, onChooseCategory = {
-            chooseCategoryModalVisible = true
-        })
+        // paying off a credit card is just moving money: no category or tags to fill in
+        val cardPayment = transactionType == TransactionType.TRANSFER && toAccount?.isCreditCard == true
+        if (!cardPayment) {
+            Category(category = category, onChooseCategory = {
+                chooseCategoryModalVisible = true
+            })
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-        AddTagButton(transactionAssociatedTags = transactionAssociatedTags, onClick = {
-            tagModelVisible = true
-        })
+            AddTagButton(transactionAssociatedTags = transactionAssociatedTags, onClick = {
+                tagModelVisible = true
+            })
 
-        Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(32.dp))
+        }
 
         val ivyContext = ivyWalletCtx()
 
@@ -419,19 +421,6 @@ private fun BoxWithConstraintsScope.UI(
             }
         }
 
-        if (transactionType == TransactionType.TRANSFER && cardPayoff != null) {
-            Spacer(Modifier.height(12.dp))
-            IvyOutlinedButton(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                text = stringResource(
-                    R.string.pay_off_card,
-                    "${cardPayoff.owed.format(cardPayoff.currency)} ${cardPayoff.currency}"
-                ),
-                iconStart = R.drawable.ic_vue_money_card_send,
-                onClick = onPayOffCard,
-            )
-        }
-
         if (dueDate == null && transactionType != TransactionType.TRANSFER && dateTime == null) {
             Spacer(Modifier.height(12.dp))
 
@@ -474,6 +463,18 @@ private fun BoxWithConstraintsScope.UI(
         amount = amount,
         currency = baseCurrency,
         convertedAmount = customExchangeRateState.convertedAmount,
+        transferNote = if (transactionType == TransactionType.TRANSFER && cardPayoff != null) {
+            {
+                CardPaymentNote(
+                    payoff = cardPayoff,
+                    paying = customExchangeRateState.convertedAmount
+                        ?.takeIf { customExchangeRateState.showCard } ?: amount,
+                    onPayAll = onPayOffCard,
+                )
+            }
+        } else {
+            null
+        },
         convertedAmountCurrencyCode = customExchangeRateState.toCurrencyCode,
 
         ActionButton = {
