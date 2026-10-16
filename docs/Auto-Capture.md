@@ -66,3 +66,21 @@ numbers). For the next message from the same shop, `CaptureProcessor` takes the 
 category of your most recent transaction with matching bank details, so renaming one anywhere
 in the app (review screen or transaction editor) teaches it. The first time, the title is the
 bank's name made readable (`MerchantNames.tidy`: `Galadari Ice Cream`).
+
+## To do: understand what a message means
+
+The parser only decides *money out or money in*, from keywords. OTPs, declines, offers and
+reminders that use a known phrase ("is due on", "minimum payment", "statement is ready") are
+skipped, but:
+
+- **Transfers between your own accounts** become two entries. The bank side ("AED 1,000
+  transferred to your card ending 1234") is added as a spend, and the card side ("Payment of
+  AED 1,000 received") as income. It should be one transfer: pair the two messages by amount
+  and time, or by the card ending linked to the other account.
+- **Payment-due reminders with other wording** are added as spends, e.g. "Your card payment of
+  AED 500 is due by 25/10" ("payment of" reads as a purchase).
+
+Plan: sort each message into a kind first (purchase, refund, money received, transfer between
+your accounts, card payment, reminder or statement, information only) and only then parse it.
+Purchases, refunds and money received become transactions; transfers and card payments become
+one transfer; reminders and statements update the card's due date and amount instead.
