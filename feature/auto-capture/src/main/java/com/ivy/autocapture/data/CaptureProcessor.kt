@@ -319,7 +319,7 @@ class CaptureProcessor @Inject constructor(
         ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
         ?.takeIf { accountDao.findById(it) != null }
 
-    private fun CapturedTransactionEntity.asTransfer(from: UUID, to: UUID) = copy(
+    private fun CapturedTransactionEntity.asTransfer(from: UUID, to: UUID): CapturedTransactionEntity = copy(
         type = TransactionType.TRANSFER,
         accountId = from,
         toAccountId = to,
