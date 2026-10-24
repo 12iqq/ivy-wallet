@@ -235,7 +235,8 @@ private fun CapturedCard(
 
         Spacer(Modifier.height(8.dp))
 
-        val isExpense = captured.type == TransactionType.EXPENSE
+        // a joined transfer switched off is money leaving its first account
+        val isExpense = captured.type != TransactionType.INCOME
         val sign = when {
             item.isTransfer -> ""
             isExpense -> "-"

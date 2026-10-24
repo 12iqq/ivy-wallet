@@ -355,7 +355,12 @@ class CaptureProcessor @Inject constructor(
         // a double tap or "Add all" twice must not create two transactions
         if (capturedDao.claimPending(captured.id, CapturedTransactionEntity.STATUS_ADDING) == 0) return null
         val amount = convert(captured.amount, captured.currency, accountCurrency, baseCurrency)
-        val type = if (toAccount != null) TransactionType.TRANSFER else captured.type
+        val type = when {
+            toAccount != null -> TransactionType.TRANSFER
+            // a joined transfer you said isn't one: money left the account
+            captured.type == TransactionType.TRANSFER -> TransactionType.EXPENSE
+            else -> captured.type
+        }
         // a transfer doesn't need a name; anything else gets the one you used last time
         val finalTitle = title?.takeIf { it.isNotBlank() } ?: suggestedTitle(captured).takeIf { toAccount == null }
 
