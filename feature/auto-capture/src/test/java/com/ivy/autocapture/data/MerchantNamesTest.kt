@@ -26,6 +26,36 @@ class MerchantNamesTest {
     }
 
     @Test
+    fun `key ignores the payment processor in front of the shop`() {
+        MerchantNames.key("TAP*Keeta") shouldBe "keeta"
+        MerchantNames.key("MYF*KEETA") shouldBe "keeta"
+        MerchantNames.key("WL *STEAM PURCHASE") shouldBe "steam purchase"
+        // a short name ending in * is the shop itself
+        MerchantNames.key("TABB*") shouldBe "tabb"
+    }
+
+    @Test
+    fun `same shop when one name is cut shorter`() {
+        MerchantNames.sameShop("emarat atrium", "emarat atrium stor") shouldBe true
+        MerchantNames.sameShop("emarat atrium stor", "emarat atrium") shouldBe true
+        MerchantNames.sameShop("keeta", "keeta") shouldBe true
+        MerchantNames.sameShop("amazon", "amazon now") shouldBe false
+        MerchantNames.sameShop("nesto center", "nesto hyper market") shouldBe false
+    }
+
+    @Test
+    fun `your own title names the shop`() {
+        MerchantNames.titleMatch("Nesto", MerchantNames.key("NESTO CENTER LLC")!!) shouldBe 5
+        (MerchantNames.titleMatch("Baybites", MerchantNames.key("BAY BITES RESTAURANT")!!) > 0) shouldBe true
+        MerchantNames.titleMatch("Keeta", MerchantNames.key("TAP*Keeta")!!) shouldBe 5
+        val amazonNow = MerchantNames.key("AMAZON NOW,DUBAI")!!
+        val amazonNowScore = MerchantNames.titleMatch("Amazon Now", amazonNow)
+        (amazonNowScore > MerchantNames.titleMatch("Amazon", amazonNow)) shouldBe true
+        MerchantNames.titleMatch("City Center", MerchantNames.key("CITY FARMS HPMKT LLC")!!) shouldBe 0
+        MerchantNames.titleMatch("Dad", MerchantNames.key("DADA STORE")!!) shouldBe 0
+    }
+
+    @Test
     fun `no key without latin letters`() {
         MerchantNames.key("١٢٣") shouldBe null
         MerchantNames.key(null) shouldBe null
@@ -39,6 +69,12 @@ class MerchantNamesTest {
         MerchantNames.tidy("BAB DIJAL CAFETERIA") shouldBe "Bab Dijal Cafeteria"
         MerchantNames.tidy("BASKIN-ROBBINS DUBAI MALL") shouldBe "Baskin-Robbins Dubai Mall"
         MerchantNames.tidy("ENOC 1023") shouldBe "Enoc"
+    }
+
+    @Test
+    fun `tidy drops the payment processor`() {
+        MerchantNames.tidy("TAP*Keeta") shouldBe "Keeta"
+        MerchantNames.tidy("MYF*KEETA") shouldBe "Keeta"
     }
 
     @Test

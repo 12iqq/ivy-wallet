@@ -1,7 +1,12 @@
 package com.ivy.autocapture.data
 
+import com.ivy.base.model.TransactionType
+import com.ivy.data.db.entity.CapturedTransactionEntity
 import io.kotest.matchers.shouldBe
 import org.junit.Test
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 
 class CaptureLogicTest {
 
@@ -128,5 +133,120 @@ class CaptureLogicTest {
     @Test
     fun `same message gives the same fingerprint`() {
         CaptureLogic.fingerprint("ADCB", "text ") shouldBe CaptureLogic.fingerprint("adcb", "text")
+    }
+
+    private val bank = UUID.randomUUID()
+    private val card = UUID.randomUUID()
+    private val wallet = UUID.randomUUID()
+    private val noon = Instant.parse("2026-09-08T08:00:00Z")
+
+    @Suppress("LongParameterList")
+    private fun captured(
+        type: TransactionType,
+        account: UUID?,
+        amount: Double,
+        at: Instant,
+        isTransfer: Boolean = false,
+        status: String = CapturedTransactionEntity.STATUS_PENDING,
+        toAccount: UUID? = null,
+    ) = CapturedTransactionEntity(
+        source = CapturedTransactionEntity.SOURCE_SMS,
+        sender = "bank",
+        rawText = "",
+        bankId = "bank",
+        type = type,
+        amount = amount,
+        currency = "AED",
+        merchant = null,
+        last4 = null,
+        isCreditCard = null,
+        receivedAt = at,
+        accountId = account,
+        categoryId = null,
+        status = status,
+        transactionId = null,
+        fingerprint = UUID.randomUUID().toString(),
+        toAccountId = toAccount,
+        isTransfer = isTransfer,
+    )
+
+    @Test
+    fun `card payment joins the card's payment received`() {
+        val fromBank = captured(TransactionType.EXPENSE, bank, 1627.21, noon, isTransfer = true)
+        val atCard = captured(TransactionType.INCOME, card, 1627.21, noon.plusSeconds(360), isTransfer = true)
+
+        CaptureLogic.otherHalf(atCard, listOf(fromBank)) shouldBe fromBank
+        CaptureLogic.transferAccounts(atCard, fromBank) shouldBe (bank to card)
+        // either order
+        CaptureLogic.transferAccounts(fromBank, atCard) shouldBe (bank to card)
+    }
+
+    @Test
+    fun `card confirmation a day later still joins`() {
+        val fromBank = captured(TransactionType.EXPENSE, bank, 289.96, noon, isTransfer = true)
+        val atCard = captured(TransactionType.INCOME, card, 289.96, noon.plus(Duration.ofHours(25)), isTransfer = true)
+
+        CaptureLogic.otherHalf(atCard, listOf(fromBank)) shouldBe fromBank
+    }
+
+    @Test
+    fun `top-up joins the plain card charge for it`() {
+        val charge = captured(
+            TransactionType.EXPENSE,
+            bank,
+            500.0,
+            noon,
+            status = CapturedTransactionEntity.STATUS_ADDED
+        )
+        val topUp = captured(TransactionType.INCOME, wallet, 500.0, noon.plusSeconds(4000), isTransfer = true)
+
+        CaptureLogic.otherHalf(topUp, listOf(charge)) shouldBe charge
+        CaptureLogic.transferAccounts(topUp, charge) shouldBe (bank to wallet)
+    }
+
+    @Test
+    fun `charge after a top-up already made a transfer is its other end`() {
+        val transfer = captured(TransactionType.TRANSFER, bank, 500.0, noon, isTransfer = true, toAccount = wallet)
+        val charge = captured(TransactionType.EXPENSE, bank, 500.0, noon.plusSeconds(4000))
+
+        CaptureLogic.otherHalf(charge, listOf(transfer)) shouldBe transfer
+        // but a charge of the same amount days later is a new purchase
+        CaptureLogic.otherHalf(charge.copy(receivedAt = noon.plus(Duration.ofDays(2))), listOf(transfer)) shouldBe null
+    }
+
+    @Test
+    fun `ordinary spending and income never join`() {
+        val spend = captured(TransactionType.EXPENSE, bank, 50.0, noon)
+        val income = captured(TransactionType.INCOME, wallet, 50.0, noon.plusSeconds(60))
+
+        CaptureLogic.otherHalf(income, listOf(spend)) shouldBe null
+    }
+
+    @Test
+    fun `no join on the same account, a different amount or a handled message`() {
+        val atCard = captured(TransactionType.INCOME, card, 100.0, noon, isTransfer = true)
+
+        val sameAccount = captured(TransactionType.EXPENSE, card, 100.0, noon, isTransfer = true)
+        CaptureLogic.otherHalf(atCard, listOf(sameAccount)) shouldBe null
+        val otherAmount = captured(TransactionType.EXPENSE, bank, 99.0, noon, isTransfer = true)
+        CaptureLogic.otherHalf(atCard, listOf(otherAmount)) shouldBe null
+        val skipped = captured(
+            TransactionType.EXPENSE,
+            bank,
+            100.0,
+            noon,
+            isTransfer = true,
+            status = CapturedTransactionEntity.STATUS_DISMISSED
+        )
+        CaptureLogic.otherHalf(atCard, listOf(skipped)) shouldBe null
+    }
+
+    @Test
+    fun `the closest message wins`() {
+        val near = captured(TransactionType.EXPENSE, bank, 500.0, noon.minusSeconds(600), isTransfer = true)
+        val far = captured(TransactionType.EXPENSE, bank, 500.0, noon.minus(Duration.ofDays(2)), isTransfer = true)
+        val atCard = captured(TransactionType.INCOME, card, 500.0, noon, isTransfer = true)
+
+        CaptureLogic.otherHalf(atCard, listOf(far, near)) shouldBe near
     }
 }

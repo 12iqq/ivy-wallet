@@ -1,6 +1,7 @@
 package com.ivy.data.db.entity
 
 import androidx.annotation.Keep
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.ivy.base.model.TransactionType
@@ -30,7 +31,7 @@ data class CapturedTransactionEntity(
     val last4: String?,
     val isCreditCard: Boolean?,
     val receivedAt: Instant,
-    /** Suggested account (from the card/account mapping) */
+    /** Suggested account (from the card/account mapping); for a TRANSFER, where the money left */
     val accountId: UUID?,
     /** Suggested category (learned from previous transactions) */
     val categoryId: UUID?,
@@ -40,6 +41,11 @@ data class CapturedTransactionEntity(
     val transactionId: UUID?,
     /** Used to drop duplicates of the same message */
     val fingerprint: String,
+    /** For a TRANSFER: the account the money reached */
+    val toAccountId: UUID? = null,
+    /** The message reads as money moving between your own accounts (a card payment, a top-up) */
+    @ColumnInfo(defaultValue = "0")
+    val isTransfer: Boolean = false,
 ) {
     companion object {
         const val STATUS_PENDING = "PENDING"
@@ -48,6 +54,9 @@ data class CapturedTransactionEntity(
         /** Being turned into a transaction right now. */
         const val STATUS_ADDING = "ADDING"
         const val STATUS_DISMISSED = "DISMISSED"
+
+        /** The other message about a transfer that's already captured: kept only to know it was seen. */
+        const val STATUS_MERGED = "MERGED"
 
         const val SOURCE_SMS = "SMS"
         const val SOURCE_NOTIFICATION = "NOTIFICATION"

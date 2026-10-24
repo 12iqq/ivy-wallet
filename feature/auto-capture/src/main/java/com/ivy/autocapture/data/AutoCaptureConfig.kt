@@ -1,6 +1,11 @@
 package com.ivy.autocapture.data
 
+import com.ivy.base.model.TransactionType
+import com.ivy.data.db.entity.CapturedTransactionEntity
 import kotlinx.serialization.Serializable
+import java.time.Duration
+import java.util.UUID
+import kotlin.math.abs
 
 @Serializable
 enum class AutoCaptureMode {
@@ -59,7 +64,21 @@ data class AutoCaptureConfig(
     val lastSmsCheckMillis: Long? = null,
 )
 
+@Suppress("TooManyFunctions")
 object CaptureLogic {
+    private const val AmountTolerance = 0.01
+
+    /** A card payment can be confirmed by the card a day after the bank sent it. */
+    private val TransferWindow: Duration = Duration.ofDays(3)
+
+    /** A plain card charge only joins a transfer it's close to (a top-up's charge comes within the hour). */
+    private val ChargeWindow: Duration = Duration.ofHours(6)
+
+    private val PairableStatuses = setOf(
+        CapturedTransactionEntity.STATUS_PENDING,
+        CapturedTransactionEntity.STATUS_ADDED,
+    )
+
     /** The SMS receiver only exists while new messages are picked up as they arrive. */
     fun receivesSms(config: AutoCaptureConfig): Boolean = config.mode.readsSms && !config.smsCheck.scheduled
 
@@ -106,6 +125,50 @@ object CaptureLogic {
             .filterNot { new -> config.links.any { it.bankId == new.bankId && it.last4 == new.last4 } }
             .distinctBy { it.bankId to it.last4 }
         return config.copy(links = config.links + newLinks, accountEndingsMoved = true)
+    }
+
+    /**
+     * The earlier message about the same money as [new] when it moved between two of your
+     * accounts: the bank's "card payment" and the card's "payment received", or a wallet top-up
+     * and the card charge for it. Same amount, the other direction, another of your accounts,
+     * and one of the two reads as a transfer.
+     */
+    fun otherHalf(new: CapturedTransactionEntity, recent: List<CapturedTransactionEntity>): CapturedTransactionEntity? {
+        val accountId = new.accountId ?: return null
+        return recent
+            .filter { it.id != new.id && it.status in PairableStatuses }
+            .filter { abs(it.amount - new.amount) < AmountTolerance }
+            .filter { it.currency.equals(new.currency, ignoreCase = true) }
+            .filter { other ->
+                if (other.type == TransactionType.TRANSFER) {
+                    // already a transfer: this message must be its other end
+                    val end = if (new.type == TransactionType.EXPENSE) other.accountId else other.toAccountId
+                    end == accountId
+                } else {
+                    other.type != new.type && other.accountId != null && other.accountId != accountId &&
+                        (new.isTransfer || other.isTransfer)
+                }
+            }
+            .filter { other -> apart(other, new) <= pairingWindow(new, other) }
+            .minByOrNull { apart(it, new) }
+    }
+
+    private fun pairingWindow(new: CapturedTransactionEntity, other: CapturedTransactionEntity): Duration {
+        val readsAsTransfer = new.isTransfer || other.type != TransactionType.TRANSFER && other.isTransfer
+        return if (readsAsTransfer) TransferWindow else ChargeWindow
+    }
+
+    private fun apart(a: CapturedTransactionEntity, b: CapturedTransactionEntity): Duration =
+        Duration.between(a.receivedAt, b.receivedAt).abs()
+
+    /** From the account the money left to the one it reached, for [new] and its [other] half. */
+    fun transferAccounts(new: CapturedTransactionEntity, other: CapturedTransactionEntity): Pair<UUID, UUID>? {
+        val (from, to) = when {
+            other.type == TransactionType.TRANSFER -> other.accountId to other.toAccountId
+            new.type == TransactionType.EXPENSE -> new.accountId to other.accountId
+            else -> other.accountId to new.accountId
+        }
+        return if (from != null && to != null && from != to) from to to else null
     }
 
     /** Identifies the same message (banks sometimes deliver an SMS twice). */

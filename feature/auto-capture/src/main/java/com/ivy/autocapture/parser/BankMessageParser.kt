@@ -16,7 +16,7 @@ enum class Direction {
     Credit,
 }
 
-@Suppress("DataClassTypedIDs")
+@Suppress("DataClassTypedIDs", "DataClassDefaultValues")
 data class ParsedMessage(
     val bankId: String,
     val direction: Direction,
@@ -28,17 +28,24 @@ data class ParsedMessage(
     /** true = credit card, false = debit card / account, null = unknown. */
     val isCreditCard: Boolean?,
     val availableBalance: Double?,
+    /** Money moving between your own accounts (a card payment, a wallet top-up), not spending or income. */
+    val isTransfer: Boolean = false,
+    /** For a transfer: last 4 digits of your other card or account, e.g. the card a wallet was topped up from. */
+    val otherLast4: String? = null,
 )
 
 /**
  * A custom regex for banks whose wording the generic parser can't handle.
- * Named groups: `amount` (required), `currency`, `merchant`, `last4`.
+ * Named groups: `amount` (required), `currency`, `merchant`, `last4`, and `other` for
+ * [ParsedMessage.otherLast4].
  */
 @Suppress("DataClassDefaultValues")
 data class MessagePattern(
     val regex: Regex,
     val direction: Direction,
     val isCreditCard: Boolean? = null,
+    /** See [ParsedMessage.isTransfer]. */
+    val isTransfer: Boolean = false,
 )
 
 @Suppress("DataClassDefaultValues", "DataClassTypedIDs")
@@ -51,6 +58,8 @@ data class BankProfile(
     /** Text the bank uses in messages that are never transactions. */
     val ignorePhrases: List<String> = emptyList(),
     val defaultCurrency: String = "AED",
+    /** Only [patterns] are transactions: anything else from this sender is not. */
+    val patternsOnly: Boolean = false,
 )
 
 @Suppress("ReturnCount", "MagicNumber", "MaxLineLength", "MaximumLineLength")
@@ -60,8 +69,9 @@ object GenericMessageParser {
     private const val CURRENCIES =
         "AED|USD|EUR|GBP|SAR|QAR|OMR|KWD|BHD|INR|PKR|PHP|EGP|JOD|CAD|AUD|CHF|JPY|CNY|TRY|THB|SGD|LKR|NPR|BDT|Dhs|DHS|Dh|AE"
 
+    // "AED 25.00", "AED25.00", "Dhs. 25", "AED: 25.00"
     private val amountAfterCurrency = Regex(
-        """(?<![A-Za-z])($CURRENCIES)\.?\s*([0-9][0-9,]*(?:\.[0-9]{1,3})?)""",
+        """(?<![A-Za-z])($CURRENCIES)[.:]?\s*([0-9][0-9,]*(?:\.[0-9]{1,3})?)""",
         RegexOption.IGNORE_CASE
     )
     private val amountBeforeCurrency = Regex(
@@ -76,6 +86,9 @@ object GenericMessageParser {
         "was rejected", "has been blocked", "will be debited", "is due on",
         "minimum payment", "min. payment", "min payment", "statement is ready",
         "statement has been generated", "pre-approved", "apply now", "offer",
+        // reminders, statements and payments still waiting for approval
+        "is due by", "due date", "billing alert", "will be charged", "complete your", "confirm it in",
+        "needs your confirmation", "under review",
     )
 
     private val creditFirstPhrases = listOf(
@@ -95,7 +108,7 @@ object GenericMessageParser {
 
     private val debitPhrases = listOf(
         "purchase", "purchased", "spent", "used for", "used at", "was used", "paid",
-        "debited", "withdrawn", "withdrawal", "transaction of", "trxn", "txn of", "trx of",
+        "debited", "drawn from", "withdrawn", "withdrawal", "transaction of", "trxn", "txn of", "trx of",
         "charged", "payment to", "transfer to", "transferred to", "sent to", "pos ",
         "atm", "bill payment", "direct debit",
         // "payment of ... received" is handled as a credit before these are checked
@@ -126,10 +139,12 @@ object GenericMessageParser {
         RegexOption.IGNORE_CASE
     )
 
+    // inside a lookahead so candidates can overlap: when "to the value of AED 1.00 made at SHOP"
+    // is rejected, "at SHOP" inside it is still tried
     private val merchantRegex = Regex(
-        """\b(?:at|@|to|from|merchant[:\s])\s+([A-Za-z0-9][A-Za-z0-9 &'*.,\-_/]{1,60}?)""" +
+        """\b(?=(?:at|@|to|from|merchant[:\s])\s+([A-Za-z0-9][A-Za-z0-9 &'*.,\-_/]{1,60}?)""" +
             """(?=\s+on\s|\s+was\s|\s+is\s|\s+has\s|\s+dated|\s+date|\s+using|\s+with|\s+via|\s+by\s|\s+for\s|\s+avl|\s+avail|\s+bal|""" +
-            """\s+ref|\s+txn|\.\s|\.$|;|\s+-\s|\s{2,}|\s+\d{1,2}[/\-]|$)""",
+            """\s+ref|\s+txn|\.\s|\.$|;|\s+-\s|\s{2,}|\s+\d{1,2}[/\-]|$))""",
         RegexOption.IGNORE_CASE
     )
 
@@ -142,6 +157,7 @@ object GenericMessageParser {
         profile.patterns.forEach { pattern ->
             parseWithPattern(profile, pattern, text)?.let { return it }
         }
+        if (profile.patternsOnly) return null
 
         val direction = direction(lower) ?: return null
         val (amount, currency) = transactionAmount(text, profile.defaultCurrency) ?: return null
@@ -156,6 +172,9 @@ object GenericMessageParser {
             last4 = last4Regex.find(text)?.groupValues?.get(1),
             isCreditCard = isCreditCard(lower),
             availableBalance = availableBalance(text),
+            // "Payment of AED 2,000 received towards your credit card": paid from another account
+            isTransfer = direction == Direction.Credit && isPaymentReceived(lower) &&
+                creditCardHints.any { lower.contains(it) },
         )
     }
 
@@ -185,18 +204,17 @@ object GenericMessageParser {
             amount = amount,
             currency = group("currency")?.normalizeCurrency() ?: profile.defaultCurrency,
             merchant = group("merchant")?.cleanMerchant(),
-            last4 = group("last4") ?: last4Regex.find(text)?.groupValues?.get(1),
+            // a transfer's other card ("topped up using card ending 2060") is not this account
+            last4 = group("last4") ?: last4Regex.find(text)?.groupValues?.get(1)?.takeUnless { pattern.isTransfer },
             isCreditCard = pattern.isCreditCard ?: isCreditCard(text.lowercase()),
             availableBalance = availableBalance(text),
+            isTransfer = pattern.isTransfer,
+            otherLast4 = group("other"),
         )
     }
 
     fun direction(lower: String): Direction? {
-        // "Payment of AED 2,000 received towards your card" / "Thank you for your payment"
-        // but not "Thank you. Your payment of AED 300 to DEWA has been processed"
-        val paymentReceived = (lower.contains("payment") || lower.contains("paid")) &&
-            (lower.contains("received") || thankYouForPayment.any { lower.contains(it) })
-        if (paymentReceived) return Direction.Credit
+        if (isPaymentReceived(lower)) return Direction.Credit
 
         val creditIndex = creditFirstPhrases
             .filter { it != "payment of" }
@@ -214,6 +232,12 @@ object GenericMessageParser {
             else -> Direction.Debit
         }
     }
+
+    // "Payment of AED 2,000 received towards your card" / "Thank you for your payment"
+    // but not "Thank you. Your payment of AED 300 to DEWA has been processed"
+    private fun isPaymentReceived(lower: String): Boolean =
+        (lower.contains("payment") || lower.contains("paid")) &&
+            (lower.contains("received") || thankYouForPayment.any { lower.contains(it) })
 
     /** The first amount that isn't a balance / limit figure. */
     private fun transactionAmount(text: String, defaultCurrency: String): Pair<Double, String>? {
@@ -246,14 +270,17 @@ object GenericMessageParser {
     }
 
     private fun merchant(text: String): String? = merchantRegex.findAll(text)
-        .map { it.groupValues[1].cleanMerchant() }
+        .mapNotNull { it.groupValues[1].cleanMerchant() }
         .firstOrNull { candidate ->
-            candidate != null &&
-                !candidate.startsWith("your", ignoreCase = true) &&
+            !candidate.startsWith("your", ignoreCase = true) &&
                 !candidate.matches(Regex("""(?i)[x*\d\s]+""")) &&
-                !candidate.contains("card", ignoreCase = true) &&
-                !candidate.contains("account", ignoreCase = true)
+                // "from a/c no. 089-520-..." is the account, not the shop
+                listOf("card", "account", "a/c").none { candidate.contains(it, ignoreCase = true) } &&
+                // "to the value of AED 1.00 made at ..." is the amount, not the shop
+                !amountInText.containsMatchIn(candidate)
         }
+
+    private val amountInText = Regex("""\d\.\d{2}\b|(?i)\b(?:AED|USD|EUR|GBP|SAR)\s?\d""")
 
     private fun isCreditCard(lower: String): Boolean? = when {
         creditCardHints.any { lower.contains(it) } -> true
@@ -270,12 +297,25 @@ internal fun String.normalizeCurrency(): String? = when (val upper = uppercase()
     else -> upper.takeIf { it.length == 3 }
 }
 
+// "CHQ:100004-I/W CLEARING C" -> "I/W CLEARING C"
+private val chequeNumber = Regex("""(?i)^CHQ:?\s*\d+\s*-\s*""")
+
+// "SEWA PAYMENT-001UPSW22177" -> "SEWA PAYMENT", but "D586-TEXAS RHOUSE" stays
+private val referenceCode = Regex("""\s*-\s*(?=[A-Za-z0-9 :/]*\d)[A-Za-z0-9 :/]+$""")
+
+// "Vox Cinemas, Dubai" -> "Vox Cinemas", "Tabby, 800 82229" -> "Tabby"
+private val placeAfterComma = Regex("""\s*,\s*[A-Za-z0-9][A-Za-z0-9 ]*$""")
+
 @Suppress("MagicNumber")
 internal fun String.cleanMerchant(): String? {
     val cleaned = trim()
         .trimEnd('.', ',', '-', ' ')
         .replace(Regex("""(?i)[-\s]+(AE|ARE|UAE)$"""), "")
+        .replace(chequeNumber, "")
+        .replace(referenceCode, "")
+        .replace(placeAfterComma, "")
         .replace(Regex("""\s{2,}"""), " ")
         .trim()
+        .trimEnd('.', ',', '-', ' ')
     return cleaned.takeIf { it.length >= 2 }
 }

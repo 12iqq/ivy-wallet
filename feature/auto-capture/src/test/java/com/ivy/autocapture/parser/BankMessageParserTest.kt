@@ -87,19 +87,267 @@ class BankMessageParserTest {
         result.direction shouldBe Direction.Credit
         result.amount shouldBe 2000.0
         result.isCreditCard shouldBe true
+        // paid from another account
+        result.isTransfer shouldBe true
     }
 
     @Test
-    fun `Tabby purchase`() {
+    fun `Tabby pay-later orders aren't Tabby Cash spending`() {
+        // the instalments are captured from the card that pays them
+        listOf(
+            "Your purchase of AED 300.00 at Noon was successful. Your first payment of AED 75.00 is paid.",
+            "Order of 600.00 AED from Amazon.ae is confirmed. Track your upcoming payments with the Tabby app",
+            "Your AED 120.00 purchase at Amazon.ae is confirmed. Track your upcoming payments with the Tabby app",
+            "Complete your AED 50 purchase at Dubai Pay on the Tabby app: https://example.com",
+            "Your Amazon.ae payment of AED 53.00 will be charged to your card tomorrow.",
+            "We've received your payment of AED 130.00",
+            "To complete your Tabby Cash Card payment at Vox Cinemas for AED 98.00, confirm it in the Tabby app",
+        ).forEach { parse("Tabby", it) shouldBe null }
+    }
+
+    @Test
+    fun `Tabby Cash card spend`() {
         val result = parse(
-            "tabby",
-            "Your purchase of AED 300.00 at Noon was successful. Your first payment of AED 75.00 is paid."
+            "Tabby",
+            "You spent AED 53.90 at TAP*Keeta. Your available Tabby Cash balance is now AED 386.40."
         )!!
 
         result.bankId shouldBe "tabby"
         result.direction shouldBe Direction.Debit
-        result.amount shouldBe 300.0
-        result.merchant shouldBe "Noon"
+        result.amount shouldBe 53.9
+        result.merchant shouldBe "TAP*Keeta"
+        result.isTransfer shouldBe false
+    }
+
+    @Test
+    fun `Tabby Cash top-up is a transfer from the card`() {
+        val result = parse(
+            "Tabby",
+            "AED 500 was added to your account using card ending 1234. Your new balance is AED 785.30."
+        )!!
+
+        result.direction shouldBe Direction.Credit
+        result.amount shouldBe 500.0
+        result.isTransfer shouldBe true
+        result.otherLast4 shouldBe "1234"
+        // the card is where the money came from, not this account
+        result.last4 shouldBe null
+    }
+
+    @Test
+    fun `Tabby Cash money sent and received`() {
+        val received = parse("Tabby", "You received 285.30 AED from JOHN SMITH. Your new balance is AED 285.30.")!!
+        received.direction shouldBe Direction.Credit
+        received.amount shouldBe 285.3
+        received.merchant shouldBe "JOHN SMITH"
+
+        val sent = parse("Tabby", "You sent AED 52.50 to JOHN SMITH.  \nYour new balance is AED 716.26.")!!
+        sent.direction shouldBe Direction.Debit
+        sent.amount shouldBe 52.5
+    }
+
+    @Test
+    fun `DIB card purchase names the shop, not the account`() {
+        val old = parse(
+            "DIB-SMS",
+            "POS Purchase of AED:   39.00 from a/c no.  012-345-6789***-01 on 01-NOV-2022 14:40 from KFC SAHARA. " +
+                "Available balance is AED 11,112.17"
+        )!!
+        old.direction shouldBe Direction.Debit
+        old.amount shouldBe 39.0
+        old.merchant shouldBe "KFC SAHARA"
+        old.isCreditCard shouldBe false
+
+        val online = parse(
+            "DIB-SMS",
+            "Online Purchase of AED 23.65 from a/c no. 012-345-6789***-01 on 08-JUL-2026 17:19 from Amazon Now. " +
+                "Available balance is AED 3,954.20"
+        )!!
+        online.amount shouldBe 23.65
+        online.merchant shouldBe "Amazon Now"
+
+        val foreign = parse(
+            "DIB-SMS",
+            "Online Purchase of USD 25.00 from a/c no. 012-345-6789***-01 on 13-APR-2026 06:21 from EXAMPLE.ORG. " +
+                "Available balance is AED 31,211.70"
+        )!!
+        foreign.currency shouldBe "USD"
+        foreign.merchant shouldBe "EXAMPLE.ORG"
+    }
+
+    @Test
+    fun `DIB account debits use the bank's description`() {
+        val bill = parse(
+            "DIB-SMS",
+            "AED 437.00 has been drawn from A/C No. 012-345-678XXXX-01 as SEWA PAYMENT-001UPSW22177. " +
+                "Available balance is  6,398.90"
+        )!!
+        bill.direction shouldBe Direction.Debit
+        bill.amount shouldBe 437.0
+        bill.merchant shouldBe "SEWA PAYMENT"
+
+        parse(
+            "DIB-SMS",
+            "AED 408.45 has been drawn from A/C No. 012-345-678XXXX-01 as ETISALAT PAYMENT-MBA : 012345678. " +
+                "Available balance is  8,289.95"
+        )!!.merchant shouldBe "ETISALAT PAYMENT"
+
+        parse(
+            "DIB-SMS",
+            "AED 5,500.00 has been drawn from A/C No. 012-345-678XXXX-01 as CHQ:100004-I/W CLEARING C. " +
+                "Available balance is  12,524.10"
+        )!!.merchant shouldBe "I/W CLEARING C"
+
+        val atm = parse(
+            "DIB-SMS",
+            "AED 700.00 has been withdrawn from your A/C no. 012-345-6789***-01 on 01-JUL-2026 " +
+                "as ATM CASH WITHDRAWAL. Available balance is  5,993.49"
+        )!!
+        atm.direction shouldBe Direction.Debit
+        atm.merchant shouldBe "ATM CASH WITHDRAWAL"
+    }
+
+    @Test
+    fun `DIB account credits and salary`() {
+        val deposit = parse(
+            "DIB-SMS",
+            "AED 4,500.00 has been credited to your a/c 012-345-678XXXX-01 as CDM CASH DEPOSIT. " +
+                "Available balance is  35,556.93"
+        )!!
+        deposit.direction shouldBe Direction.Credit
+        deposit.amount shouldBe 4500.0
+        deposit.merchant shouldBe "CDM CASH DEPOSIT"
+
+        val salary = parse(
+            "DIB-SMS",
+            "Salary amount of AED  6,000.00 credited to your A/C no. 012-345-6789***-01 on 01-MAR-2023. " +
+                "Available balance is  18,398.20"
+        )!!
+        salary.direction shouldBe Direction.Credit
+        salary.amount shouldBe 6000.0
+        salary.merchant shouldBe "Salary"
+    }
+
+    @Test
+    fun `paying a credit card from DIB is a transfer`() {
+        val result = parse(
+            "DIB-SMS",
+            "AED 1,627.21 has been debited from A/C No. 012-345-678XXXX-01 for Card Payment. " +
+                "Available balance is AED 2,031.02"
+        )!!
+
+        result.direction shouldBe Direction.Debit
+        result.amount shouldBe 1627.21
+        result.merchant shouldBe "Card Payment"
+        result.isTransfer shouldBe true
+    }
+
+    @Test
+    fun `DIB reversal names the shop`() {
+        val result = parse(
+            "DIB-SMS",
+            "A transaction to the value of AED 1.00 made at Smart Dubai Governme on your DIB card ending with XX1234 " +
+                "has been reversed."
+        )!!
+
+        result.direction shouldBe Direction.Credit
+        result.merchant shouldBe "Smart Dubai Governme"
+        result.last4 shouldBe "1234"
+    }
+
+    @Test
+    fun `ADCB credit card purchase drops the city`() {
+        val result = parse(
+            "ADCBAlert",
+            "Credit Card XX1234 was used for AED46.00 on 27/08/2026 23:29:18 at Vox Cinemas, Dubai-AE. " +
+                "Available limit  AED3908.00"
+        )!!
+
+        result.merchant shouldBe "Vox Cinemas"
+        result.last4 shouldBe "1234"
+        result.amount shouldBe 46.0
+
+        parse(
+            "ADCBAlert",
+            "Congratulations on your first 3D secure transaction. Your Credit Card xxx 1234 was used for AED 46.00 " +
+                "on 27/08/2026 23:22:21 at Vox Cinemas,Dubai- AE. Available credit limit is now AED 3954.00."
+        )!!.merchant shouldBe "Vox Cinemas"
+    }
+
+    @Test
+    fun `ADCB bill paid from the card, reversal and card payment`() {
+        val bill = parse(
+            "ADCBAlert",
+            "AED612.00 debited from Acc/Cr.Card XXX1234 for SEWA on 02-09-2026 13:28:59 through ADCB Mobile App." +
+                "Avl.Limit is AED 2921.79"
+        )!!
+        bill.direction shouldBe Direction.Debit
+        bill.amount shouldBe 612.0
+        bill.merchant shouldBe "SEWA"
+        bill.last4 shouldBe "1234"
+
+        val reversal = parse(
+            "ADCBAlert",
+            "An amount of AED46.00 has been reversed to your Credit Card XXX1234 on 28/08/2026 00:00:43 " +
+                "by Vox Cinemas,Dubai-AE."
+        )!!
+        reversal.direction shouldBe Direction.Credit
+        reversal.merchant shouldBe "Vox Cinemas"
+
+        val payment = parse(
+            "ADCBAlert",
+            "Your payment of AED 1627.21 against Credit Card no. XXX1234 was received at 03:32 PM " +
+                "on 08/09/2026. Thank you."
+        )!!
+        payment.direction shouldBe Direction.Credit
+        payment.amount shouldBe 1627.21
+        payment.last4 shouldBe "1234"
+        payment.isTransfer shouldBe true
+    }
+
+    @Test
+    fun `card statements and approvals are ignored`() {
+        parse(
+            "ADCBAlert",
+            "Cr.Card XXX1234 Billing alert: Total due to avoid fin. charges: AED1627.21. Due date Sep 30 2026; " +
+                "Pay min. AED100.00 by due date to avoid AED241.50 late fees."
+        ) shouldBe null
+        parse("DIB-SMS", "Your card payment of AED 500.00 is due by 25/10/2026.") shouldBe null
+        parse(
+            "EI SMS",
+            "A payment on your card needs your confirmation. " +
+                "Please access the EI+ app and proceed to the Activities section."
+        ) shouldBe null
+    }
+
+    @Test
+    fun `Emirates Islamic purchase`() {
+        val result = parse(
+            "EI SMS",
+            "Credit Card Purchase\rCard Ending: : 1234\rAt: AMAZON RETAIL, Dubai\rAmount: AED 25.99\r" +
+                "Date: 03/10/2026, 20:32\rAvailable Limit: AED 12,574.01\r"
+        )!!
+
+        result.bankId shouldBe "eib"
+        result.direction shouldBe Direction.Debit
+        result.amount shouldBe 25.99
+        result.merchant shouldBe "AMAZON RETAIL"
+        result.last4 shouldBe "1234"
+        result.isCreditCard shouldBe true
+    }
+
+    @Test
+    fun `Emirates Islamic card payment received`() {
+        val result = parse(
+            "EI SMS",
+            "This is to confirm receipt of your payment of AED 289.96 towards your Credit Card starting with 512345  " +
+                "on 15/10/2026. Available limit is   AED 12,600.00."
+        )!!
+
+        result.direction shouldBe Direction.Credit
+        result.amount shouldBe 289.96
+        result.isTransfer shouldBe true
+        result.last4 shouldBe null
     }
 
     @Test
@@ -195,7 +443,10 @@ class BankMessageParserTest {
     fun `sender normalization`() {
         router.bankFor("AD-Emirates NBD", allBanks)?.id shouldBe "enbd"
         router.bankFor("ADCBAlerts", allBanks)?.id shouldBe "adcb"
+        router.bankFor("ADCBAlert", allBanks)?.id shouldBe "adcb"
         router.bankFor("adib", allBanks)?.id shouldBe "adib"
+        router.bankFor("DIB-SMS", allBanks)?.id shouldBe "dib"
+        router.bankFor("EI SMS", allBanks)?.id shouldBe "eib"
     }
 
     @Test
