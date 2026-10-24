@@ -80,7 +80,8 @@ private fun BoxWithConstraintsScope.UI(
     onEvent: (AutoCaptureReviewEvent) -> Unit,
 ) {
     val nav = navigation()
-    var accountPickerFor by remember { mutableStateOf<UUID?>(null) }
+    // which item's account is being picked, and whether it's the "to" side of a transfer
+    var accountPickerFor by remember { mutableStateOf<Pair<UUID, Boolean>?>(null) }
     var categoryPickerFor by remember { mutableStateOf<ReviewItem?>(null) }
 
     LazyColumn(
@@ -119,7 +120,9 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
             CapturedCard(
                 item = item,
-                onChooseAccount = { accountPickerFor = item.captured.id },
+                onChooseAccount = { accountPickerFor = item.captured.id to false },
+                onChooseToAccount = { accountPickerFor = item.captured.id to true },
+                onToggleTransfer = { onEvent(AutoCaptureReviewEvent.SetTransfer(item.captured.id, !item.isTransfer)) },
                 onChooseCategory = { categoryPickerFor = item },
                 onTitleChange = { onEvent(AutoCaptureReviewEvent.SetTitle(item.captured.id, it)) },
                 onAdd = { onEvent(AutoCaptureReviewEvent.Add(item)) },
@@ -140,7 +143,7 @@ private fun BoxWithConstraintsScope.UI(
         Spacer(Modifier.width(20.dp))
         CloseButton { nav.back() }
         Spacer(Modifier.weight(1f))
-        if (state.items.any { it.account != null && !it.possibleDuplicate && !it.missingRate }) {
+        if (state.items.any { it.canAdd && !it.possibleDuplicate }) {
             IvyButton(
                 text = stringResource(R.string.add_all),
                 iconStart = R.drawable.ic_check,
@@ -157,7 +160,15 @@ private fun BoxWithConstraintsScope.UI(
         accounts = state.accounts,
         dismiss = { accountPickerFor = null },
     ) { account ->
-        accountPickerFor?.let { onEvent(AutoCaptureReviewEvent.SetAccount(it, account)) }
+        accountPickerFor?.let { (capturedId, toSide) ->
+            onEvent(
+                if (toSide) {
+                    AutoCaptureReviewEvent.SetToAccount(capturedId, account)
+                } else {
+                    AutoCaptureReviewEvent.SetAccount(capturedId, account)
+                }
+            )
+        }
         accountPickerFor = null
     }
 
@@ -180,6 +191,8 @@ private fun BoxWithConstraintsScope.UI(
 private fun CapturedCard(
     item: ReviewItem,
     onChooseAccount: () -> Unit,
+    onChooseToAccount: () -> Unit,
+    onToggleTransfer: () -> Unit,
     onChooseCategory: () -> Unit,
     onTitleChange: (String) -> Unit,
     onAdd: () -> Unit,
@@ -223,10 +236,15 @@ private fun CapturedCard(
         Spacer(Modifier.height(8.dp))
 
         val isExpense = captured.type == TransactionType.EXPENSE
+        val sign = when {
+            item.isTransfer -> ""
+            isExpense -> "-"
+            else -> "+"
+        }
         Text(
-            text = "${if (isExpense) "-" else "+"}${captured.amount.format(captured.currency)} ${captured.currency}",
+            text = "$sign${captured.amount.format(captured.currency)} ${captured.currency}",
             style = UI.typo.nH2.style(
-                color = if (isExpense) UI.colors.pureInverse else Green,
+                color = if (item.isTransfer || isExpense) UI.colors.pureInverse else Green,
                 fontWeight = FontWeight.ExtraBold
             )
         )
@@ -236,7 +254,13 @@ private fun CapturedCard(
         IvyOutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = title,
-            hint = stringResource(if (isExpense) R.string.expense_title else R.string.income_title),
+            hint = stringResource(
+                when {
+                    item.isTransfer -> R.string.transfer_title
+                    isExpense -> R.string.expense_title
+                    else -> R.string.income_title
+                }
+            ),
         ) {
             title = it
             onTitleChange(it.text)
@@ -246,17 +270,41 @@ private fun CapturedCard(
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Chip(
-                text = item.account?.name ?: stringResource(R.string.choose_account),
+                text = item.account?.name
+                    ?: stringResource(if (item.isTransfer) R.string.choose_from_account else R.string.choose_account),
                 color = item.account?.color?.toComposeColor(),
                 onClick = onChooseAccount,
             )
-            Spacer(Modifier.width(8.dp))
-            Chip(
-                text = item.category?.name?.value ?: stringResource(R.string.add_category),
-                color = item.category?.color?.value?.toComposeColor(),
-                onClick = onChooseCategory,
-            )
+            if (item.isTransfer) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    text = "→",
+                    style = UI.typo.b2.style(color = UI.colors.gray, fontWeight = FontWeight.Bold)
+                )
+                Chip(
+                    text = item.toAccount?.name ?: stringResource(R.string.choose_to_account),
+                    color = item.toAccount?.color?.toComposeColor(),
+                    onClick = onChooseToAccount,
+                )
+            } else {
+                Spacer(Modifier.width(8.dp))
+                Chip(
+                    text = item.category?.name?.value ?: stringResource(R.string.add_category),
+                    color = item.category?.color?.value?.toComposeColor(),
+                    onClick = onChooseCategory,
+                )
+            }
         }
+
+        Text(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .clip(UI.shapes.rFull)
+                .clickable { onToggleTransfer() }
+                .padding(vertical = 6.dp),
+            text = stringResource(if (item.isTransfer) R.string.not_a_transfer else R.string.is_a_transfer),
+            style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Bold)
+        )
 
         if (item.possibleDuplicate) {
             Spacer(Modifier.height(10.dp))
@@ -299,7 +347,7 @@ private fun CapturedCard(
             IvyButton(
                 text = stringResource(R.string.add),
                 iconStart = R.drawable.ic_check,
-                enabled = item.account != null && !item.missingRate,
+                enabled = item.canAdd,
             ) { onAdd() }
         }
     }

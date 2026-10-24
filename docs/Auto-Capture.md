@@ -67,20 +67,33 @@ category of your most recent transaction with matching bank details, so renaming
 in the app (review screen or transaction editor) teaches it. The first time, the title is the
 bank's name made readable (`MerchantNames.tidy`: `Galadari Ice Cream`).
 
-## To do: understand what a message means
+## Transfers between your own accounts
 
-The parser only decides *money out or money in*, from keywords. OTPs, declines, offers and
-reminders that use a known phrase ("is due on", "minimum payment", "statement is ready") are
-skipped, but:
+Paying a credit card or topping up a wallet sends two messages, one from each side:
 
-- **Transfers between your own accounts** become two entries. The bank side ("AED 1,000
-  transferred to your card ending 1234") is added as a spend, and the card side ("Payment of
-  AED 1,000 received") as income. It should be one transfer: pair the two messages by amount
-  and time, or by the card ending linked to the other account.
-- **Payment-due reminders with other wording** are added as spends, e.g. "Your card payment of
-  AED 500 is due by 25/10" ("payment of" reads as a purchase).
+| Money moves | Message from where it left | Message from where it arrived |
+|---|---|---|
+| Bank → credit card | DIB: "AED 1,627.21 has been debited … for Card Payment" | ADCB: "Your payment of AED 1627.21 against Credit Card … was received"; EI: "receipt of your payment of AED 289.96 …" (often the next day) |
+| Bank card → Tabby Cash | DIB: "Online Purchase of AED 500.00 … from TABB*" | Tabby: "AED 500 was added to your account using card ending 1234" |
 
-Plan: sort each message into a kind first (purchase, refund, money received, transfer between
-your accounts, card payment, reminder or statement, information only) and only then parse it.
-Purchases, refunds and money received become transactions; transfers and card payments become
-one transfer; reminders and statements update the card's due date and amount instead.
+The parser marks the messages that read as transfers (`ParsedMessage.isTransfer`), and
+`CaptureLogic.otherHalf` finds the other side: same amount, the other direction, another of
+your accounts, up to 3 days apart (6 hours for a plain card charge joining a top-up).
+`CaptureProcessor` keeps one transfer from the account the money left to the one it reached;
+the second message is only marked as seen (`MERGED`). If one side was already added on its own,
+that transaction becomes the transfer. A Tabby top-up names the card it came from, so it is a
+transfer straight away when that card is linked. A card payment whose other side hasn't arrived
+yet waits in review (as a transfer with the other account to pick) instead of being added as a
+spend.
+
+Tabby messages only count when they move money in Tabby Cash (spends, top-ups, money sent or
+received). Pay-later orders, reminders and requests to confirm are skipped: the instalments
+show up on the card that pays them.
+
+## To do
+
+- Sort every message into a kind first (purchase, refund, money received, transfer, card
+  payment, reminder or statement, information only) instead of keyword lists.
+- Cash: ATM withdrawals and cash deposits could become transfers to and from a Cash account
+  the way you recorded them last time.
+- Card statements ("Total due … Due date …") could update the card's due date and amount.

@@ -167,7 +167,7 @@ class CaptureProcessor @Inject constructor(
             to = at.plus(SAME_PURCHASE_WINDOW),
         ) > 0
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     private suspend fun capture(
         sender: String,
         body: String,
@@ -190,12 +190,12 @@ class CaptureProcessor @Inject constructor(
             return null
         }
 
-        val accountId = linkedAccountId
-            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
-            ?.takeIf { accountDao.findById(it) != null }
-        // the category you gave this shop last time, else one from a similarly titled transaction
-        val categoryId = lastTransactionAt(parsed.merchant)?.categoryId
-            ?: parsed.merchant?.let { suggestCategoryFromHistory(it) }
+        val accountId = linkedAccountId.toExistingAccountId()
+        // the category you gave this shop last time, else the one of a transaction titled like it
+        val categoryId = (
+            lastTransactionAt(parsed.merchant, parsed.amount)
+                ?: lastTransactionTitledLike(parsed.merchant)
+            )?.categoryId
 
         val captured = CapturedTransactionEntity(
             source = source,
@@ -214,58 +214,166 @@ class CaptureProcessor @Inject constructor(
             status = CapturedTransactionEntity.STATUS_PENDING,
             transactionId = null,
             fingerprint = fingerprint,
+            isTransfer = parsed.isTransfer,
         )
-        capturedDao.save(captured)
 
-        val addedRightAway = config.addWithoutReview && accountId != null && !isPossibleDuplicate(captured) &&
-            add(captured, accountId = accountId, categoryId = categoryId, title = null) != null
-        if (!addedRightAway && notify) {
-            notifyNew(captured)
+        // the other message about the same money between your accounts came in already
+        val recent = capturedDao.findReceivedBetween(receivedAt.minus(PAIRING_WINDOW), receivedAt.plus(PAIRING_WINDOW))
+        CaptureLogic.otherHalf(captured, recent)?.let { other ->
+            CaptureLogic.transferAccounts(captured, other)?.let { (from, to) ->
+                return joinTransfer(captured, other, from, to, notify)
+            }
         }
-        return captured
+
+        val fromCard = CaptureLogic.linkedAccountIdByLast4(config.links, parsed.otherLast4).toExistingAccountId()
+        val item = topUpFrom(captured, fromCard) ?: captured
+        capturedDao.save(item)
+
+        val addedRightAway = config.addWithoutReview && item.readyToAdd() && !isPossibleDuplicate(item) &&
+            addAsCaptured(item) != null
+        if (!addedRightAway && notify) {
+            notifyNew(item)
+        }
+        return item
     }
+
+    /**
+     * [new] and [other] are the two messages about the same money moving [from] one of your
+     * accounts [to] another (the bank's card payment and the card's "payment received", a
+     * top-up and its card charge). Keeps one transfer; the second message is only marked seen.
+     */
+    @Suppress("LongParameterList")
+    private suspend fun joinTransfer(
+        new: CapturedTransactionEntity,
+        other: CapturedTransactionEntity,
+        from: UUID,
+        to: UUID,
+        notify: Boolean,
+    ): CapturedTransactionEntity {
+        capturedDao.save(
+            new.copy(status = CapturedTransactionEntity.STATUS_MERGED, transactionId = other.transactionId)
+        )
+        if (other.type == TransactionType.TRANSFER) return other
+
+        val transfer = other.asTransfer(from, to).copy(merchant = other.merchant ?: new.merchant)
+        val addedId = other.transactionId
+        if (other.status == CapturedTransactionEntity.STATUS_ADDED && addedId != null) {
+            // it was added on its own as a spend or an income: that transaction becomes the transfer
+            turnIntoTransfer(addedId, other, from, to)
+            capturedDao.save(transfer)
+            return transfer
+        }
+
+        capturedDao.save(transfer)
+        val added = settingsStore.current().addWithoutReview && !isPossibleDuplicate(transfer) &&
+            addAsCaptured(transfer) != null
+        if (!added && notify) notifyNew(transfer)
+        return transfer
+    }
+
+    /** Makes the transaction added from one message the transfer [from] -> [to] it turned out to be. */
+    private suspend fun turnIntoTransfer(transactionId: UUID, added: CapturedTransactionEntity, from: UUID, to: UUID) {
+        val transaction = transactionDao.findById(transactionId) ?: return
+        val baseCurrency = settingsDao.findFirst().currency
+        val fromCurrency = accountDao.findById(from)?.currency ?: baseCurrency
+        val toCurrency = accountDao.findById(to)?.currency ?: baseCurrency
+        // the amount is in the currency of the account it was added to
+        val (amount, toAmount) = if (transaction.accountId == from) {
+            transaction.amount to convert(transaction.amount, fromCurrency, toCurrency, baseCurrency)
+        } else {
+            convert(transaction.amount, toCurrency, fromCurrency, baseCurrency) to transaction.amount
+        }
+        transactionWriter.save(
+            transaction.copy(
+                type = TransactionType.TRANSFER,
+                accountId = from,
+                amount = amount,
+                toAccountId = to,
+                toAmount = toAmount,
+                categoryId = null,
+                // transfers don't need a name: drop the one auto-add gave it
+                title = transaction.title.takeUnless { it == suggestedTitle(added) },
+            )
+        )
+    }
+
+    private suspend fun addAsCaptured(item: CapturedTransactionEntity): UUID? {
+        val accountId = item.accountId ?: return null
+        return add(
+            captured = item,
+            accountId = accountId,
+            categoryId = item.categoryId,
+            title = null,
+            toAccountId = item.toAccountId,
+        )
+    }
+
+    /** A top-up names the card it came from ("using card ending 1234"): a transfer from that card's account. */
+    private fun topUpFrom(captured: CapturedTransactionEntity, cardAccountId: UUID?): CapturedTransactionEntity? {
+        val accountId = captured.accountId ?: return null
+        if (captured.type != TransactionType.INCOME || cardAccountId == null || cardAccountId == accountId) return null
+        return captured.asTransfer(from = cardAccountId, to = accountId)
+    }
+
+    private suspend fun String?.toExistingAccountId(): UUID? = this
+        ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        ?.takeIf { accountDao.findById(it) != null }
+
+    private fun CapturedTransactionEntity.asTransfer(from: UUID, to: UUID) = copy(
+        type = TransactionType.TRANSFER,
+        accountId = from,
+        toAccountId = to,
+        categoryId = null,
+        isTransfer = true,
+    )
+
+    /** A transfer needs both accounts; a lone card payment waits in review for its other half. */
+    private fun CapturedTransactionEntity.readyToAdd(): Boolean = accountId != null &&
+        if (type == TransactionType.TRANSFER) toAccountId != null else !isTransfer
 
     /**
      * Creates the real transaction from a captured item and remembers the
      * user's choices for next time.
      */
+    @Suppress("LongMethod")
     suspend fun add(
         captured: CapturedTransactionEntity,
         accountId: UUID,
         categoryId: UUID?,
         title: String?,
+        /** Makes it a transfer from [accountId] to this account. */
+        toAccountId: UUID? = null,
     ): UUID? {
         val account = accountDao.findById(accountId) ?: return null
+        val toAccount = toAccountId?.let { accountDao.findById(it) ?: return null }
         val baseCurrency = settingsDao.findFirst().currency
         val accountCurrency = account.currency ?: baseCurrency
+        val toCurrency = toAccount?.let { it.currency ?: baseCurrency }
         // without a rate the amount would be copied 1:1 (USD 100 -> AED 100): keep it for review
-        if (!exchangeRatesLogic.canConvert(baseCurrency, captured.currency, accountCurrency)) return null
+        val currencies = listOfNotNull(accountCurrency, toCurrency)
+        if (currencies.any { !exchangeRatesLogic.canConvert(baseCurrency, captured.currency, it) }) return null
         // a double tap or "Add all" twice must not create two transactions
         if (capturedDao.claimPending(captured.id, CapturedTransactionEntity.STATUS_ADDING) == 0) return null
-        val amount = if (captured.currency.equals(accountCurrency, ignoreCase = true)) {
-            captured.amount
-        } else {
-            exchangeRatesLogic.convertAmount(
-                baseCurrency = baseCurrency,
-                amount = captured.amount,
-                fromCurrency = captured.currency,
-                toCurrency = accountCurrency
-            ).toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
-        }
-        val finalTitle = title?.takeIf { it.isNotBlank() } ?: suggestedTitle(captured)
+        val amount = convert(captured.amount, captured.currency, accountCurrency, baseCurrency)
+        val type = if (toAccount != null) TransactionType.TRANSFER else captured.type
+        // a transfer doesn't need a name; anything else gets the one you used last time
+        val finalTitle = title?.takeIf { it.isNotBlank() } ?: suggestedTitle(captured).takeIf { toAccount == null }
 
         val transactionId = UUID.randomUUID()
         // the item is claimed now: whatever happens, don't leave it stuck as "adding"
         val saved = runCatching {
             Transaction(
                 accountId = accountId,
-                type = captured.type,
+                type = type,
                 amount = amount.toBigDecimal(),
+                toAccountId = toAccountId,
+                toAmount = (toCurrency?.let { convert(captured.amount, captured.currency, it, baseCurrency) } ?: amount)
+                    .toBigDecimal(),
                 title = finalTitle,
                 // the description stays the user's own; the bank's wording goes in bank details
                 bankDetails = bankDetails(captured, accountCurrency),
                 dateTime = captured.receivedAt,
-                categoryId = categoryId,
+                categoryId = categoryId.takeIf { toAccount == null },
                 isSynced = false,
                 id = transactionId,
             ).toDomain(transactionMapper)?.let {
@@ -282,23 +390,67 @@ class CaptureProcessor @Inject constructor(
             return null
         }
 
-        capturedDao.updateStatus(captured.id, CapturedTransactionEntity.STATUS_ADDED, transactionId)
+        // remembered as added the way it was (a transfer's other message can still join it)
+        capturedDao.save(
+            captured.copy(
+                type = type,
+                accountId = accountId,
+                toAccountId = toAccountId,
+                status = CapturedTransactionEntity.STATUS_ADDED,
+                transactionId = transactionId,
+            )
+        )
         return transactionId
     }
 
+    private suspend fun convert(amount: Double, from: String, to: String, baseCurrency: String): Double =
+        if (from.equals(to, ignoreCase = true)) {
+            amount
+        } else {
+            exchangeRatesLogic.convertAmount(
+                baseCurrency = baseCurrency,
+                amount = amount,
+                fromCurrency = from,
+                toCurrency = to
+            ).toBigDecimal().setScale(2, RoundingMode.HALF_UP).toDouble()
+        }
+
     /**
      * What you called this shop last time - learned from your own transactions, so renaming
-     * one anywhere in the app teaches it - else the bank's name made readable.
+     * one anywhere in the app teaches it - else your title that names the shop ("Nesto" for
+     * NESTO CENTER LLC), else the bank's name made readable.
      */
     suspend fun suggestedTitle(captured: CapturedTransactionEntity): String? =
-        lastTransactionAt(captured.merchant)?.title?.takeIf { it.isNotBlank() }
+        lastTransactionAt(captured.merchant, captured.amount)?.title?.takeIf { it.isNotBlank() }
+            ?: lastTransactionTitledLike(captured.merchant)?.title
             ?: captured.merchant?.let(MerchantNames::tidy)
 
-    /** Your most recent transaction at the shop the bank calls [merchant]. */
-    private suspend fun lastTransactionAt(merchant: String?): TransactionEntity? {
+    /**
+     * Your most recent transaction at the shop the bank calls [merchant]. The same wording can
+     * mean different things ("Inward Clearing Debit" is any cheque), so one for the same
+     * [amount] comes first: the same rent cheque, the same salary.
+     */
+    private suspend fun lastTransactionAt(merchant: String?, amount: Double): TransactionEntity? {
         val key = MerchantNames.key(merchant) ?: return null
-        return transactionDao.findAllByBankDetailsMatchingPattern("%${key.substringBefore(' ')}%")
-            .firstOrNull { MerchantNames.key(it.bankDetails?.substringBefore(DETAILS_SEPARATOR)) == key }
+        val atShop = transactionDao.findAllByBankDetailsMatchingPattern("%${key.substringBefore(' ')}%")
+            .filter { trn ->
+                val known = MerchantNames.key(trn.bankDetails?.substringBefore(DETAILS_SEPARATOR))
+                known != null && MerchantNames.sameShop(known, key)
+            }
+        return atShop.firstOrNull { abs(it.amount - amount) < SAME_AMOUNT } ?: atShop.firstOrNull()
+    }
+
+    /** Your most recent transaction titled like the shop: "Nesto" for NESTO CENTER LLC. */
+    private suspend fun lastTransactionTitledLike(merchant: String?): TransactionEntity? {
+        val key = MerchantNames.key(merchant) ?: return null
+        val start = key.substringBefore(' ').takeIf { it.length >= TITLE_START }?.take(TITLE_START) ?: return null
+        val matches = transactionDao.findAllByTitleMatchingPattern("%$start%").mapNotNull { trn ->
+            val score = trn.title?.let { MerchantNames.titleMatch(it, key) } ?: 0
+            if (score > 0) trn to score else null
+        }
+        // the title that names the most of the shop, then the most recent
+        val best = compareBy<Pair<TransactionEntity, Int>> { it.second }.thenBy { it.first.dateTime ?: Instant.EPOCH }
+        return matches.maxWithOrNull(best)?.first
     }
 
     /** "GALADARI ICE CREAM CO LLC", plus the original amount when it was in another currency. */
@@ -363,16 +515,6 @@ class CaptureProcessor @Inject constructor(
         }
     }
 
-    /** Most recent category used for a transaction titled like the merchant. */
-    private suspend fun suggestCategoryFromHistory(merchant: String): UUID? {
-        val word = MerchantNames.key(merchant)?.substringBefore(' ')
-            ?.takeIf { it.length >= 3 } ?: return null
-        return transactionDao.findAllByTitleMatchingPattern("%$word%")
-            .filter { it.categoryId != null }
-            .maxByOrNull { it.dateTime ?: Instant.EPOCH }
-            ?.categoryId
-    }
-
     /** One notification for what a scheduled check found that still needs a look. */
     suspend fun notifyFound(found: List<CapturedTransactionEntity>) {
         val waiting = found.filter { capturedDao.findById(it.id)?.status == CapturedTransactionEntity.STATUS_PENDING }
@@ -424,5 +566,12 @@ class CaptureProcessor @Inject constructor(
         private val SAME_MESSAGE_WINDOW: Duration = Duration.ofDays(1)
         private const val REVIEW_REQUEST_CODE = 4243
         private const val DETAILS_SEPARATOR = " · "
+        private const val SAME_AMOUNT = 0.01
+
+        /** Letters of a shop's name to look titles up by ("bay" finds "Baybites" and "Bay Bites"). */
+        private const val TITLE_START = 3
+
+        /** How far apart the two messages about one transfer can be (see [CaptureLogic.otherHalf]). */
+        private val PAIRING_WINDOW: Duration = Duration.ofDays(3)
     }
 }

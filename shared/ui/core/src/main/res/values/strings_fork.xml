@@ -176,4 +176,8 @@
     <string name="daily_average_and_count">%1$s a day on average · %2$d transactions</string>
     <string name="nothing_in_this_period">Nothing here for this period.</string>
     <string name="missing_exchange_rate">No %1$s exchange rate yet, so the amount can\'t be converted. Add one in Settings → Exchange rates, or pick an account in that currency.</string>
+    <string name="choose_from_account">From…</string>
+    <string name="choose_to_account">To…</string>
+    <string name="not_a_transfer">Not a transfer</string>
+    <string name="is_a_transfer">It\'s a transfer between my accounts</string>
 </resources>
