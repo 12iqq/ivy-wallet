@@ -1,6 +1,15 @@
-package com.ivy.insights.utilities
+package com.ivy.domain.utilities
 
 import com.ivy.data.db.entity.UtilityBillEntity
+import java.time.LocalDate
+
+/** The provider confirming money it received for one or more of its [accounts]. */
+data class UtilityPayment(
+    val provider: String,
+    val accounts: List<String>,
+    val amount: Double,
+    val date: LocalDate,
+)
 
 /**
  * Reads utility bills from the provider's SMS: SEWA (Sharjah) for now. Another provider
@@ -16,6 +25,31 @@ object UtilityBillParser {
         sender.contains(SEWA, ignoreCase = true) -> parseSewa(body)
         else -> null
     }
+
+    /** "Thank You! We have received AED 475.00 for account(s) 0200… on 2026-10-03." */
+    fun parsePayment(sender: String, body: String): UtilityPayment? {
+        // every text passes through here: only the provider's own are searched
+        val match = if (sender.contains(SEWA, ignoreCase = true)) SewaReceipt.find(body) else null
+        val (amount, accounts, date) = match?.destructured ?: return null
+        val value = amount.replace(",", "").toDoubleOrNull()
+        val day = runCatching { LocalDate.parse(date) }.getOrNull()
+        return if (value == null || day == null) {
+            null
+        } else {
+            UtilityPayment(
+                provider = SEWA,
+                accounts = accounts.split(',', ' ').map { it.trim() }.filter { it.isNotEmpty() },
+                amount = value,
+                date = day,
+            )
+        }
+    }
+
+    /** The provider a bank's text names as the shop: "SEWA" in "SEWA PAYMENT". */
+    fun providerIn(text: String?): String? = senders.firstOrNull { text?.contains(it, ignoreCase = true) == true }
+
+    /** Account numbers as the provider writes them, with or without the leading zeros. */
+    fun sameAccount(a: String, b: String): Boolean = a.trimStart('0') == b.trimStart('0')
 
     /**
      * "Your Utility services bill for the account 0200… billed on 2026-09-17 - 2026-10-17
@@ -62,4 +96,8 @@ object UtilityBillParser {
         RegexOption.IGNORE_CASE
     )
     private val DueDate = Regex("""Due\s+Date\s*:\s*(\d{4}-\d{2}-\d{2})""", RegexOption.IGNORE_CASE)
+    private val SewaReceipt = Regex(
+        """received\s+AED\s*([\d,]+(?:\.\d+)?)\s+for\s+account\(s\)\s*([\d,\s]+?)\s+on\s+(\d{4}-\d{2}-\d{2})""",
+        RegexOption.IGNORE_CASE
+    )
 }

@@ -53,6 +53,10 @@ automatically from bank SMS alerts.
 - **Utility bills** (optional, in Reports): reads SEWA's monthly bill texts and shows electricity, water and gas
   bill by bill, with the change since the last bill, averages and totals. Bills are kept, and backed up, after the
   texts are deleted. SEWA's texts give amounts only, not kWh or gallons.
+  Each new bill can become a planned payment due on its due date; when SEWA confirms the payment it's marked paid,
+  and the bank's text for the same payment isn't added a second time.
+- **Transaction look** (Settings): color account tags with each account's color, like category tags, and choose
+  the text size of account and category tags, with a light and a dark preview.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
   CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
 - A cleaner Settings screen, without the original project's community, share and rating links.

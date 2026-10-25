@@ -107,9 +107,21 @@ private fun UtilityBillsUi(state: UtilityBillsState, onEvent: (UtilityBillsEvent
                 style = UI.typo.b2.style(color = UI.colors.gray, fontWeight = FontWeight.Medium)
             )
             Spacer(Modifier.height(16.dp))
-            TrackRow(checked = state.enabled) { enabled ->
+            SwitchRow(
+                title = stringResource(R.string.track_utility_bills),
+                description = stringResource(R.string.track_utility_bills_desc),
+                checked = state.enabled,
+            ) { enabled ->
                 onEvent(UtilityBillsEvent.SetEnabled(enabled))
                 if (enabled && !state.hasPermission) permissionLauncher.launch(Manifest.permission.READ_SMS)
+            }
+            if (state.enabled) {
+                Spacer(Modifier.height(12.dp))
+                SwitchRow(
+                    title = stringResource(R.string.plan_utility_bills),
+                    description = stringResource(R.string.plan_utility_bills_desc),
+                    checked = state.planBills,
+                ) { onEvent(UtilityBillsEvent.SetPlanBills(it)) }
             }
         }
 
@@ -225,7 +237,12 @@ fun UtilityBillsCard(card: UtilityCard, onOpen: () -> Unit, modifier: Modifier =
 }
 
 @Composable
-private fun TrackRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SwitchRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -237,12 +254,9 @@ private fun TrackRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
+            Text(text = title, style = UI.typo.b2.style(fontWeight = FontWeight.Bold))
             Text(
-                text = stringResource(R.string.track_utility_bills),
-                style = UI.typo.b2.style(fontWeight = FontWeight.Bold)
-            )
-            Text(
-                text = stringResource(R.string.track_utility_bills_desc),
+                text = description,
                 style = UI.typo.c.style(color = UI.colors.gray, fontWeight = FontWeight.Medium)
             )
         }

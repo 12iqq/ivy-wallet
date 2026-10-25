@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.ivy.base.legacy.SharedPrefs
 import com.ivy.data.db.dao.write.UtilityBillDao
+import com.ivy.domain.utilities.UtilityBillPlanner
+import com.ivy.domain.utilities.UtilityBillReader
 import com.ivy.ui.ComposeViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
@@ -21,6 +23,8 @@ import javax.inject.Inject
 @Immutable
 data class UtilityBillsState(
     val enabled: Boolean,
+    /** Each new bill becomes a planned payment */
+    val planBills: Boolean,
     val hasPermission: Boolean,
     val loading: Boolean,
     val accounts: ImmutableList<String>,
@@ -32,6 +36,7 @@ data class UtilityBillsState(
 sealed interface UtilityBillsEvent {
     data object Refresh : UtilityBillsEvent
     data class SetEnabled(val enabled: Boolean) : UtilityBillsEvent
+    data class SetPlanBills(val enabled: Boolean) : UtilityBillsEvent
     data class SelectAccount(val account: String) : UtilityBillsEvent
 
     /** The SMS permission prompt was answered. */
@@ -43,6 +48,7 @@ sealed interface UtilityBillsEvent {
 class UtilityBillsViewModel @Inject constructor(
     private val sharedPrefs: SharedPrefs,
     private val reader: UtilityBillReader,
+    private val planner: UtilityBillPlanner,
     private val dao: UtilityBillDao,
 ) : ComposeViewModel<UtilityBillsState, UtilityBillsEvent>() {
 
@@ -52,6 +58,7 @@ class UtilityBillsViewModel @Inject constructor(
     private var state by mutableStateOf(
         UtilityBillsState(
             enabled = sharedPrefs.getBoolean(SharedPrefs.TRACK_UTILITY_BILLS, false),
+            planBills = planBills(),
             hasPermission = reader.hasPermission(),
             loading = true,
             accounts = persistentListOf(),
@@ -71,6 +78,13 @@ class UtilityBillsViewModel @Inject constructor(
                 // flip the switch now; the bills follow once the texts are read
                 state = state.copy(enabled = event.enabled)
                 load()
+            }
+
+            is UtilityBillsEvent.SetPlanBills -> {
+                sharedPrefs.putBoolean(SharedPrefs.PLAN_UTILITY_BILLS, event.enabled)
+                state = state.copy(planBills = event.enabled)
+                // the bill that's due now gets its planned payment right away
+                if (event.enabled) viewModelScope.launch { planner.planDueBills() }
             }
 
             is UtilityBillsEvent.SelectAccount -> {
@@ -94,6 +108,7 @@ class UtilityBillsViewModel @Inject constructor(
         val account = selectedAccount?.takeIf { it in accounts } ?: accounts.firstOrNull()
         state = UtilityBillsState(
             enabled = enabled(),
+            planBills = planBills(),
             hasPermission = reader.hasPermission(),
             loading = false,
             accounts = accounts.toImmutableList(),
@@ -103,4 +118,6 @@ class UtilityBillsViewModel @Inject constructor(
     }
 
     private fun enabled(): Boolean = sharedPrefs.getBoolean(SharedPrefs.TRACK_UTILITY_BILLS, false)
+
+    private fun planBills(): Boolean = sharedPrefs.getBoolean(SharedPrefs.PLAN_UTILITY_BILLS, true)
 }

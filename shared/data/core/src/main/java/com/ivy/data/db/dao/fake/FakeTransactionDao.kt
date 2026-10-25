@@ -247,7 +247,9 @@ class FakeTransactionDao : TransactionDao, WriteTransactionDao {
     }
 
     override suspend fun findAllByTitleMatchingPattern(pattern: String): List<TransactionEntity> {
-        return items.filter { it.title?.contains(pattern) == true && !it.isDeleted }
+        // like SQL's LIKE: % is any text, letters match in any case
+        val like = Regex(pattern.split('%').joinToString(".*") { Regex.escape(it) }, RegexOption.IGNORE_CASE)
+        return items.filter { it.title?.matches(like) == true && !it.isDeleted }
             .sortedByDescending { it.dateTime }
     }
 

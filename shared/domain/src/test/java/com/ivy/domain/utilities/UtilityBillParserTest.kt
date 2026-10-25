@@ -1,7 +1,8 @@
-package com.ivy.insights.utilities
+package com.ivy.domain.utilities
 
 import io.kotest.matchers.shouldBe
 import org.junit.Test
+import java.time.LocalDate
 
 class UtilityBillParserTest {
 
@@ -82,5 +83,54 @@ class UtilityBillParserTest {
 
         parsed.total shouldBe 189.0
         parsed.dueDate shouldBe null
+    }
+
+    @Test
+    fun `reads SEWA's payment confirmation`() {
+        val payment = UtilityBillParser.parsePayment(
+            "SEWA",
+            "Thank You! We have received AED 475.00 for account(s) 020000123456 on 2026-10-03. " +
+                "Get your payment receipt https://example.com/r Rate our service https://example.com/s ."
+        )!!
+
+        payment.provider shouldBe "SEWA"
+        payment.accounts shouldBe listOf("020000123456")
+        payment.amount shouldBe 475.0
+        payment.date shouldBe LocalDate.of(2026, 10, 3)
+    }
+
+    @Test
+    fun `a payment for several accounts names each`() {
+        val payment = UtilityBillParser.parsePayment(
+            "SEWA",
+            "Thank You! We have received AED 1,250.50 for account(s) 020000123456, 020000654321 on 2026-10-03."
+        )!!
+
+        payment.accounts shouldBe listOf("020000123456", "020000654321")
+        payment.amount shouldBe 1250.5
+    }
+
+    @Test
+    fun `bills and other texts are not payments`() {
+        UtilityBillParser.parsePayment("SEWA", bill) shouldBe null
+        UtilityBillParser.parsePayment("SEWA", "Dear Customer, Use verification code 123456.") shouldBe null
+        UtilityBillParser.parsePayment(
+            "DIB-SMS",
+            "Thank You! We have received AED 475.00 for account(s) 020000123456 on 2026-10-03."
+        ) shouldBe null
+    }
+
+    @Test
+    fun `the provider a bank's text names`() {
+        UtilityBillParser.providerIn("SEWA PAYMENT") shouldBe "SEWA"
+        UtilityBillParser.providerIn("Sewa - Home") shouldBe "SEWA"
+        UtilityBillParser.providerIn("CARREFOUR") shouldBe null
+        UtilityBillParser.providerIn(null) shouldBe null
+    }
+
+    @Test
+    fun `account numbers with or without leading zeros`() {
+        UtilityBillParser.sameAccount("020000123456", "20000123456") shouldBe true
+        UtilityBillParser.sameAccount("020000123456", "020000654321") shouldBe false
     }
 }

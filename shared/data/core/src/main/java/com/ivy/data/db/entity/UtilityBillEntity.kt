@@ -1,6 +1,7 @@
 package com.ivy.data.db.entity
 
 import androidx.annotation.Keep
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.serialization.SerialName
@@ -10,7 +11,7 @@ import kotlinx.serialization.Serializable
  * A utility bill (SEWA for now) read from the provider's SMS. Dates are ISO `yyyy-MM-dd`.
  * Part of backups, so the history survives a reinstall even after the texts are gone.
  */
-@Suppress("DataClassTypedIDs")
+@Suppress("DataClassTypedIDs", "DataClassDefaultValues")
 @Keep
 @Serializable
 @Entity(tableName = "utility_bills")
@@ -50,4 +51,8 @@ data class UtilityBillEntity(
     val dueDate: String?,
     @SerialName("currency")
     val currency: String,
+    /** A planned payment was made for this bill once; it isn't made again, even if deleted */
+    @ColumnInfo(defaultValue = "0")
+    @SerialName("planned")
+    val planned: Boolean = false,
 )

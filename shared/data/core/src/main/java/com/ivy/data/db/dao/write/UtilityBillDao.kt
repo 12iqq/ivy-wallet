@@ -13,6 +13,9 @@ interface UtilityBillDao {
     @Query("SELECT * FROM utility_bills ORDER BY periodEnd DESC")
     suspend fun findAll(): List<UtilityBillEntity>
 
+    @Query("SELECT * FROM utility_bills WHERE id = :id")
+    suspend fun findById(id: String): UtilityBillEntity?
+
     @Query("DELETE FROM utility_bills")
     suspend fun deleteAll()
 }

@@ -14,6 +14,8 @@ class FakeUtilityBillDao : UtilityBillDao {
 
     override suspend fun findAll(): List<UtilityBillEntity> = items.values.sortedByDescending { it.periodEnd }
 
+    override suspend fun findById(id: String): UtilityBillEntity? = items[id]
+
     override suspend fun deleteAll() {
         items.clear()
     }

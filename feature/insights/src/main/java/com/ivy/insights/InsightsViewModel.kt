@@ -17,7 +17,7 @@ import com.ivy.data.model.Transfer
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TransactionRepository
-import com.ivy.insights.utilities.UtilityBillReader
+import com.ivy.domain.utilities.UtilityBillReader
 import com.ivy.insights.utilities.UtilityCalculator
 import com.ivy.insights.utilities.UtilityCard
 import com.ivy.ui.ComposeViewModel

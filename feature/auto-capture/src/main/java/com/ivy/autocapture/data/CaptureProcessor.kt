@@ -24,6 +24,8 @@ import com.ivy.data.model.CardEndings
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.domain.AppStarter
+import com.ivy.domain.utilities.UtilityBillPlanner
+import com.ivy.domain.utilities.UtilityBillReader
 import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.utils.format
 import com.ivy.ui.R
@@ -62,6 +64,8 @@ class CaptureProcessor @Inject constructor(
     private val notificationService: NotificationService,
     private val appStarter: AppStarter,
     private val sharedPrefs: SharedPrefs,
+    private val utilityBills: UtilityBillReader,
+    private val utilityPlanner: UtilityBillPlanner,
 ) {
     private val router = BankMessageRouter()
     private val captureLock = Mutex()
@@ -87,6 +91,8 @@ class CaptureProcessor @Inject constructor(
         source: String = CapturedTransactionEntity.SOURCE_SMS,
         notify: Boolean = true,
     ): CapturedTransactionEntity? {
+        // utility bills and the utility's payment confirmations (SEWA) aren't bank transactions
+        if (utilityBills.onMessage(sender, body, receivedAt)) return null
         val config = settingsStore.current()
         if (config.mode == AutoCaptureMode.Off) return null
 
@@ -216,6 +222,17 @@ class CaptureProcessor @Inject constructor(
             fingerprint = fingerprint,
             isTransfer = parsed.isTransfer,
         )
+
+        // the utility's confirmation already marked its bill paid: this text is that same payment
+        if (captured.type == TransactionType.EXPENSE) {
+            utilityPlanner.recordedPayment(parsed.merchant, parsed.amount, receivedAt)?.let { payment ->
+                utilityPlanner.paidFrom(payment, accountId)
+                capturedDao.save(
+                    captured.copy(status = CapturedTransactionEntity.STATUS_MERGED, transactionId = payment.id)
+                )
+                return null
+            }
+        }
 
         // the other message about the same money between your accounts came in already
         val recent = capturedDao.findReceivedBetween(receivedAt.minus(PAIRING_WINDOW), receivedAt.plus(PAIRING_WINDOW))
