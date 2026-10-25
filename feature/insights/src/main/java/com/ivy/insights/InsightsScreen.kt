@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.dp
 import com.ivy.base.model.TransactionType
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.insights.utilities.UtilityBillsCard
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.ReportScreen
+import com.ivy.navigation.UtilityBillsScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
@@ -190,6 +192,10 @@ private fun InsightsUi(state: InsightsState, onEvent: (InsightsEvent) -> Unit) {
                 ReportCard(title = stringResource(R.string.net_worth)) {
                     NetWorthLine(points = state.netWorth, currency = state.currency)
                 }
+            }
+
+            item {
+                UtilityBillsCard(card = state.utilities, onOpen = { nav.navigateTo(UtilityBillsScreen) })
             }
         }
 

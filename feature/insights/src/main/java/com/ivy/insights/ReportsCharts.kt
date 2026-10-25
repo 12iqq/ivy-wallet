@@ -13,16 +13,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -221,6 +224,67 @@ fun IncomeSpendingBars(months: ImmutableList<MonthTotals>, modifier: Modifier = 
     }
 }
 
+/** A bar split into parts drawn bottom-up, e.g. a utility bill: electricity, water, gas, the rest. */
+@Immutable
+data class StackedBar(val month: YearMonth, val parts: ImmutableList<Double>)
+
+/** Stacked bars, oldest left; [colors] and [legend] follow the order of the parts. */
+@Composable
+fun StackedBars(
+    bars: ImmutableList<StackedBar>,
+    colors: ImmutableList<Color>,
+    legend: ImmutableList<String>,
+    modifier: Modifier = Modifier,
+) {
+    val max = bars.maxOfOrNull { it.parts.sum() }?.takeIf { it > 0 } ?: 1.0
+    // a few bars shouldn't turn into a few very wide ones: empty slots on the left instead
+    val slots = maxOf(bars.size, MinStackedSlots)
+    val empty = slots - bars.size
+    Column(modifier = modifier) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ChartHeight.dp)
+        ) {
+            val slot = size.width / slots
+            val barWidth = slot * BarFraction
+            bars.forEachIndexed { i, bar ->
+                val left = (empty + i) * slot + (slot - barWidth) / 2
+                val height = (bar.parts.sum() / max * size.height).toFloat()
+                val shape = Path().apply {
+                    addRoundRect(
+                        RoundRect(
+                            left = left,
+                            top = size.height - height,
+                            right = left + barWidth,
+                            bottom = size.height,
+                            cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
+                        )
+                    )
+                }
+                clipPath(shape) {
+                    var bottom = size.height
+                    bar.parts.forEachIndexed { part, value ->
+                        val partHeight = (value / max * size.height).toFloat()
+                        drawRect(
+                            color = colors[part % colors.size],
+                            topLeft = Offset(left, bottom - partHeight),
+                            size = Size(barWidth, partHeight)
+                        )
+                        bottom -= partHeight
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        MonthLabels(labels = (List(empty) { "" } + narrowNames(bars.map { it.month })).toImmutableList())
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            legend.forEachIndexed { i, text -> LegendItem(color = colors[i % colors.size], text = text) }
+        }
+    }
+}
+
 /** Total balance at the end of each month. */
 @Composable
 fun NetWorthLine(points: ImmutableList<NetWorthPoint>, currency: String, modifier: Modifier = Modifier) {
@@ -334,6 +398,7 @@ private const val SliceGap = 2f
 private const val MinSweep = 0.5f
 private const val ChartHeight = 140
 private const val BarFraction = 0.7f
+private const val MinStackedSlots = 6
 private const val LineWidth = 6f
 private const val DotRadius = 7f
 private const val FadedAlpha = 0.25f

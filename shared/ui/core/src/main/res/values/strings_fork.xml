@@ -180,4 +180,34 @@
     <string name="choose_to_account">To…</string>
     <string name="not_a_transfer">Not a transfer</string>
     <string name="is_a_transfer">It\'s a transfer between my accounts</string>
+
+    <!-- Utility bills (SEWA) -->
+    <string name="utility_bills">Utility bills</string>
+    <string name="utility_bills_desc">Electricity, water and gas from your SEWA bill texts, bill by bill.</string>
+    <string name="utility_bills_off">See your SEWA electricity, water and gas bills over time, read from the bill texts SEWA sends you.</string>
+    <string name="utility_set_up">Set up</string>
+    <string name="utility_see_all">See all bills</string>
+    <string name="track_utility_bills">Read SEWA bills from SMS</string>
+    <string name="track_utility_bills_desc">Reads every SEWA bill text on your phone, old ones too, and keeps the bills even after the texts are deleted. Nothing leaves your phone.</string>
+    <string name="utility_sms_permission">Allow Ivy to read SMS so it can find your SEWA bill texts. Messages never leave your phone.</string>
+    <string name="utility_no_bills">No SEWA bill texts found yet. SEWA sends one each month with the bill's breakdown.</string>
+    <string name="utility_latest_bill">Latest bill</string>
+    <string name="utility_bill_by_bill">Bill by bill</string>
+    <string name="utility_averages">Averages</string>
+    <string name="utility_all_bills">All bills</string>
+    <string name="utility_period_days">%1$s · %2$d days</string>
+    <string name="utility_due">Due %1$s</string>
+    <string name="utility_account">Account …%1$s</string>
+    <string name="utility_electricity">Electricity</string>
+    <string name="utility_water">Water</string>
+    <string name="utility_gas">Gas</string>
+    <string name="utility_municipality">Municipality fee</string>
+    <string name="utility_vat">VAT</string>
+    <string name="utility_others">Others</string>
+    <string name="utility_arrears">Unpaid from earlier bills</string>
+    <string name="utility_other">Fees &amp; VAT</string>
+    <string name="utility_average_bill">Average bill</string>
+    <string name="utility_totals">This year %1$s · All time %2$s · %3$d bills</string>
+    <string name="utility_change_up">▲ %1$d%%</string>
+    <string name="utility_change_down">▼ %1$d%%</string>
 </resources>

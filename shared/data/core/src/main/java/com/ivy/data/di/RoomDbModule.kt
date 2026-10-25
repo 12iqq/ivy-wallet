@@ -24,6 +24,7 @@ import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.db.dao.write.WriteTagAssociationDao
 import com.ivy.data.db.dao.write.CapturedTransactionDao
+import com.ivy.data.db.dao.write.UtilityBillDao
 import com.ivy.data.db.dao.write.WriteTagDao
 import com.ivy.data.db.dao.write.WriteTransactionDao
 import dagger.Module
@@ -162,6 +163,11 @@ object RoomDbModule {
     @Provides
     fun provideCapturedTransactionDao(db: IvyRoomDatabase): CapturedTransactionDao {
         return db.capturedTransactionDao
+    }
+
+    @Provides
+    fun provideUtilityBillDao(db: IvyRoomDatabase): UtilityBillDao {
+        return db.utilityBillDao
     }
 
     @Provides

@@ -175,3 +175,9 @@ data object NotificationSettingsScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }
+
+/** Water, electricity and gas bills read from the provider's SMS (SEWA). */
+data object UtilityBillsScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}

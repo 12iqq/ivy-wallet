@@ -50,6 +50,9 @@ automatically from bank SMS alerts.
 - **Reports** (Cashew-style, in Ivy's look): month or year view, spending or income, a category donut you can tap
   to filter everything, spending pace vs last month, top places, the transactions behind the numbers, past months,
   and total balance over time.
+- **Utility bills** (optional, in Reports): reads SEWA's monthly bill texts and shows electricity, water and gas
+  bill by bill, with the change since the last bill, averages and totals. Bills are kept, and backed up, after the
+  texts are deleted. SEWA's texts give amounts only, not kWh or gallons.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
   CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
 - A cleaner Settings screen, without the original project's community, share and rating links.
@@ -66,6 +69,8 @@ Your existing Ivy Wallet backups (`.zip`) import as-is.
 3. To let the app read bank SMS, Android 13+ requires one more step for apps installed outside the Play Store:
    **Settings → Apps → Ivy Wallet → ⋮ → Allow restricted settings**, then grant the SMS permission.
 4. In your old Ivy Wallet, go to **Settings → Backup data**, then in this app use **Settings → Import data**.
+   Import into an empty app: importing adds to what's already there instead of replacing it, so anything entered
+   separately would show up twice. **Settings → Delete all user data** empties the app first.
 
 ## Build it yourself
 

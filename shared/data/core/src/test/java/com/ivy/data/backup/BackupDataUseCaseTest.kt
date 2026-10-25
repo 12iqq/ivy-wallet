@@ -13,6 +13,7 @@ import com.ivy.data.db.dao.fake.FakeSettingsDao
 import com.ivy.data.db.dao.fake.FakeTagAssociationDao
 import com.ivy.data.db.dao.fake.FakeTagDao
 import com.ivy.data.db.dao.fake.FakeTransactionDao
+import com.ivy.data.db.dao.fake.FakeUtilityBillDao
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.CurrencyRepository
@@ -82,7 +83,8 @@ class BackupDataUseCaseTest {
             tagsReader = tagDao,
             tagsWriter = tagDao,
             tagAssociationReader = tagAssociationDao,
-            tagAssociationWriter = tagAssociationDao
+            tagAssociationWriter = tagAssociationDao,
+            utilityBillDao = FakeUtilityBillDao()
         )
     }
 

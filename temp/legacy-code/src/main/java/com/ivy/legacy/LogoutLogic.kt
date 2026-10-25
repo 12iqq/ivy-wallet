@@ -7,6 +7,7 @@ import com.ivy.base.legacy.SharedPrefs
 import com.ivy.data.DataObserver
 import com.ivy.data.DataWriteEvent
 import com.ivy.data.db.dao.read.UserDao
+import com.ivy.data.db.dao.write.UtilityBillDao
 import com.ivy.data.db.dao.write.WriteBudgetDao
 import com.ivy.data.db.dao.write.WriteLoanDao
 import com.ivy.data.db.dao.write.WriteLoanRecordDao
@@ -39,7 +40,8 @@ class LogoutLogic @Inject constructor(
     private val writeBudgetDao: WriteBudgetDao,
     private val writeLoanDao: WriteLoanDao,
     private val writeLoanRecordDao: WriteLoanRecordDao,
-    private val exchangeRatesRepository: ExchangeRatesRepository
+    private val exchangeRatesRepository: ExchangeRatesRepository,
+    private val utilityBillDao: UtilityBillDao,
 ) {
     suspend fun logout() {
         ioThread {
@@ -67,6 +69,7 @@ class LogoutLogic @Inject constructor(
         writeLoanDao.deleteAll()
         writeLoanRecordDao.deleteAll()
         exchangeRatesRepository.deleteAll()
+        utilityBillDao.deleteAll()
     }
 
     suspend fun cloudLogout() {

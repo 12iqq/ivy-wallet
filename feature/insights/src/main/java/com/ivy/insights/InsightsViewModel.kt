@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import arrow.core.Some
+import com.ivy.base.legacy.SharedPrefs
+import com.ivy.data.db.dao.write.UtilityBillDao
 import com.ivy.data.model.Category
 import com.ivy.data.model.Expense
 import com.ivy.data.model.Income
@@ -15,6 +17,9 @@ import com.ivy.data.model.Transfer
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TransactionRepository
+import com.ivy.insights.utilities.UtilityBillReader
+import com.ivy.insights.utilities.UtilityCalculator
+import com.ivy.insights.utilities.UtilityCard
 import com.ivy.ui.ComposeViewModel
 import com.ivy.wallet.domain.action.exchange.ExchangeAct
 import com.ivy.wallet.domain.action.settings.BaseCurrencyAct
@@ -80,6 +85,7 @@ data class InsightsState(
     /** Last 12 months, oldest first. */
     val months: ImmutableList<MonthTotals>,
     val netWorth: ImmutableList<NetWorthPoint>,
+    val utilities: UtilityCard,
 )
 
 sealed interface InsightsEvent {
@@ -104,6 +110,9 @@ class InsightsViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val baseCurrencyAct: BaseCurrencyAct,
     private val exchangeAct: ExchangeAct,
+    private val sharedPrefs: SharedPrefs,
+    private val utilityBillDao: UtilityBillDao,
+    private val utilityBillReader: UtilityBillReader,
 ) : ComposeViewModel<InsightsState, InsightsEvent>() {
 
     // loaded data
@@ -111,6 +120,7 @@ class InsightsViewModel @Inject constructor(
     private var deltas: List<BalanceDelta> = emptyList()
     private var categories: Map<String, Category> = emptyMap()
     private var currency = ""
+    private var utilities = UtilityCard(enabled = false, latest = null)
 
     // selection
     private var mode = PeriodMode.Month
@@ -174,6 +184,7 @@ class InsightsViewModel @Inject constructor(
     }
 
     private fun load() {
+        loadUtilities()
         viewModelScope.launch {
             val baseCurrency = baseCurrencyAct(Unit)
             val accounts = accountRepository.findAll().associateBy { it.id }
@@ -254,6 +265,21 @@ class InsightsViewModel @Inject constructor(
         }
     }
 
+    private fun loadUtilities() {
+        viewModelScope.launch {
+            val enabled = sharedPrefs.getBoolean(SharedPrefs.TRACK_UTILITY_BILLS, false)
+            // picks up a bill that arrived since the last visit
+            if (enabled) utilityBillReader.readInbox()
+            val latest = if (enabled) {
+                utilityBillDao.findAll().firstNotNullOfOrNull(UtilityCalculator::toBill)
+            } else {
+                null
+            }
+            utilities = UtilityCard(enabled = enabled, latest = latest)
+            state = state.copy(utilities = utilities)
+        }
+    }
+
     private fun recompute() {
         val today = LocalDate.now()
         val period = currentPeriod()
@@ -302,6 +328,7 @@ class InsightsViewModel @Inject constructor(
             hasMoreTransactions = allTransactions.size > transactionsShown,
             months = InsightsCalculator.monthlyTotals(records, today).toImmutableList(),
             netWorth = InsightsCalculator.netWorth(deltas, today).toImmutableList(),
+            utilities = utilities,
         )
     }
 
@@ -336,6 +363,7 @@ class InsightsViewModel @Inject constructor(
         hasMoreTransactions = false,
         months = persistentListOf(),
         netWorth = persistentListOf(),
+        utilities = utilities,
     )
 
     private companion object {

@@ -19,6 +19,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.read.TagAssociationDao
 import com.ivy.data.db.dao.read.TagDao
 import com.ivy.data.db.dao.read.TransactionDao
+import com.ivy.data.db.dao.write.UtilityBillDao
 import com.ivy.data.db.dao.write.WriteBudgetDao
 import com.ivy.data.db.dao.write.WriteCategoryDao
 import com.ivy.data.db.dao.write.WriteLoanDao
@@ -72,7 +73,8 @@ class BackupDataUseCase @Inject constructor(
     private val tagsReader: TagDao,
     private val tagAssociationReader: TagAssociationDao,
     private val tagsWriter: WriteTagDao,
-    private val tagAssociationWriter: WriteTagAssociationDao
+    private val tagAssociationWriter: WriteTagAssociationDao,
+    private val utilityBillDao: UtilityBillDao,
 ) {
     suspend fun exportToFile(
         zipFileUri: Uri
@@ -108,6 +110,7 @@ class BackupDataUseCase @Inject constructor(
             val sharedPrefs = async { getSharedPrefsData() }
             val tags = async { tagsReader.findAll() }
             val tagAssociations = async { tagAssociationReader.findAll() }
+            val utilityBills = async { utilityBillDao.findAll() }
 
             val completeData = IvyWalletCompleteData(
                 accounts = accounts.await(),
@@ -120,7 +123,8 @@ class BackupDataUseCase @Inject constructor(
                 transactions = transactions.await(),
                 sharedPrefs = sharedPrefs.await(),
                 tags = tags.await(),
-                tagAssociations = tagAssociations.await()
+                tagAssociations = tagAssociations.await(),
+                utilityBills = utilityBills.await(),
             )
 
             json.encodeToString(completeData)
@@ -282,6 +286,7 @@ class BackupDataUseCase @Inject constructor(
 
             val plannedPayments =
                 async { plannedPaymentRuleWriter.saveMany(completeData.plannedPaymentRules) }
+            val utilityBills = async { utilityBillDao.saveAll(completeData.utilityBills) }
             val settings = async {
                 settingsWriter.deleteAll()
                 settingsWriter.saveMany(completeData.settings)
@@ -311,6 +316,7 @@ class BackupDataUseCase @Inject constructor(
             )
 
             plannedPayments.await()
+            utilityBills.await()
             settings.await()
             tags.await()
             tagAssociations.await()

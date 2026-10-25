@@ -11,6 +11,7 @@ import com.ivy.data.db.entity.SettingsEntity
 import com.ivy.data.db.entity.TagAssociationEntity
 import com.ivy.data.db.entity.TagEntity
 import com.ivy.data.db.entity.TransactionEntity
+import com.ivy.data.db.entity.UtilityBillEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -39,5 +40,7 @@ data class IvyWalletCompleteData(
     @SerialName("tags")
     val tags: List<TagEntity> = emptyList(),
     @SerialName("tagAssociations")
-    val tagAssociations: List<TagAssociationEntity> = emptyList()
+    val tagAssociations: List<TagAssociationEntity> = emptyList(),
+    @SerialName("utilityBills")
+    val utilityBills: List<UtilityBillEntity> = emptyList(),
 )
