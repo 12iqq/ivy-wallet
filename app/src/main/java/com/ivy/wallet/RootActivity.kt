@@ -20,6 +20,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -111,7 +112,6 @@ class RootActivity : AppCompatActivity(), RootScreen {
             }
 
             val appLocked by viewModel.appLocked.collectAsState()
-            val transactionLook by transactionLookStore.look.collectAsState()
             when (appLocked) {
                 null -> { // display nothing
                 }
@@ -135,22 +135,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
                     }
                 }
 
-                false -> {
-                    // Settings -> Transaction look, for every transaction card
-                    CompositionLocalProvider(LocalTransactionLook provides transactionLook) {
-                        NavigationRoot(navigation = navigation) { screen ->
-                            IvyUI(
-                                design = appDesign(ivyContext),
-                                includeSurface = screen?.isLegacy ?: true,
-                                timeConverter = timeConverter,
-                                timeProvider = timeProvider,
-                                timeFormatter = timeFormatter,
-                            ) {
-                                IvyNavGraph(screen)
-                            }
-                        }
-                    }
-                }
+                false -> AppContent()
             }
 
             IvyMaterial3Theme(
@@ -161,6 +146,27 @@ class RootActivity : AppCompatActivity(), RootScreen {
                 isTrueBlack = appDesign(ivyContext).context().theme == Theme.AMOLED_DARK
             ) {
                 dateTimePicker.Content()
+            }
+        }
+    }
+
+    @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
+    @Composable
+    @Suppress("FunctionNaming")
+    private fun AppContent() {
+        // Settings -> Transaction look, for every transaction card
+        val transactionLook by transactionLookStore.look.collectAsState()
+        CompositionLocalProvider(LocalTransactionLook provides transactionLook) {
+            NavigationRoot(navigation = navigation) { screen ->
+                IvyUI(
+                    design = appDesign(ivyContext),
+                    includeSurface = screen?.isLegacy ?: true,
+                    timeConverter = timeConverter,
+                    timeProvider = timeProvider,
+                    timeFormatter = timeFormatter,
+                ) {
+                    IvyNavGraph(screen)
+                }
             }
         }
     }

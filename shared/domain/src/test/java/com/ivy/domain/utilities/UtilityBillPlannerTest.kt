@@ -266,7 +266,9 @@ class UtilityBillPlannerTest {
             to: Instant,
         ): Int = 0
 
-        override suspend fun deleteHandledBefore(before: Instant) = Unit
+        override suspend fun deleteHandledBefore(before: Instant) {
+            items.values.removeAll { it.status != CapturedTransactionEntity.STATUS_PENDING && it.receivedAt < before }
+        }
 
         private fun pending(): List<CapturedTransactionEntity> =
             items.values.filter { it.status == CapturedTransactionEntity.STATUS_PENDING }
