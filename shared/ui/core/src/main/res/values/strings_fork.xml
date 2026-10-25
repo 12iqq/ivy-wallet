@@ -190,7 +190,7 @@
     <string name="track_utility_bills">Read SEWA bills from SMS</string>
     <string name="track_utility_bills_desc">Reads every SEWA bill text on your phone, old ones too, and keeps the bills even after the texts are deleted. Nothing leaves your phone.</string>
     <string name="utility_sms_permission">Allow Ivy to read SMS so it can find your SEWA bill texts. Messages never leave your phone.</string>
-    <string name="utility_no_bills">No SEWA bill texts found yet. SEWA sends one each month with the bill's breakdown.</string>
+    <string name="utility_no_bills">No SEWA bill texts found yet. SEWA sends one each month with the bill\'s breakdown.</string>
     <string name="utility_latest_bill">Latest bill</string>
     <string name="utility_bill_by_bill">Bill by bill</string>
     <string name="utility_averages">Averages</string>
