@@ -53,6 +53,7 @@ import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
 import com.ivy.navigation.ImportScreen
 import com.ivy.navigation.NotificationSettingsScreen
+import com.ivy.navigation.TransactionLookScreen
 import com.ivy.navigation.navigation
 import com.ivy.navigation.screenScopedViewModel
 import com.ivy.ui.R
@@ -312,6 +313,16 @@ private fun BoxWithConstraintsScope.UI(
             Spacer(Modifier.height(12.dp))
 
             val nav = navigation()
+            SettingsDefaultButton(
+                icon = R.drawable.ic_custom_palette_m,
+                text = stringResource(R.string.transaction_look),
+                description = stringResource(R.string.transaction_look_button_desc),
+            ) {
+                nav.navigateTo(TransactionLookScreen)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
 //            SettingsDefaultButton(
 //                icon = R.drawable.ic_custom_atom_m,
 //                text = "Features"

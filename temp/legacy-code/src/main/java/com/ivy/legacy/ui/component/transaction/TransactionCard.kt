@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ivy.base.legacy.LegacyTag
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
@@ -63,6 +64,8 @@ import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.ui.time.TimeFormatter
+import com.ivy.ui.transactionlook.LocalTransactionLook
+import com.ivy.ui.transactionlook.TagTextSize
 import com.ivy.wallet.domain.data.IvyCurrency
 import com.ivy.wallet.ui.theme.Blue
 import com.ivy.wallet.ui.theme.Gradient
@@ -356,7 +359,8 @@ private fun TransactionHeaderRow(
                 text = account?.name ?: stringResource(R.string.deleted),
                 backgroundColor = accountBackgroundColor,
                 icon = account?.icon,
-                defaultIcon = R.drawable.ic_custom_account_s
+                defaultIcon = R.drawable.ic_custom_account_s,
+                textSize = LocalTransactionLook.current.accountTagSize,
             ) {
                 account?.let {
                     nav.navigateTo(
@@ -380,7 +384,8 @@ fun CategoryBadgeDisplay(
         text = category.name.value,
         backgroundColor = category.color.value.toComposeColor(),
         icon = category.icon?.id,
-        defaultIcon = R.drawable.ic_custom_category_s
+        defaultIcon = R.drawable.ic_custom_category_s,
+        textSize = LocalTransactionLook.current.categoryTagSize,
     ) {
         // Navigation logic
         nav.navigateTo(
@@ -420,7 +425,7 @@ private fun TransactionBadge(
     icon: String?,
     @DrawableRes
     defaultIcon: Int,
-
+    textSize: TagTextSize,
     onClick: () -> Unit
 ) {
     Row(
@@ -450,7 +455,7 @@ private fun TransactionBadge(
             typo = UI.typo.c.style(
                 color = contrastColor,
                 fontWeight = FontWeight.ExtraBold
-            )
+            ).copy(fontSize = textSize.sp.sp)
         )
 
         SpacerHor(width = 20.dp)
@@ -471,6 +476,7 @@ private fun TransferHeader(
     val toAccount = remember(accounts, transaction) {
         accounts.find { transaction.toAccountId == it.id }
     }
+    val nameSize = LocalTransactionLook.current.accountTagSize.sp.sp
 
     Row(
         modifier = Modifier
@@ -517,7 +523,7 @@ private fun TransferHeader(
             style = UI.typo.c.style(
                 fontWeight = FontWeight.ExtraBold,
                 color = accountContrastColor
-            )
+            ).copy(fontSize = nameSize)
         )
 
         Spacer(Modifier.width(12.dp))
@@ -549,7 +555,7 @@ private fun TransferHeader(
             style = UI.typo.c.style(
                 fontWeight = FontWeight.ExtraBold,
                 color = toAccountContrastColor
-            )
+            ).copy(fontSize = nameSize)
         )
 
         Spacer(Modifier.width(20.dp))

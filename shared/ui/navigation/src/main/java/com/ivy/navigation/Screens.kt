@@ -181,3 +181,9 @@ data object UtilityBillsScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }
+
+/** How transaction cards look: account tag colors, tag text sizes. */
+data object TransactionLookScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}

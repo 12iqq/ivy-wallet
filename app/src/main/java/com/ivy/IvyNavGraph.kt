@@ -52,6 +52,7 @@ import com.ivy.navigation.ReportScreen
 import com.ivy.navigation.Screen
 import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
+import com.ivy.navigation.TransactionLookScreen
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.UtilityBillsScreen
 import com.ivy.onboarding.OnboardingScreen
@@ -63,6 +64,7 @@ import com.ivy.releases.ReleasesScreenImpl
 import com.ivy.reports.ReportScreen
 import com.ivy.search.SearchScreen
 import com.ivy.settings.SettingsScreen
+import com.ivy.settings.TransactionLookScreenImpl
 import com.ivy.transaction.EditTransactionScreen
 import com.ivy.transactions.TransactionsScreen
 
@@ -106,5 +108,6 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         NotificationSettingsScreen -> NotificationSettingsScreenImpl()
         InsightsScreen -> InsightsScreenImpl()
         UtilityBillsScreen -> UtilityBillsScreenImpl()
+        TransactionLookScreen -> TransactionLookScreenImpl()
     }
 }

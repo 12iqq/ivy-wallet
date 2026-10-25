@@ -189,6 +189,8 @@
     <string name="utility_see_all">See all bills</string>
     <string name="track_utility_bills">Read SEWA bills from SMS</string>
     <string name="track_utility_bills_desc">Reads every SEWA bill text on your phone, old ones too, and keeps the bills even after the texts are deleted. Nothing leaves your phone.</string>
+    <string name="plan_utility_bills">Add bills as planned payments</string>
+    <string name="plan_utility_bills_desc">Each new bill becomes a planned payment due on its due date, named like your last SEWA payment. When SEWA confirms your payment it\'s marked paid, and the bank\'s text for it isn\'t added twice.</string>
     <string name="utility_sms_permission">Allow Ivy to read SMS so it can find your SEWA bill texts. Messages never leave your phone.</string>
     <string name="utility_no_bills">No SEWA bill texts found yet. SEWA sends one each month with the bill\'s breakdown.</string>
     <string name="utility_latest_bill">Latest bill</string>
@@ -210,4 +212,18 @@
     <string name="utility_totals">This year %1$s · All time %2$s · %3$d bills</string>
     <string name="utility_change_up">▲ %1$d%%</string>
     <string name="utility_change_down">▼ %1$d%%</string>
+
+    <!-- Transaction look -->
+    <string name="transaction_look">Transaction look</string>
+    <string name="transaction_look_button_desc">Account tag color and text size</string>
+    <string name="transaction_look_desc">How transactions look in your lists. The preview shows light and dark mode.</string>
+    <string name="transaction_look_sample">Sample purchase</string>
+    <string name="color_account_tags">Color account tags</string>
+    <string name="color_account_tags_desc">Account tags use each account\'s color, like category tags. The text turns black or white so it stays readable.</string>
+    <string name="account_tag_text">Account tag text</string>
+    <string name="category_tag_text">Category tag text</string>
+    <string name="tag_size_small">Small</string>
+    <string name="tag_size_default">Default</string>
+    <string name="tag_size_large">Large</string>
+    <string name="tag_size_extra_large">Extra large</string>
 </resources>

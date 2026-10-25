@@ -20,6 +20,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +51,8 @@ import com.ivy.navigation.NavigationRoot
 import com.ivy.ui.R
 import com.ivy.ui.time.TimeFormatter
 import com.ivy.ui.time.impl.DateTimePicker
+import com.ivy.ui.transactionlook.LocalTransactionLook
+import com.ivy.ui.transactionlook.TransactionLookStore
 import com.ivy.wallet.ui.applocked.AppLockedScreen
 import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import com.ivy.widget.transaction.AddTransactionWidget
@@ -83,6 +86,9 @@ class RootActivity : AppCompatActivity(), RootScreen {
     @Inject
     lateinit var dateTimePicker: DateTimePicker
 
+    @Inject
+    lateinit var transactionLookStore: TransactionLookStore
+
     private lateinit var createFileLauncher: ActivityResultLauncher<String>
     private lateinit var onFileCreated: (fileUri: Uri) -> Unit
 
@@ -105,6 +111,7 @@ class RootActivity : AppCompatActivity(), RootScreen {
             }
 
             val appLocked by viewModel.appLocked.collectAsState()
+            val transactionLook by transactionLookStore.look.collectAsState()
             when (appLocked) {
                 null -> { // display nothing
                 }
@@ -129,15 +136,18 @@ class RootActivity : AppCompatActivity(), RootScreen {
                 }
 
                 false -> {
-                    NavigationRoot(navigation = navigation) { screen ->
-                        IvyUI(
-                            design = appDesign(ivyContext),
-                            includeSurface = screen?.isLegacy ?: true,
-                            timeConverter = timeConverter,
-                            timeProvider = timeProvider,
-                            timeFormatter = timeFormatter,
-                        ) {
-                            IvyNavGraph(screen)
+                    // Settings -> Transaction look, for every transaction card
+                    CompositionLocalProvider(LocalTransactionLook provides transactionLook) {
+                        NavigationRoot(navigation = navigation) { screen ->
+                            IvyUI(
+                                design = appDesign(ivyContext),
+                                includeSurface = screen?.isLegacy ?: true,
+                                timeConverter = timeConverter,
+                                timeProvider = timeProvider,
+                                timeFormatter = timeFormatter,
+                            ) {
+                                IvyNavGraph(screen)
+                            }
                         }
                     }
                 }

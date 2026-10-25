@@ -30,6 +30,13 @@ class SharedPrefs @Inject constructor(
 
         // read utility bills (SEWA) from SMS for the utility bills report
         const val TRACK_UTILITY_BILLS = "track_utility_bills"
+
+        // each new utility bill becomes a planned payment
+        const val PLAN_UTILITY_BILLS = "plan_utility_bills"
+
+        // Settings -> Transaction look
+        const val ACCOUNT_TAG_TEXT_SIZE = "account_tag_text_size"
+        const val CATEGORY_TAG_TEXT_SIZE = "category_tag_text_size"
         // ----------------------------- App Settings -----------------------------------------------
 
         // -------------------------------- Customer Journey ----------------------------------------
