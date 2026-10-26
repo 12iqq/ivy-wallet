@@ -35,6 +35,8 @@
     <string name="auto_capture_mode_both_desc">Capture SMS as they arrive and catch up with statements</string>
     <string name="auto_add_without_review">Add without review</string>
     <string name="auto_add_without_review_desc">Add transactions straight away when the account is known</string>
+    <string name="plan_card_bills">Card bills become planned payments</string>
+    <string name="plan_card_bills_desc">A card\'s billing alert (ADCB sends one each month) waits under Upcoming for the total due, paid from the account you paid the card from last time. Paying the card marks it paid.</string>
     <string name="my_banks">My banks &amp; cards</string>
     <string name="my_banks_desc">Only messages from selected banks are read</string>
     <string name="card_ending">Last 4 digits, e.g. 1234</string>

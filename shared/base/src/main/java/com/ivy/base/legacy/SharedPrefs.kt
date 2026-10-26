@@ -41,6 +41,9 @@ class SharedPrefs @Inject constructor(
 
         // Settings -> Find duplicates: groups marked "not duplicates"
         const val IGNORED_DUPLICATES = "ignored_duplicates"
+
+        // auto-add: card bills already made planned payments, so they aren't planned twice
+        const val PLANNED_CARD_BILLS = "planned_card_bills"
         // ----------------------------- App Settings -----------------------------------------------
 
         // -------------------------------- Customer Journey ----------------------------------------

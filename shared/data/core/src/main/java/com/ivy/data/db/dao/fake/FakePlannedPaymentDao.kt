@@ -34,6 +34,8 @@ class FakePlannedPaymentDao : PlannedPaymentRuleDao, WritePlannedPaymentRuleDao 
     }
 
     override suspend fun save(value: PlannedPaymentRuleEntity) {
+        // an upsert, like the real one
+        items.removeIf { it.id == value.id }
         items.add(value)
     }
 

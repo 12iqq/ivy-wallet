@@ -90,10 +90,29 @@ Tabby messages only count when they move money in Tabby Cash (spends, top-ups, m
 received). Pay-later orders, reminders and requests to confirm are skipped: the instalments
 show up on the card that pays them.
 
+## Card bills
+
+A card's billing alert ("Cr.Card XXX1234 Billing alert: Total due … AED1,234.56. Due date Oct 30
+2026; Pay min. AED100.00 …", sent by ADCB) isn't a transaction. `CardBillParser` reads the card,
+the total due, the minimum and the due date, and `CardBillPlanner` turns it into a one-time planned
+transfer into the linked card for the total due, due at noon on the due date, so it waits under
+Upcoming. It's paid from the account that paid this card last time (else the one that paid another
+card, else the account picked last when adding a transaction), in the card's currency. The rule and
+its pending transaction have ids made from the card and the due date, and planned bills are
+remembered (`SharedPrefs.PLANNED_CARD_BILLS`), so reading the alert again, as a scan of the inbox
+does, doesn't plan it twice or bring back one you deleted.
+
+When auto-add adds a transfer into the card, `CardBillPlanner.onPayment` checks the card's pending
+bill. A payment that covers what's left becomes the bill's payment (it gets the rule's id and the due
+date it paid for, and the pending one and the rule are removed, as when paying by hand). A smaller
+one lowers what's left and is noted in the description ("· Paid AED 500.00"). The alert can arrive
+after the card was paid, so payments from up to 2 days before it count too. A new statement replaces
+a bill that's still pending, since it includes what was left. Switch it off with *Card bills become
+planned payments* in the auto-add settings.
+
 ## To do
 
 - Sort every message into a kind first (purchase, refund, money received, transfer, card
   payment, reminder or statement, information only) instead of keyword lists.
 - Cash: ATM withdrawals and cash deposits could become transfers to and from a Cash account
   the way you recorded them last time.
-- Card statements ("Total due … Due date …") could update the card's due date and amount.

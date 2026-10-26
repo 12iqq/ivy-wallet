@@ -37,6 +37,9 @@ automatically from bank SMS alerts.
 - **Google Wallet payments** (optional): tap-to-pay notifications are captured too, and matched to your card by its
   last 4 digits. If the bank's SMS for the same purchase also arrives, it's added only once.
 - **Card payment reminders** a few days before each card's due date, then the day before and on the day.
+- **Card bills** (ADCB's monthly billing alert): the total due becomes a planned payment into the card, due on its
+  due date and paid from the account you paid the card from last time. Paying the card marks it paid; a smaller
+  payment lowers what's left.
 - **Credit card payments**: a transfer to a credit card shows what the card owes and what's left after the payment,
   with *Pay all* to clear it; no category or tags needed.
 - **Statement-cycle spending** on credit cards: "Spent this statement" instead of the calendar month.

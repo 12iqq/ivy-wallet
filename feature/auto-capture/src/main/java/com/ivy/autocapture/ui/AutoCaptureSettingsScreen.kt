@@ -205,6 +205,13 @@ private fun BoxWithConstraintsScope.UI(
 
                 Spacer(Modifier.height(12.dp))
                 SwitchRow(
+                    title = stringResource(R.string.plan_card_bills),
+                    description = stringResource(R.string.plan_card_bills_desc),
+                    checked = config.planCardBills,
+                ) { onEvent(AutoCaptureSettingsEvent.SetPlanCardBills(it)) }
+
+                Spacer(Modifier.height(12.dp))
+                SwitchRow(
                     title = stringResource(R.string.read_wallet_notifications),
                     description = stringResource(
                         if (config.smsCheck.scheduled) {

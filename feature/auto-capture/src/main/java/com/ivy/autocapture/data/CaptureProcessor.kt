@@ -55,6 +55,7 @@ class CaptureProcessor @Inject constructor(
     private val notifications: CaptureNotifications,
     private val utilityBills: UtilityBillReader,
     private val utilityPlanner: UtilityBillPlanner,
+    private val cardBills: CardBillPlanner,
 ) {
     private val router = BankMessageRouter()
     private val captureLock = Mutex()
@@ -85,9 +86,11 @@ class CaptureProcessor @Inject constructor(
         val config = settingsStore.current()
         if (config.mode == AutoCaptureMode.Off) return null
 
-        val parsed = router.parse(sender, body, config.enabledBankIds, config.extraSenders)
-            ?: return null
+        val bank = router.bankFor(sender, config.enabledBankIds, config.extraSenders) ?: return null
         moveAccountEndingsToLinks()
+        // a card's statement isn't a transaction: it can become the card's planned payment
+        if (cardBills.onMessage(bank.id, body, receivedAt)) return null
+        val parsed = GenericMessageParser.parse(bank, body) ?: return null
         val links = settingsStore.current().links
 
         // SMS and Wallet notifications arrive on different threads: check-and-save one at a time
@@ -296,18 +299,18 @@ class CaptureProcessor @Inject constructor(
         } else {
             convert(transaction.amount, toCurrency, fromCurrency, baseCurrency) to transaction.amount
         }
-        transactionWriter.save(
-            transaction.copy(
-                type = TransactionType.TRANSFER,
-                accountId = from,
-                amount = amount,
-                toAccountId = to,
-                toAmount = toAmount,
-                categoryId = null,
-                // transfers don't need a name: drop the one auto-add gave it
-                title = transaction.title.takeUnless { it == suggestedTitle(added) },
-            )
+        val transfer = transaction.copy(
+            type = TransactionType.TRANSFER,
+            accountId = from,
+            amount = amount,
+            toAccountId = to,
+            toAmount = toAmount,
+            categoryId = null,
+            // transfers don't need a name: drop the one auto-add gave it
+            title = transaction.title.takeUnless { it == suggestedTitle(added) },
         )
+        transactionWriter.save(transfer)
+        cardBills.onPayment(transfer)
     }
 
     private suspend fun addAsCaptured(item: CapturedTransactionEntity): UUID? {
@@ -423,6 +426,8 @@ class CaptureProcessor @Inject constructor(
             )
         )
         notifications.dismiss(captured.id)
+        // paying a card can pay its planned bill
+        cardBills.onAdded(transactionId)
         return transactionId
     }
 

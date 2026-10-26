@@ -53,6 +53,8 @@ data class AutoCaptureConfig(
     val extraSenders: Map<String, List<String>> = emptyMap(),
     val links: List<CardLink> = emptyList(),
     val addWithoutReview: Boolean = false,
+    /** A card's billing alert becomes a planned payment into the card (see CardBillPlanner). */
+    val planCardBills: Boolean = true,
     /** Also read Google Wallet tap-to-pay notifications (needs notification access). */
     val readWalletNotifications: Boolean = false,
     /** Card endings once typed on accounts were copied into [links]. */

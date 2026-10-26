@@ -48,6 +48,7 @@ sealed interface AutoCaptureSettingsEvent {
     data class SetSmsCheck(val check: SmsCheck) : AutoCaptureSettingsEvent
     data class SetBankEnabled(val bankId: String, val enabled: Boolean) : AutoCaptureSettingsEvent
     data class SetAddWithoutReview(val enabled: Boolean) : AutoCaptureSettingsEvent
+    data class SetPlanCardBills(val enabled: Boolean) : AutoCaptureSettingsEvent
     data class SetReadWalletNotifications(val enabled: Boolean) : AutoCaptureSettingsEvent
     data class AddLink(val bankId: String, val last4: String?, val account: Account) :
         AutoCaptureSettingsEvent
@@ -101,6 +102,8 @@ class AutoCaptureSettingsViewModel @Inject constructor(
         )
     }
 
+    // one branch per event
+    @Suppress("CyclomaticComplexMethod")
     override fun onEvent(event: AutoCaptureSettingsEvent) {
         when (event) {
             is AutoCaptureSettingsEvent.SetMode -> {
@@ -131,6 +134,10 @@ class AutoCaptureSettingsViewModel @Inject constructor(
 
             is AutoCaptureSettingsEvent.SetAddWithoutReview -> store.update {
                 it.copy(addWithoutReview = event.enabled)
+            }
+
+            is AutoCaptureSettingsEvent.SetPlanCardBills -> store.update {
+                it.copy(planCardBills = event.enabled)
             }
 
             is AutoCaptureSettingsEvent.SetReadWalletNotifications -> {
