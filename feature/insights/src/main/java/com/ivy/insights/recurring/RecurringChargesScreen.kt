@@ -176,7 +176,7 @@ private fun ChargeRow(
                 )
                 Text(
                     text = listOfNotNull(
-                        cadence(row.cadence),
+                        stringResource(cadenceName(row.cadence)),
                         stringResource(R.string.recurring_planned).takeIf { row.planned },
                         row.account,
                     ).joinToString(" · "),
@@ -287,15 +287,13 @@ fun RecurringChargesCard(card: RecurringCard, onOpen: () -> Unit, modifier: Modi
     }
 }
 
-@Composable
-private fun cadence(cadence: Cadence): String = stringResource(
-    when (cadence) {
-        Cadence.Weekly -> R.string.recurring_weekly
-        Cadence.Monthly -> R.string.recurring_monthly
-        Cadence.Quarterly -> R.string.recurring_quarterly
-        Cadence.Yearly -> R.string.recurring_yearly
-    }
-)
+// a string id, not a composable returning the text: those can't be skipped
+private fun cadenceName(cadence: Cadence): Int = when (cadence) {
+    Cadence.Weekly -> R.string.recurring_weekly
+    Cadence.Monthly -> R.string.recurring_monthly
+    Cadence.Quarterly -> R.string.recurring_quarterly
+    Cadence.Yearly -> R.string.recurring_yearly
+}
 
 private fun money(amount: Double, currency: String): String = "${amount.format(currency)} $currency"
 
