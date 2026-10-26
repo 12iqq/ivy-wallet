@@ -31,6 +31,7 @@ import com.ivy.navigation.BalanceScreen
 import com.ivy.navigation.BudgetScreen
 import com.ivy.navigation.CSVScreen
 import com.ivy.navigation.CategoriesScreen
+import com.ivy.navigation.DuplicatesScreen
 import com.ivy.navigation.ContributorsScreen
 import com.ivy.navigation.DisclaimerScreen
 import com.ivy.navigation.EditPlannedScreen
@@ -65,6 +66,7 @@ import com.ivy.reports.ReportScreen
 import com.ivy.search.SearchScreen
 import com.ivy.settings.SettingsScreen
 import com.ivy.settings.TransactionLookScreenImpl
+import com.ivy.settings.duplicates.DuplicatesScreenImpl
 import com.ivy.transaction.EditTransactionScreen
 import com.ivy.transactions.TransactionsScreen
 
@@ -109,5 +111,6 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         InsightsScreen -> InsightsScreenImpl()
         UtilityBillsScreen -> UtilityBillsScreenImpl()
         TransactionLookScreen -> TransactionLookScreenImpl()
+        DuplicatesScreen -> DuplicatesScreenImpl()
     }
 }

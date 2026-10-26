@@ -49,6 +49,7 @@ import com.ivy.legacy.utils.drawColoredShadow
 import com.ivy.navigation.AssistantSettingsScreen
 import com.ivy.navigation.AttributionsScreen
 import com.ivy.navigation.AutoCaptureSettingsScreen
+import com.ivy.navigation.DuplicatesScreen
 import com.ivy.navigation.ExchangeRatesScreen
 import com.ivy.navigation.FeaturesScreen
 import com.ivy.navigation.ImportScreen
@@ -285,6 +286,16 @@ private fun BoxWithConstraintsScope.UI(
                 iconPadding = 8.dp
             ) {
                 nav.navigateTo(AssistantSettingsScreen)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            SettingsDefaultButton(
+                icon = R.drawable.ic_search,
+                text = stringResource(R.string.find_duplicates),
+                description = stringResource(R.string.find_duplicates_button_desc),
+            ) {
+                nav.navigateTo(DuplicatesScreen)
             }
         }
 

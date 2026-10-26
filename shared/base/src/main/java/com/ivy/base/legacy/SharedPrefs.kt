@@ -38,6 +38,9 @@ class SharedPrefs @Inject constructor(
         const val ACCOUNT_TAG_TEXT_SIZE = "account_tag_text_size"
         const val CATEGORY_TAG_TEXT_SIZE = "category_tag_text_size"
         const val ACCOUNT_TAG_ON_RIGHT = "account_tag_on_right"
+
+        // Settings -> Find duplicates: groups marked "not duplicates"
+        const val IGNORED_DUPLICATES = "ignored_duplicates"
         // ----------------------------- App Settings -----------------------------------------------
 
         // -------------------------------- Customer Journey ----------------------------------------

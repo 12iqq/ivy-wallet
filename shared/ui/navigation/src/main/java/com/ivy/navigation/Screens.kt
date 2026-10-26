@@ -187,3 +187,9 @@ data object TransactionLookScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }
+
+/** Transactions that look entered twice, to delete the extra copies. */
+data object DuplicatesScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}
