@@ -37,6 +37,7 @@ class SharedPrefs @Inject constructor(
         // Settings -> Transaction look
         const val ACCOUNT_TAG_TEXT_SIZE = "account_tag_text_size"
         const val CATEGORY_TAG_TEXT_SIZE = "category_tag_text_size"
+        const val ACCOUNT_TAG_ON_RIGHT = "account_tag_on_right"
         // ----------------------------- App Settings -----------------------------------------------
 
         // -------------------------------- Customer Journey ----------------------------------------

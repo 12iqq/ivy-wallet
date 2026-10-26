@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -334,6 +336,35 @@ private fun TransactionHeaderRow(
                 shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions
             )
         }
+    } else if (LocalTransactionLook.current.accountOnRight) {
+        // the category on the left, the account it was paid from on the right
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 20.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (category != null) {
+                Box(modifier = Modifier.weight(1f, fill = false)) {
+                    CategoryBadgeDisplay(category, nav, singleLine = true)
+                }
+            } else {
+                Spacer(Modifier)
+            }
+            Box(
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .widthIn(max = AccountTagMaxWidth.dp)
+            ) {
+                AccountBadge(
+                    account = account(accountId = transaction.accountId, accounts = accounts),
+                    colored = shouldShowAccountSpecificColorInTransactions,
+                    nav = nav,
+                    singleLine = true,
+                )
+            }
+        }
     } else {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -343,34 +374,33 @@ private fun TransactionHeaderRow(
             if (category != null) {
                 CategoryBadgeDisplay(category, nav)
             }
-
-            val account = account(
-                accountId = transaction.accountId,
-                accounts = accounts
+            AccountBadge(
+                account = account(accountId = transaction.accountId, accounts = accounts),
+                colored = shouldShowAccountSpecificColorInTransactions,
+                nav = nav,
+                singleLine = false,
             )
+        }
+    }
+}
 
-            val accountBackgroundColor = if (shouldShowAccountSpecificColorInTransactions) {
-                account?.color?.toComposeColor() ?: UI.colors.pure
-            } else {
-                UI.colors.pure
-            }
-
-            TransactionBadge(
-                text = account?.name ?: stringResource(R.string.deleted),
-                backgroundColor = accountBackgroundColor,
-                icon = account?.icon,
-                defaultIcon = R.drawable.ic_custom_account_s,
-                textSize = LocalTransactionLook.current.accountTagSize,
-            ) {
-                account?.let {
-                    nav.navigateTo(
-                        TransactionsScreen(
-                            accountId = account.id,
-                            categoryId = null
-                        )
-                    )
-                }
-            }
+@Composable
+private fun AccountBadge(account: Account?, colored: Boolean, nav: Navigation, singleLine: Boolean) {
+    TransactionBadge(
+        text = account?.name ?: stringResource(R.string.deleted),
+        backgroundColor = if (colored) account?.color?.toComposeColor() ?: UI.colors.pure else UI.colors.pure,
+        icon = account?.icon,
+        defaultIcon = R.drawable.ic_custom_account_s,
+        textSize = LocalTransactionLook.current.accountTagSize,
+        singleLine = singleLine,
+    ) {
+        account?.let {
+            nav.navigateTo(
+                TransactionsScreen(
+                    accountId = it.id,
+                    categoryId = null
+                )
+            )
         }
     }
 }
@@ -379,6 +409,7 @@ private fun TransactionHeaderRow(
 fun CategoryBadgeDisplay(
     category: Category,
     nav: Navigation,
+    singleLine: Boolean = false,
 ) {
     TransactionBadge(
         text = category.name.value,
@@ -386,6 +417,7 @@ fun CategoryBadgeDisplay(
         icon = category.icon?.id,
         defaultIcon = R.drawable.ic_custom_category_s,
         textSize = LocalTransactionLook.current.categoryTagSize,
+        singleLine = singleLine,
     ) {
         // Navigation logic
         nav.navigateTo(
@@ -426,6 +458,8 @@ private fun TransactionBadge(
     @DrawableRes
     defaultIcon: Int,
     textSize: TagTextSize,
+    /** One line, shortened with "…" when there's no room (next to the other tag on one row). */
+    singleLine: Boolean,
     onClick: () -> Unit
 ) {
     Row(
@@ -450,19 +484,28 @@ private fun TransactionBadge(
 
         SpacerHor(width = 4.dp)
 
-        IvyText(
-            text = text,
-            typo = UI.typo.c.style(
-                color = contrastColor,
-                fontWeight = FontWeight.ExtraBold
-            ).copy(fontSize = textSize.sp.sp)
-        )
+        val style = UI.typo.c.style(
+            color = contrastColor,
+            fontWeight = FontWeight.ExtraBold
+        ).copy(fontSize = textSize.sp.sp)
+        if (singleLine) {
+            Text(
+                modifier = Modifier.weight(1f, fill = false),
+                text = text,
+                style = style,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else {
+            IvyText(text = text, typo = style)
+        }
 
         SpacerHor(width = 20.dp)
     }
 }
 
 private const val TransferHeaderGradientThreshold = 0.35f
+private const val AccountTagMaxWidth = 200
 
 @Composable
 private fun TransferHeader(

@@ -49,6 +49,7 @@ sealed interface TransactionLookEvent {
     data class SetColorAccountTags(val enabled: Boolean) : TransactionLookEvent
     data class SetAccountTagSize(val size: TagTextSize) : TransactionLookEvent
     data class SetCategoryTagSize(val size: TagTextSize) : TransactionLookEvent
+    data class SetAccountOnRight(val onRight: Boolean) : TransactionLookEvent
 }
 
 @Stable
@@ -95,6 +96,7 @@ class TransactionLookViewModel @Inject constructor(
 
             is TransactionLookEvent.SetAccountTagSize -> store.setAccountTagSize(event.size)
             is TransactionLookEvent.SetCategoryTagSize -> store.setCategoryTagSize(event.size)
+            is TransactionLookEvent.SetAccountOnRight -> store.setAccountOnRight(event.onRight)
         }
     }
 

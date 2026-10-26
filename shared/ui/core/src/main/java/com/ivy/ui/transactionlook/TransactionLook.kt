@@ -23,9 +23,15 @@ enum class TagTextSize(val sp: Int) {
 data class TransactionLook(
     val accountTagSize: TagTextSize,
     val categoryTagSize: TagTextSize,
+    /** The category tag on the left and the account tag on the right, instead of side by side. */
+    val accountOnRight: Boolean,
 ) {
     companion object {
-        val Default = TransactionLook(accountTagSize = TagTextSize.Default, categoryTagSize = TagTextSize.Default)
+        val Default = TransactionLook(
+            accountTagSize = TagTextSize.Default,
+            categoryTagSize = TagTextSize.Default,
+            accountOnRight = false,
+        )
     }
 }
 
@@ -50,9 +56,15 @@ class TransactionLookStore @Inject constructor(
         state.update { it.copy(categoryTagSize = size) }
     }
 
+    fun setAccountOnRight(onRight: Boolean) {
+        sharedPrefs.putBoolean(SharedPrefs.ACCOUNT_TAG_ON_RIGHT, onRight)
+        state.update { it.copy(accountOnRight = onRight) }
+    }
+
     private fun load(): TransactionLook = TransactionLook(
         accountTagSize = size(SharedPrefs.ACCOUNT_TAG_TEXT_SIZE),
         categoryTagSize = size(SharedPrefs.CATEGORY_TAG_TEXT_SIZE),
+        accountOnRight = sharedPrefs.getBoolean(SharedPrefs.ACCOUNT_TAG_ON_RIGHT, false),
     )
 
     private fun size(key: String): TagTextSize =

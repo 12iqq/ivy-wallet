@@ -220,6 +220,8 @@
     <string name="transaction_look_sample">Sample purchase</string>
     <string name="color_account_tags">Color account tags</string>
     <string name="color_account_tags_desc">Account tags use each account\'s color, like category tags. The text turns black or white so it stays readable.</string>
+    <string name="account_tag_on_right">Account on the right</string>
+    <string name="account_tag_on_right_desc">The category tag on the left and the account tag on the right of each transaction. Long names are shortened to fit one line.</string>
     <string name="account_tag_text">Account tag text</string>
     <string name="category_tag_text">Category tag text</string>
     <string name="tag_size_small">Small</string>

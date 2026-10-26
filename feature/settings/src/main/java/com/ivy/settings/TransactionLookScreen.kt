@@ -95,6 +95,13 @@ private fun TransactionLookUi(state: TransactionLookState, onEvent: (Transaction
                 checked = state.colorAccountTags,
             ) { onEvent(TransactionLookEvent.SetColorAccountTags(it)) }
 
+            Spacer(Modifier.height(12.dp))
+            SwitchRow(
+                title = stringResource(R.string.account_tag_on_right),
+                description = stringResource(R.string.account_tag_on_right_desc),
+                checked = state.look.accountOnRight,
+            ) { onEvent(TransactionLookEvent.SetAccountOnRight(it)) }
+
             SizeChoice(
                 title = stringResource(R.string.account_tag_text),
                 selected = state.look.accountTagSize,
