@@ -36,6 +36,8 @@ data class ReviewItem(
     val toAccount: Account?,
     val category: Category?,
     val title: String?,
+    /** Your own words for the description, e.g. typed in reply to the notification */
+    val note: String?,
     val possibleDuplicate: Boolean,
     /** Foreign currency without an exchange rate yet: adding would use a wrong amount. */
     val missingRate: Boolean,
@@ -61,6 +63,7 @@ sealed interface AutoCaptureReviewEvent {
     data class SetTransfer(val capturedId: UUID, val isTransfer: Boolean) : AutoCaptureReviewEvent
     data class SetCategory(val capturedId: UUID, val category: Category?) : AutoCaptureReviewEvent
     data class SetTitle(val capturedId: UUID, val title: String) : AutoCaptureReviewEvent
+    data class SetNote(val capturedId: UUID, val note: String) : AutoCaptureReviewEvent
     data object Refresh : AutoCaptureReviewEvent
 }
 
@@ -83,6 +86,7 @@ class AutoCaptureReviewViewModel @Inject constructor(
     private val chosenTransfer = mutableMapOf<UUID, Boolean>()
     private val chosenCategories = mutableMapOf<UUID, Category?>()
     private val chosenTitles = mutableMapOf<UUID, String>()
+    private val chosenNotes = mutableMapOf<UUID, String>()
 
     init {
         viewModelScope.launch {
@@ -145,6 +149,11 @@ class AutoCaptureReviewViewModel @Inject constructor(
                 chosenTitles[event.capturedId] = event.title
                 refresh(event.capturedId)
             }
+
+            is AutoCaptureReviewEvent.SetNote -> {
+                chosenNotes[event.capturedId] = event.note
+                refresh(event.capturedId)
+            }
         }
     }
 
@@ -156,6 +165,7 @@ class AutoCaptureReviewViewModel @Inject constructor(
             categoryId = item.category?.id?.value.takeUnless { item.isTransfer },
             title = item.title,
             toAccountId = item.toAccount?.id.takeIf { item.isTransfer },
+            note = item.note,
         )
     }
 
@@ -193,6 +203,7 @@ class AutoCaptureReviewViewModel @Inject constructor(
                 categoriesNow.firstOrNull { it.id.value == categoryId }
             },
             title = chosenTitles[id] ?: if (transfer) null else processor.suggestedTitle(this),
+            note = chosenNotes[id] ?: note,
             possibleDuplicate = processor.isPossibleDuplicate(this),
             missingRate = processor.missingRate(this, account?.id),
         )

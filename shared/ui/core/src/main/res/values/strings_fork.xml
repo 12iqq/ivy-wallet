@@ -72,6 +72,10 @@
     <string name="new_bank_transaction_text">%1$s %2$s at %3$s - tap to review</string>
     <string name="new_bank_transactions">%1$d new bank transactions</string>
     <string name="new_bank_transactions_text">Tap to review them</string>
+    <string name="transaction_added">Added: %1$s</string>
+    <string name="add_note">Add note</string>
+    <string name="note_hint">Note (optional), e.g. the film or what you ordered</string>
+    <string name="note_saved">Note saved</string>
     <string name="from_your_bank">From your bank: %1$s</string>
     <string name="card_payment_title">Paying off this card</string>
     <string name="card_payment_owed">%1$s owed</string>
@@ -228,4 +232,12 @@
     <string name="tag_size_default">Default</string>
     <string name="tag_size_large">Large</string>
     <string name="tag_size_extra_large">Extra large</string>
+
+    <!-- Find duplicates -->
+    <string name="find_duplicates">Find duplicates</string>
+    <string name="find_duplicates_button_desc">Transactions entered twice, e.g. after an import</string>
+    <string name="duplicates_desc">Transactions with the same amount, account and day. Delete the extra copy, or mark a group as not duplicates if they really are two.</string>
+    <string name="no_duplicates">No possible duplicates.</string>
+    <string name="not_duplicates">Not duplicates</string>
+    <string name="tap_again_to_delete">Tap again to delete</string>
 </resources>

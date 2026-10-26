@@ -21,6 +21,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- Receives the note typed in reply to an auto-add notification -->
+        <receiver
+            android:name="com.ivy.autocapture.notification.NoteReplyReceiver"
+            android:exported="false" />
+
         <!-- Optional: reads Google Wallet tap-to-pay notifications. Off until the user
              enables it in the app AND grants notification access in Android settings. -->
         <service

@@ -46,6 +46,8 @@ data class CapturedTransactionEntity(
     /** The message reads as money moving between your own accounts (a card payment, a top-up) */
     @ColumnInfo(defaultValue = "0")
     val isTransfer: Boolean = false,
+    /** Typed in from the notification or the review card: becomes the transaction's description */
+    val note: String? = null,
 ) {
     companion object {
         const val STATUS_PENDING = "PENDING"

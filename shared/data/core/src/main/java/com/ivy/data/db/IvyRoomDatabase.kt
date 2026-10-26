@@ -54,6 +54,7 @@ import com.ivy.data.db.migration.Migration132to133_TransactionBankDetails
 import com.ivy.data.db.migration.Migration133to134_CapturedTransfers
 import com.ivy.data.db.migration.Migration134to135_UtilityBills
 import com.ivy.data.db.migration.Migration135to136_UtilityBillPlanned
+import com.ivy.data.db.migration.Migration136to137_CapturedNote
 import com.ivy.domain.db.RoomTypeConverters
 import com.ivy.domain.db.migration.Migration105to106_TrnRecurringRules
 import com.ivy.domain.db.migration.Migration106to107_Wishlist
@@ -89,7 +90,7 @@ import com.ivy.domain.db.migration.Migration125to126_Tags
             spec = IvyRoomDatabase.DeleteSEMigration::class
         )
     ],
-    version = 136,
+    version = 137,
     exportSchema = true
 )
 @TypeConverters(RoomTypeConverters::class)
@@ -154,7 +155,8 @@ abstract class IvyRoomDatabase : RoomDatabase() {
             Migration132to133_TransactionBankDetails(),
             Migration133to134_CapturedTransfers(),
             Migration134to135_UtilityBills(),
-            Migration135to136_UtilityBillPlanned()
+            Migration135to136_UtilityBillPlanned(),
+            Migration136to137_CapturedNote()
         )
 
         @Suppress("SpreadOperator")

@@ -1,8 +1,6 @@
 package com.ivy.autocapture.data
 
-import android.app.PendingIntent
-import android.content.Context
-import androidx.core.app.NotificationCompat
+import com.ivy.autocapture.notification.CaptureNotifications
 import com.ivy.autocapture.parser.BankMessageRouter
 import com.ivy.autocapture.parser.Direction
 import com.ivy.autocapture.parser.GenericMessageParser
@@ -10,7 +8,6 @@ import com.ivy.autocapture.parser.ParsedMessage
 import com.ivy.autocapture.parser.GoogleWalletPackage
 import com.ivy.autocapture.parser.UaeBanks
 import com.ivy.autocapture.parser.WalletNotifications
-import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.dao.read.AccountDao
@@ -23,16 +20,11 @@ import com.ivy.data.db.entity.TransactionEntity
 import com.ivy.data.model.CardEndings
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
-import com.ivy.domain.AppStarter
 import com.ivy.domain.utilities.UtilityBillPlanner
 import com.ivy.domain.utilities.UtilityBillReader
 import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.utils.format
-import com.ivy.ui.R
-import com.ivy.wallet.android.notification.IvyNotificationChannel
-import com.ivy.wallet.android.notification.NotificationService
 import com.ivy.wallet.domain.deprecated.logic.currency.ExchangeRatesLogic
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
@@ -51,7 +43,6 @@ import kotlin.math.abs
 @Suppress("LongParameterList", "TooManyFunctions", "ReturnCount", "MagicNumber")
 @Singleton
 class CaptureProcessor @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val settingsStore: AutoCaptureSettingsStore,
     private val capturedDao: CapturedTransactionDao,
     private val transactionDao: TransactionDao,
@@ -61,9 +52,7 @@ class CaptureProcessor @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val transactionMapper: TransactionMapper,
     private val exchangeRatesLogic: ExchangeRatesLogic,
-    private val notificationService: NotificationService,
-    private val appStarter: AppStarter,
-    private val sharedPrefs: SharedPrefs,
+    private val notifications: CaptureNotifications,
     private val utilityBills: UtilityBillReader,
     private val utilityPlanner: UtilityBillPlanner,
 ) {
@@ -246,10 +235,17 @@ class CaptureProcessor @Inject constructor(
         val item = topUpFrom(captured, fromCard) ?: captured
         capturedDao.save(item)
 
-        val addedRightAway = config.addWithoutReview && item.readyToAdd() && !isPossibleDuplicate(item) &&
-            addAsCaptured(item) != null
-        if (!addedRightAway && notify) {
-            notifyNew(item)
+        val addedId = if (config.addWithoutReview && item.readyToAdd() && !isPossibleDuplicate(item)) {
+            addAsCaptured(item)
+        } else {
+            null
+        }
+        if (notify) {
+            if (addedId != null) {
+                notifications.added(item, transactionDao.findById(addedId)?.title)
+            } else {
+                notifications.waiting(item)
+            }
         }
         return item
     }
@@ -284,7 +280,7 @@ class CaptureProcessor @Inject constructor(
         capturedDao.save(transfer)
         val added = settingsStore.current().addWithoutReview && !isPossibleDuplicate(transfer) &&
             addAsCaptured(transfer) != null
-        if (!added && notify) notifyNew(transfer)
+        if (!added && notify) notifications.waiting(transfer)
         return transfer
     }
 
@@ -360,6 +356,8 @@ class CaptureProcessor @Inject constructor(
         title: String?,
         /** Makes it a transfer from [accountId] to this account. */
         toAccountId: UUID? = null,
+        /** Your own words about it, e.g. typed in reply to its notification. */
+        note: String? = captured.note,
     ): UUID? {
         val account = accountDao.findById(accountId) ?: return null
         val toAccount = toAccountId?.let { accountDao.findById(it) ?: return null }
@@ -392,7 +390,8 @@ class CaptureProcessor @Inject constructor(
                 toAmount = (toCurrency?.let { convert(captured.amount, captured.currency, it, baseCurrency) } ?: amount)
                     .toBigDecimal(),
                 title = finalTitle,
-                // the description stays the user's own; the bank's wording goes in bank details
+                // the description is the user's own note; the bank's wording goes in bank details
+                description = note?.trim()?.takeIf { it.isNotEmpty() },
                 bankDetails = bankDetails(captured, accountCurrency),
                 dateTime = captured.receivedAt,
                 categoryId = categoryId.takeIf { toAccount == null },
@@ -420,10 +419,30 @@ class CaptureProcessor @Inject constructor(
                 toAccountId = toAccountId,
                 status = CapturedTransactionEntity.STATUS_ADDED,
                 transactionId = transactionId,
+                note = note,
             )
         )
+        notifications.dismiss(captured.id)
         return transactionId
     }
+
+    /**
+     * A note typed in reply to a transaction's notification: its description once it's added,
+     * or right away when it already was.
+     */
+    suspend fun addNote(capturedId: UUID, note: String) {
+        val captured = capturedDao.findById(capturedId) ?: return
+        val transaction = captured.transactionId?.let { transactionDao.findById(it) }
+        if (transaction != null) {
+            transactionWriter.save(transaction.copy(description = withNote(transaction.description, note)))
+        } else {
+            capturedDao.save(captured.copy(note = withNote(captured.note, note)))
+        }
+        notifications.noteSaved(captured, note)
+    }
+
+    private fun withNote(existing: String?, note: String): String =
+        listOfNotNull(existing?.takeIf { it.isNotBlank() }, note).joinToString("\n")
 
     private suspend fun convert(amount: Double, from: String, to: String, baseCurrency: String): Double =
         if (from.equals(to, ignoreCase = true)) {
@@ -522,6 +541,7 @@ class CaptureProcessor @Inject constructor(
 
     suspend fun dismiss(capturedId: UUID) {
         capturedDao.updateStatus(capturedId, CapturedTransactionEntity.STATUS_DISMISSED, null)
+        notifications.dismiss(capturedId)
     }
 
     /** Same amount within a day of an existing transaction = likely already entered manually. */
@@ -537,56 +557,30 @@ class CaptureProcessor @Inject constructor(
         }
     }
 
-    /** One notification for what a scheduled check found that still needs a look. */
+    /**
+     * After a scheduled check: one notification per transaction when there's one (with "Add note"),
+     * a summary when several wait for review.
+     */
     suspend fun notifyFound(found: List<CapturedTransactionEntity>) {
-        val waiting = found.filter { capturedDao.findById(it.id)?.status == CapturedTransactionEntity.STATUS_PENDING }
-        when {
-            waiting.size == 1 -> notifyNew(waiting.first())
-            waiting.size > 1 -> showReviewNotification(
-                title = context.getString(R.string.new_bank_transactions, waiting.size),
-                text = context.getString(R.string.new_bank_transactions_text),
-            )
+        val current = found.mapNotNull { capturedDao.findById(it.id) }
+        val waiting = current.filter { it.status == CapturedTransactionEntity.STATUS_PENDING }
+        val added = current.filter {
+            it.status == CapturedTransactionEntity.STATUS_ADDED && it.type != TransactionType.TRANSFER
         }
-    }
-
-    private fun notifyNew(captured: CapturedTransactionEntity) {
-        showReviewNotification(
-            title = context.getString(R.string.new_bank_transaction),
-            text = context.getString(
-                R.string.new_bank_transaction_text,
-                captured.currency,
-                captured.amount.format(captured.currency),
-                captured.merchant ?: UaeBanks.byId(captured.bankId)?.displayName.orEmpty()
-            ),
-        )
-    }
-
-    private fun showReviewNotification(title: String, text: String) {
-        // the user can turn these off in Settings -> Notifications
-        if (!sharedPrefs.getBoolean(SharedPrefs.NOTIFY_DETECTED_TRANSACTIONS, true)) return
-        val notification = notificationService
-            .defaultIvyNotification(channel = IvyNotificationChannel.AUTO_CAPTURE)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    context,
-                    REVIEW_REQUEST_CODE,
-                    appStarter.getRootIntent().putExtra(EXTRA_OPEN_REVIEW, true),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-        notificationService.showNotification(notification, NOTIFICATION_ID)
+        when {
+            waiting.size > 1 -> notifications.waitingCount(waiting.size)
+            waiting.size == 1 -> notifications.waiting(waiting.first())
+            added.size == 1 -> added.first().let { item ->
+                notifications.added(item, item.transactionId?.let { transactionDao.findById(it)?.title })
+            }
+        }
     }
 
     companion object {
         const val EXTRA_OPEN_REVIEW = "open_auto_capture_review"
-        private const val NOTIFICATION_ID = 4242
         private val SAME_PURCHASE_WINDOW: Duration = Duration.ofMinutes(15)
         private val SAME_NOTIFICATION_WINDOW: Duration = Duration.ofMinutes(2)
         private val SAME_MESSAGE_WINDOW: Duration = Duration.ofDays(1)
-        private const val REVIEW_REQUEST_CODE = 4243
         private const val DETAILS_SEPARATOR = " · "
         private const val SAME_AMOUNT = 0.01
 

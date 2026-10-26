@@ -125,6 +125,7 @@ private fun BoxWithConstraintsScope.UI(
                 onToggleTransfer = { onEvent(AutoCaptureReviewEvent.SetTransfer(item.captured.id, !item.isTransfer)) },
                 onChooseCategory = { categoryPickerFor = item },
                 onTitleChange = { onEvent(AutoCaptureReviewEvent.SetTitle(item.captured.id, it)) },
+                onNoteChange = { onEvent(AutoCaptureReviewEvent.SetNote(item.captured.id, it)) },
                 onAdd = { onEvent(AutoCaptureReviewEvent.Add(item)) },
                 onSkip = { onEvent(AutoCaptureReviewEvent.Skip(item)) },
             )
@@ -195,12 +196,14 @@ private fun CapturedCard(
     onToggleTransfer: () -> Unit,
     onChooseCategory: () -> Unit,
     onTitleChange: (String) -> Unit,
+    onNoteChange: (String) -> Unit,
     onAdd: () -> Unit,
     onSkip: () -> Unit,
 ) {
     val captured = item.captured
     var showRaw by remember(captured.id) { mutableStateOf(false) }
     var title by remember(captured.id) { mutableStateOf(TextFieldValue(item.title.orEmpty())) }
+    var note by remember(captured.id) { mutableStateOf(TextFieldValue(item.note.orEmpty())) }
 
     Column(
         modifier = Modifier
@@ -265,6 +268,18 @@ private fun CapturedCard(
         ) {
             title = it
             onTitleChange(it.text)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // what the bank's text can't say: the film, what was ordered
+        IvyOutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = note,
+            hint = stringResource(R.string.note_hint),
+        ) {
+            note = it
+            onNoteChange(it.text)
         }
 
         Spacer(Modifier.height(12.dp))
