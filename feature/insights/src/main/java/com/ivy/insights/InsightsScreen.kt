@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.dp
 import com.ivy.base.model.TransactionType
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.insights.recurring.RecurringChargesCard
 import com.ivy.insights.utilities.UtilityBillsCard
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.onScreenStart
 import com.ivy.navigation.EditTransactionScreen
+import com.ivy.navigation.RecurringChargesScreen
 import com.ivy.navigation.ReportScreen
 import com.ivy.navigation.UtilityBillsScreen
 import com.ivy.navigation.navigation
@@ -196,6 +198,10 @@ private fun InsightsUi(state: InsightsState, onEvent: (InsightsEvent) -> Unit) {
 
             item {
                 UtilityBillsCard(card = state.utilities, onOpen = { nav.navigateTo(UtilityBillsScreen) })
+            }
+
+            item {
+                RecurringChargesCard(card = state.recurring, onOpen = { nav.navigateTo(RecurringChargesScreen) })
             }
         }
 

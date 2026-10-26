@@ -60,6 +60,9 @@ automatically from bank SMS alerts.
   texts are deleted. SEWA's texts give amounts only, not kWh or gallons.
   Each new bill can become a planned payment due on its due date; when SEWA confirms the payment it's marked paid,
   and the bank's text for the same payment isn't added a second time.
+- **Recurring charges** (in Reports): subscriptions, bills and fees that come back every week, month, three months or
+  year, found in your expenses by their name. Each shows what it costs a month, when the next one is about due and
+  whether its price changed; ones that stopped are listed apart. A tap makes one a planned payment.
 - **Transaction look** (Settings): color account tags with each account's color, like category tags, and choose
   the text size of account and category tags, with a light and a dark preview.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,

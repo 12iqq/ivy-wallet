@@ -19,6 +19,7 @@ import com.ivy.features.FeaturesScreenImpl
 import com.ivy.importdata.csv.CSVScreen
 import com.ivy.importdata.csvimport.ImportCSVScreen
 import com.ivy.insights.InsightsScreenImpl
+import com.ivy.insights.recurring.RecurringChargesScreenImpl
 import com.ivy.insights.utilities.UtilityBillsScreenImpl
 import com.ivy.loans.loan.LoansScreen
 import com.ivy.loans.loandetails.LoanDetailsScreen
@@ -53,6 +54,7 @@ import com.ivy.navigation.ReportScreen
 import com.ivy.navigation.Screen
 import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
+import com.ivy.navigation.RecurringChargesScreen
 import com.ivy.navigation.TransactionLookScreen
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.UtilityBillsScreen
@@ -112,5 +114,6 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         UtilityBillsScreen -> UtilityBillsScreenImpl()
         TransactionLookScreen -> TransactionLookScreenImpl()
         DuplicatesScreen -> DuplicatesScreenImpl()
+        RecurringChargesScreen -> RecurringChargesScreenImpl()
     }
 }

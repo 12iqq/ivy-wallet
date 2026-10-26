@@ -193,3 +193,9 @@ data object DuplicatesScreen : Screen {
     override val isLegacy: Boolean
         get() = true
 }
+
+/** Charges that come back every week, month, three months or year (subscriptions, bills). */
+data object RecurringChargesScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}

@@ -18,6 +18,8 @@ import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.domain.utilities.UtilityBillReader
+import com.ivy.insights.recurring.RecurringCard
+import com.ivy.insights.recurring.RecurringChargesLoader
 import com.ivy.insights.utilities.UtilityCalculator
 import com.ivy.insights.utilities.UtilityCard
 import com.ivy.ui.ComposeViewModel
@@ -86,6 +88,7 @@ data class InsightsState(
     val months: ImmutableList<MonthTotals>,
     val netWorth: ImmutableList<NetWorthPoint>,
     val utilities: UtilityCard,
+    val recurring: RecurringCard,
 )
 
 sealed interface InsightsEvent {
@@ -113,6 +116,7 @@ class InsightsViewModel @Inject constructor(
     private val sharedPrefs: SharedPrefs,
     private val utilityBillDao: UtilityBillDao,
     private val utilityBillReader: UtilityBillReader,
+    private val recurringLoader: RecurringChargesLoader,
 ) : ComposeViewModel<InsightsState, InsightsEvent>() {
 
     // loaded data
@@ -121,6 +125,7 @@ class InsightsViewModel @Inject constructor(
     private var categories: Map<String, Category> = emptyMap()
     private var currency = ""
     private var utilities = UtilityCard(enabled = false, latest = null)
+    private var recurring = RecurringCard(loading = true, currency = "", perMonth = 0.0, count = 0, unplanned = 0)
 
     // selection
     private var mode = PeriodMode.Month
@@ -185,6 +190,7 @@ class InsightsViewModel @Inject constructor(
 
     private fun load() {
         loadUtilities()
+        loadRecurring()
         viewModelScope.launch {
             val baseCurrency = baseCurrencyAct(Unit)
             val accounts = accountRepository.findAll().associateBy { it.id }
@@ -280,6 +286,21 @@ class InsightsViewModel @Inject constructor(
         }
     }
 
+    private fun loadRecurring() {
+        viewModelScope.launch {
+            val data = recurringLoader.load()
+            val active = data.charges.filter { it.active }
+            recurring = RecurringCard(
+                loading = false,
+                currency = data.currency,
+                perMonth = active.sumOf { it.perMonth },
+                count = active.size,
+                unplanned = active.count { !it.planned },
+            )
+            state = state.copy(recurring = recurring)
+        }
+    }
+
     private fun recompute() {
         val today = LocalDate.now()
         val period = currentPeriod()
@@ -329,6 +350,7 @@ class InsightsViewModel @Inject constructor(
             months = InsightsCalculator.monthlyTotals(records, today).toImmutableList(),
             netWorth = InsightsCalculator.netWorth(deltas, today).toImmutableList(),
             utilities = utilities,
+            recurring = recurring,
         )
     }
 
@@ -364,6 +386,7 @@ class InsightsViewModel @Inject constructor(
         months = persistentListOf(),
         netWorth = persistentListOf(),
         utilities = utilities,
+        recurring = recurring,
     )
 
     private companion object {
