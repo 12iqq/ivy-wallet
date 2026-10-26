@@ -33,8 +33,8 @@ class CardBillPlannerTest {
         accountType = AccountEntity.TYPE_CREDIT_CARD,
     )
 
-    private var config = AutoCaptureConfig(links = listOf(CardLink("adcb", "1234", card.id.toString())))
-    private val store = mockk<AutoCaptureSettingsStore> { every { current() } answers { config } }
+    private var captureConfig = AutoCaptureConfig(links = listOf(CardLink("adcb", "1234", card.id.toString())))
+    private val store = mockk<AutoCaptureSettingsStore> { every { current() } answers { captureConfig } }
 
     private val savedPrefs = mutableMapOf<String, String?>()
     private val prefs = mockk<SharedPrefs> {
@@ -42,9 +42,9 @@ class CardBillPlannerTest {
         every { getString(SharedPrefs.PLANNED_CARD_BILLS, any()) } answers {
             savedPrefs[SharedPrefs.PLANNED_CARD_BILLS]
         }
-        val value = slot<String>()
-        every { putString(SharedPrefs.PLANNED_CARD_BILLS, capture(value)) } answers {
-            savedPrefs[SharedPrefs.PLANNED_CARD_BILLS] = value.captured
+        val written = slot<String>()
+        every { putString(SharedPrefs.PLANNED_CARD_BILLS, capture(written)) } answers {
+            savedPrefs[SharedPrefs.PLANNED_CARD_BILLS] = written.captured
         }
     }
     private val transactions = FakeTransactionDao()
@@ -213,7 +213,7 @@ class CardBillPlannerTest {
         setUp()
         planner.plan(bill, alertAt, LocalDate.of(2026, 10, 31))
         planner.plan(bill.copy(last4 = "9999", bankId = "fab"), alertAt, today)
-        config = config.copy(planCardBills = false)
+        captureConfig = captureConfig.copy(planCardBills = false)
         planner.plan(bill, alertAt, today)
 
         pending() shouldBe emptyList()
