@@ -18,13 +18,13 @@ class BankMessageParserTest {
     fun `ADCB credit card purchase`() {
         val result = parse(
             "ADCB",
-            "Your Cr.Card XXX1234 was used for AED45.50 on 06/10/2026 14:22:11 at CARREFOUR,DUBAI-AE. " +
+            "Your Cr.Card XXX1234 was used for AED47.25 on 06/10/2026 14:22:11 at CARREFOUR,DUBAI-AE. " +
                 "Avl Cr. limit is AED 9,850.00. For any queries call 600 50 2030"
         )!!
 
         result.bankId shouldBe "adcb"
         result.direction shouldBe Direction.Debit
-        result.amount shouldBe 45.50
+        result.amount shouldBe 47.25
         result.currency shouldBe "AED"
         result.merchant shouldBe "CARREFOUR"
         result.last4 shouldBe "1234"
@@ -109,12 +109,12 @@ class BankMessageParserTest {
     fun `Tabby Cash card spend`() {
         val result = parse(
             "Tabby",
-            "You spent AED 53.90 at TAP*Keeta. Your available Tabby Cash balance is now AED 386.40."
+            "You spent AED 58.40 at TAP*Keeta. Your available Tabby Cash balance is now AED 412.60."
         )!!
 
         result.bankId shouldBe "tabby"
         result.direction shouldBe Direction.Debit
-        result.amount shouldBe 53.9
+        result.amount shouldBe 58.4
         result.merchant shouldBe "TAP*Keeta"
         result.isTransfer shouldBe false
     }
@@ -123,7 +123,7 @@ class BankMessageParserTest {
     fun `Tabby Cash top-up is a transfer from the card`() {
         val result = parse(
             "Tabby",
-            "AED 500 was added to your account using card ending 1234. Your new balance is AED 785.30."
+            "AED 500 was added to your account using card ending 1234. Your new balance is AED 836.10."
         )!!
 
         result.direction shouldBe Direction.Credit
@@ -136,14 +136,14 @@ class BankMessageParserTest {
 
     @Test
     fun `Tabby Cash money sent and received`() {
-        val received = parse("Tabby", "You received 285.30 AED from JOHN SMITH. Your new balance is AED 285.30.")!!
+        val received = parse("Tabby", "You received 264.80 AED from JOHN SMITH. Your new balance is AED 264.80.")!!
         received.direction shouldBe Direction.Credit
-        received.amount shouldBe 285.3
+        received.amount shouldBe 264.8
         received.merchant shouldBe "JOHN SMITH"
 
-        val sent = parse("Tabby", "You sent AED 52.50 to JOHN SMITH.  \nYour new balance is AED 716.26.")!!
+        val sent = parse("Tabby", "You sent AED 61.50 to JOHN SMITH.  \nYour new balance is AED 702.45.")!!
         sent.direction shouldBe Direction.Debit
-        sent.amount shouldBe 52.5
+        sent.amount shouldBe 61.5
     }
 
     @Test
@@ -151,7 +151,7 @@ class BankMessageParserTest {
         val old = parse(
             "DIB-SMS",
             "POS Purchase of AED:   39.00 from a/c no.  012-345-6789***-01 on 01-NOV-2022 14:40 from KFC SAHARA. " +
-                "Available balance is AED 11,112.17"
+                "Available balance is AED 10,245.30"
         )!!
         old.direction shouldBe Direction.Debit
         old.amount shouldBe 39.0
@@ -160,16 +160,16 @@ class BankMessageParserTest {
 
         val online = parse(
             "DIB-SMS",
-            "Online Purchase of AED 23.65 from a/c no. 012-345-6789***-01 on 08-JUL-2026 17:19 from Amazon Now. " +
-                "Available balance is AED 3,954.20"
+            "Online Purchase of AED 27.15 from a/c no. 012-345-6789***-01 on 08-JUL-2026 17:19 from Amazon Now. " +
+                "Available balance is AED 4,120.35"
         )!!
-        online.amount shouldBe 23.65
+        online.amount shouldBe 27.15
         online.merchant shouldBe "Amazon Now"
 
         val foreign = parse(
             "DIB-SMS",
             "Online Purchase of USD 25.00 from a/c no. 012-345-6789***-01 on 13-APR-2026 06:21 from EXAMPLE.ORG. " +
-                "Available balance is AED 31,211.70"
+                "Available balance is AED 30,480.55"
         )!!
         foreign.currency shouldBe "USD"
         foreign.merchant shouldBe "EXAMPLE.ORG"
@@ -180,7 +180,7 @@ class BankMessageParserTest {
         val bill = parse(
             "DIB-SMS",
             "AED 437.00 has been drawn from A/C No. 012-345-678XXXX-01 as SEWA PAYMENT-001UPSW22177. " +
-                "Available balance is  6,398.90"
+                "Available balance is  6,512.40"
         )!!
         bill.direction shouldBe Direction.Debit
         bill.amount shouldBe 437.0
@@ -188,20 +188,20 @@ class BankMessageParserTest {
 
         parse(
             "DIB-SMS",
-            "AED 408.45 has been drawn from A/C No. 012-345-678XXXX-01 as ETISALAT PAYMENT-MBA : 012345678. " +
-                "Available balance is  8,289.95"
+            "AED 395.20 has been drawn from A/C No. 012-345-678XXXX-01 as ETISALAT PAYMENT-MBA : 012345678. " +
+                "Available balance is  8,104.65"
         )!!.merchant shouldBe "ETISALAT PAYMENT"
 
         parse(
             "DIB-SMS",
             "AED 5,500.00 has been drawn from A/C No. 012-345-678XXXX-01 as CHQ:100004-I/W CLEARING C. " +
-                "Available balance is  12,524.10"
+                "Available balance is  12,310.75"
         )!!.merchant shouldBe "I/W CLEARING C"
 
         val atm = parse(
             "DIB-SMS",
             "AED 700.00 has been withdrawn from your A/C no. 012-345-6789***-01 on 01-JUL-2026 " +
-                "as ATM CASH WITHDRAWAL. Available balance is  5,993.49"
+                "as ATM CASH WITHDRAWAL. Available balance is  5,870.20"
         )!!
         atm.direction shouldBe Direction.Debit
         atm.merchant shouldBe "ATM CASH WITHDRAWAL"
@@ -212,7 +212,7 @@ class BankMessageParserTest {
         val deposit = parse(
             "DIB-SMS",
             "AED 4,500.00 has been credited to your a/c 012-345-678XXXX-01 as CDM CASH DEPOSIT. " +
-                "Available balance is  35,556.93"
+                "Available balance is  34,905.15"
         )!!
         deposit.direction shouldBe Direction.Credit
         deposit.amount shouldBe 4500.0
@@ -221,7 +221,7 @@ class BankMessageParserTest {
         val salary = parse(
             "DIB-SMS",
             "Salary amount of AED  6,000.00 credited to your A/C no. 012-345-6789***-01 on 01-MAR-2023. " +
-                "Available balance is  18,398.20"
+                "Available balance is  18,215.60"
         )!!
         salary.direction shouldBe Direction.Credit
         salary.amount shouldBe 6000.0
@@ -232,12 +232,12 @@ class BankMessageParserTest {
     fun `paying a credit card from DIB is a transfer`() {
         val result = parse(
             "DIB-SMS",
-            "AED 1,627.21 has been debited from A/C No. 012-345-678XXXX-01 for Card Payment. " +
-                "Available balance is AED 2,031.02"
+            "AED 1,234.56 has been debited from A/C No. 012-345-678XXXX-01 for Card Payment. " +
+                "Available balance is AED 2,150.40"
         )!!
 
         result.direction shouldBe Direction.Debit
-        result.amount shouldBe 1627.21
+        result.amount shouldBe 1234.56
         result.merchant shouldBe "Card Payment"
         result.isTransfer shouldBe true
     }
@@ -279,7 +279,7 @@ class BankMessageParserTest {
         val bill = parse(
             "ADCBAlert",
             "AED612.00 debited from Acc/Cr.Card XXX1234 for SEWA on 02-09-2026 13:28:59 through ADCB Mobile App." +
-                "Avl.Limit is AED 2921.79"
+                "Avl.Limit is AED 2875.30"
         )!!
         bill.direction shouldBe Direction.Debit
         bill.amount shouldBe 612.0
@@ -296,11 +296,11 @@ class BankMessageParserTest {
 
         val payment = parse(
             "ADCBAlert",
-            "Your payment of AED 1627.21 against Credit Card no. XXX1234 was received at 03:32 PM " +
+            "Your payment of AED 1234.56 against Credit Card no. XXX1234 was received at 03:32 PM " +
                 "on 08/09/2026. Thank you."
         )!!
         payment.direction shouldBe Direction.Credit
-        payment.amount shouldBe 1627.21
+        payment.amount shouldBe 1234.56
         payment.last4 shouldBe "1234"
         payment.isTransfer shouldBe true
     }
@@ -309,8 +309,8 @@ class BankMessageParserTest {
     fun `card statements and approvals are ignored`() {
         parse(
             "ADCBAlert",
-            "Cr.Card XXX1234 Billing alert: Total due to avoid fin. charges: AED1627.21. Due date Sep 30 2026; " +
-                "Pay min. AED100.00 by due date to avoid AED241.50 late fees."
+            "Cr.Card XXX1234 Billing alert: Total due to avoid fin. charges: AED1234.56. Due date Sep 30 2026; " +
+                "Pay min. AED100.00 by due date to avoid AED250.00 late fees."
         ) shouldBe null
         parse("DIB-SMS", "Your card payment of AED 500.00 is due by 25/10/2026.") shouldBe null
         parse(
@@ -324,13 +324,13 @@ class BankMessageParserTest {
     fun `Emirates Islamic purchase`() {
         val result = parse(
             "EI SMS",
-            "Credit Card Purchase\rCard Ending: : 1234\rAt: AMAZON RETAIL, Dubai\rAmount: AED 25.99\r" +
-                "Date: 03/10/2026, 20:32\rAvailable Limit: AED 12,574.01\r"
+            "Credit Card Purchase\rCard Ending: : 1234\rAt: AMAZON RETAIL, Dubai\rAmount: AED 29.99\r" +
+                "Date: 03/10/2026, 20:32\rAvailable Limit: AED 12,480.25\r"
         )!!
 
         result.bankId shouldBe "eib"
         result.direction shouldBe Direction.Debit
-        result.amount shouldBe 25.99
+        result.amount shouldBe 29.99
         result.merchant shouldBe "AMAZON RETAIL"
         result.last4 shouldBe "1234"
         result.isCreditCard shouldBe true
@@ -340,12 +340,12 @@ class BankMessageParserTest {
     fun `Emirates Islamic card payment received`() {
         val result = parse(
             "EI SMS",
-            "This is to confirm receipt of your payment of AED 289.96 towards your Credit Card starting with 512345  " +
+            "This is to confirm receipt of your payment of AED 345.67 towards your Credit Card starting with 512345  " +
                 "on 15/10/2026. Available limit is   AED 12,600.00."
         )!!
 
         result.direction shouldBe Direction.Credit
-        result.amount shouldBe 289.96
+        result.amount shouldBe 345.67
         result.isTransfer shouldBe true
         result.last4 shouldBe null
     }
@@ -420,7 +420,7 @@ class BankMessageParserTest {
     fun `disabled banks are ignored`() {
         router.parse(
             "ADCB",
-            "Your Cr.Card XXX1234 was used for AED45.50 on 06/10/2026 at CARREFOUR",
+            "Your Cr.Card XXX1234 was used for AED47.25 on 06/10/2026 at CARREFOUR",
             enabledBankIds = setOf("dib")
         ) shouldBe null
     }

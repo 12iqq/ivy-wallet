@@ -32,10 +32,10 @@ class DuplicateFinderTest {
 
     @Test
     fun `same amount, account and day is a possible duplicate`() {
-        val first = entry(day = 7, hour = 9, amount = 97.18)
-        val second = entry(day = 7, hour = 18, amount = 97.18)
+        val first = entry(day = 7, hour = 9, amount = 88.40)
+        val second = entry(day = 7, hour = 18, amount = 88.40)
 
-        val nextDay = entry(day = 8, hour = 9, amount = 97.18)
+        val nextDay = entry(day = 8, hour = 9, amount = 88.40)
         val groups = DuplicateFinder.groups(listOf(second, first, nextDay), zone, emptySet())
 
         groups.size shouldBe 1

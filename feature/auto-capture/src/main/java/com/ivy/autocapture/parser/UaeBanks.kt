@@ -46,7 +46,7 @@ object UaeBanks {
                 direction = Direction.Credit,
                 isCreditCard = true,
             ),
-            // "Your payment of AED 1627.21 against Credit Card no. XXX1234 was received at 03:32 PM on 08/09/2026."
+            // "Your payment of AED 1234.56 against Credit Card no. XXX1234 was received at 03:32 PM on 08/09/2026."
             MessagePattern(
                 regex = Regex(
                     """(?i)payment of\s+$AMT\s+against (?:Cr\.?|Credit)\s*Card\s+(?:no\.?\s*)?[X*]*(?<last4>\d{4})\s+was received"""
@@ -71,7 +71,7 @@ object UaeBanks {
                 direction = Direction.Debit,
                 isCreditCard = false,
             ),
-            // paying a credit card: "AED 1,627.21 has been debited from A/C No. 012-345-678XXXX-01 for Card Payment."
+            // paying a credit card: "AED 1,234.56 has been debited from A/C No. 012-345-678XXXX-01 for Card Payment."
             MessagePattern(
                 regex = Regex(
                     """(?i)$AMT\s+has been debited from A/C No\.?\s*[\dX*\-]+\s+for\s+(?<merchant>Card Payment)"""
@@ -120,14 +120,14 @@ object UaeBanks {
         displayName = "Emirates Islamic",
         senders = listOf("EIB", "EI SMS", "EmiratesIsl", "EmiratesIslamic", "EIBank", "ae.emiratesislamic"),
         patterns = listOf(
-            // "Credit Card Purchase\nCard Ending: : 1234\nAt: AMAZON RETAIL, Dubai\nAmount: AED 25.99\nDate: ..."
+            // "Credit Card Purchase\nCard Ending: : 1234\nAt: AMAZON RETAIL, Dubai\nAmount: AED 29.99\nDate: ..."
             MessagePattern(
                 regex = Regex(
                     """(?i)Card Ending:\s*:?\s*(?<last4>\d{4})\s+At:\s*(?<merchant>.+?)\s+Amount:\s*$AMT"""
                 ),
                 direction = Direction.Debit,
             ),
-            // "This is to confirm receipt of your payment of AED 289.96 towards your Credit Card starting with 512345"
+            // "This is to confirm receipt of your payment of AED 345.67 towards your Credit Card starting with 512345"
             MessagePattern(
                 regex = Regex("""(?i)receipt of your payment of\s+$AMT\s+towards your Credit Card"""),
                 direction = Direction.Credit,
@@ -214,20 +214,20 @@ object UaeBanks {
         // to confirm aren't (the instalments show up on the card that pays them).
         patternsOnly = true,
         patterns = listOf(
-            // "You spent AED 53.90 at TAP*Keeta. Your available Tabby Cash balance is now AED 386.40."
+            // "You spent AED 58.40 at TAP*Keeta. Your available Tabby Cash balance is now AED 412.60."
             MessagePattern(
                 regex = Regex("""(?i)You spent\s+$AMT\s+at\s+(?<merchant>.+?)\.\s+Your available"""),
                 direction = Direction.Debit,
                 isCreditCard = false,
             ),
-            // a top-up: "AED 500 was added to your account using card ending 1234. Your new balance is AED 785.30."
+            // a top-up: "AED 500 was added to your account using card ending 1234. Your new balance is AED 836.10."
             MessagePattern(
                 regex = Regex("""(?i)$AMT\s+was added to your account using card ending\s+(?<other>\d{4})"""),
                 direction = Direction.Credit,
                 isCreditCard = false,
                 isTransfer = true,
             ),
-            // "You received 285.30 AED from JOHN SMITH. Your new balance is AED 285.30."
+            // "You received 264.80 AED from JOHN SMITH. Your new balance is AED 264.80."
             MessagePattern(
                 regex = Regex(
                     """(?i)You received\s+(?<amount>[\d,]+(?:\.\d+)?)\s*(?<currency>[A-Z]{3})\s+from\s+(?<merchant>.+?)\.\s+Your new balance"""
@@ -235,7 +235,7 @@ object UaeBanks {
                 direction = Direction.Credit,
                 isCreditCard = false,
             ),
-            // "You sent AED 52.50 to JOHN SMITH. Your new balance is AED 716.26."
+            // "You sent AED 61.50 to JOHN SMITH. Your new balance is AED 702.45."
             MessagePattern(
                 regex = Regex("""(?i)You sent\s+$AMT\s+to\s+(?<merchant>.+?)\.\s+Your new balance"""),
                 direction = Direction.Debit,

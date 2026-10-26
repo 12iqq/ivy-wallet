@@ -73,7 +73,7 @@ Paying a credit card or topping up a wallet sends two messages, one from each si
 
 | Money moves | Message from where it left | Message from where it arrived |
 |---|---|---|
-| Bank → credit card | DIB: "AED 1,627.21 has been debited … for Card Payment" | ADCB: "Your payment of AED 1627.21 against Credit Card … was received"; EI: "receipt of your payment of AED 289.96 …" (often the next day) |
+| Bank → credit card | DIB: "AED 1,234.56 has been debited … for Card Payment" | ADCB: "Your payment of AED 1234.56 against Credit Card … was received"; EI: "receipt of your payment of AED 345.67 …" (often the next day) |
 | Bank card → Tabby Cash | DIB: "Online Purchase of AED 500.00 … from TABB*" | Tabby: "AED 500 was added to your account using card ending 1234" |
 
 The parser marks the messages that read as transfers (`ParsedMessage.isTransfer`), and

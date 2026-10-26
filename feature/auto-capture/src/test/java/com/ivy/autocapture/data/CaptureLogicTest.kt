@@ -172,8 +172,8 @@ class CaptureLogicTest {
 
     @Test
     fun `card payment joins the card's payment received`() {
-        val fromBank = captured(TransactionType.EXPENSE, bank, 1627.21, noon, isTransfer = true)
-        val atCard = captured(TransactionType.INCOME, card, 1627.21, noon.plusSeconds(360), isTransfer = true)
+        val fromBank = captured(TransactionType.EXPENSE, bank, 1234.56, noon, isTransfer = true)
+        val atCard = captured(TransactionType.INCOME, card, 1234.56, noon.plusSeconds(360), isTransfer = true)
 
         CaptureLogic.otherHalf(atCard, listOf(fromBank)) shouldBe fromBank
         CaptureLogic.transferAccounts(atCard, fromBank) shouldBe (bank to card)
@@ -183,8 +183,8 @@ class CaptureLogicTest {
 
     @Test
     fun `card confirmation a day later still joins`() {
-        val fromBank = captured(TransactionType.EXPENSE, bank, 289.96, noon, isTransfer = true)
-        val atCard = captured(TransactionType.INCOME, card, 289.96, noon.plus(Duration.ofHours(25)), isTransfer = true)
+        val fromBank = captured(TransactionType.EXPENSE, bank, 345.67, noon, isTransfer = true)
+        val atCard = captured(TransactionType.INCOME, card, 345.67, noon.plus(Duration.ofHours(25)), isTransfer = true)
 
         CaptureLogic.otherHalf(atCard, listOf(fromBank)) shouldBe fromBank
     }
