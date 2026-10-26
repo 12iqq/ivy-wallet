@@ -31,6 +31,8 @@ automatically from bank SMS alerts.
   - learns your name and category for each shop: rename "GALADARI ICE CREAM" to "Baskin Robbins" once and the next one is filled in for you
   - warns about possible duplicates
   - can optionally add transactions without review
+  - **Add note** from the notification: type what the bank's text can't say (the film, what you ordered) and it
+    becomes the transaction's description
   - checks for new messages as they arrive, or every 1–24 hours so nothing runs in the background in between
 - **Google Wallet payments** (optional): tap-to-pay notifications are captured too, and matched to your card by its
   last 4 digits. If the bank's SMS for the same purchase also arrives, it's added only once.
@@ -59,6 +61,8 @@ automatically from bank SMS alerts.
   the text size of account and category tags, with a light and a dark preview.
 - **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
   CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
+- **Find duplicates** (Settings): transactions with the same amount, account and day side by side, to delete the
+  extra copy, for example after importing a backup into an app that already had the same data.
 - A cleaner Settings screen, without the original project's community, share and rating links.
 
 Your existing Ivy Wallet backups (`.zip`) import as-is.
