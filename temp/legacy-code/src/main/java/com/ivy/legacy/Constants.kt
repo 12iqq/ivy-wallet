@@ -2,9 +2,9 @@ package com.ivy.legacy
 
 object Constants {
     const val URL_TC =
-        "https://github.com/ILIYANGERMANOV/privacy-policies/blob/master/ivy-wallet-tc.md"
+        "https://github.com/12iqq/ivy-wallet/blob/main/LICENSE"
     const val URL_PRIVACY_POLICY =
-        "https://github.com/ILIYANGERMANOV/privacy-policies/blob/master/ivy-wallet-privacy-policy.md"
+        "https://github.com/12iqq/ivy-wallet/blob/main/PRIVACY.md"
 
     const val URL_IVY_WALLET_REPO = "https://github.com/12iqq/ivy-wallet"
 

@@ -31,7 +31,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
-import com.google.android.play.core.review.ReviewManagerFactory
 import com.ivy.IvyNavGraph
 import com.ivy.base.legacy.Theme
 import com.ivy.base.time.TimeConverter
@@ -40,12 +39,10 @@ import com.ivy.design.api.IvyDesign
 import com.ivy.design.api.IvyUI
 import com.ivy.design.system.IvyMaterial3Theme
 import com.ivy.domain.RootScreen
-import com.ivy.home.customerjourney.CustomerJourneyCardsProvider
 import com.ivy.legacy.Constants
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.appDesign
 import com.ivy.legacy.utils.activityForResultLauncher
-import com.ivy.legacy.utils.sendToCrashlytics
 import com.ivy.legacy.utils.simpleActivityForResultLauncher
 import com.ivy.navigation.Navigation
 import com.ivy.navigation.NavigationRoot
@@ -71,9 +68,6 @@ class RootActivity : AppCompatActivity(), RootScreen {
 
     @Inject
     lateinit var navigation: Navigation
-
-    @Inject
-    lateinit var customerJourneyLogic: CustomerJourneyCardsProvider
 
     @Inject
     lateinit var timeConverter: TimeConverter
@@ -382,7 +376,6 @@ class RootActivity : AppCompatActivity(), RootScreen {
             startActivity(browserIntent)
         } catch (e: Exception) {
             e.printStackTrace()
-            e.sendToCrashlytics("Cannot open URL in browser, intent not supported.")
             Toast.makeText(
                 this,
                 "No browser app found. Visit manually: $url",
@@ -447,32 +440,6 @@ class RootActivity : AppCompatActivity(), RootScreen {
         get() = BuildConfig.VERSION_NAME
     override val buildVersionCode: Int
         get() = BuildConfig.VERSION_CODE
-
-    override fun reviewIvyWallet(dismissReviewCard: Boolean) {
-        val manager = ReviewManagerFactory.create(this)
-        val request = manager.requestReviewFlow()
-        request.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // We got the ReviewInfo object
-                val reviewInfo = task.result
-                reviewInfo.let { review ->
-                    val flow = manager.launchReviewFlow(this, review!!)
-                    flow.addOnCompleteListener {
-                        // The flow has finished. The API does not indicate whether the user
-                        // reviewed or not, or even whether the review dialog was shown. Thus, no
-                        // matter the result, we continue our app flow.
-                        if (dismissReviewCard) {
-                            customerJourneyLogic.dismissCard(CustomerJourneyCardsProvider.rateUsCard())
-                        }
-
-                        openGooglePlayAppPage(packageName)
-                    }
-                }
-            } else {
-                openGooglePlayAppPage(packageName)
-            }
-        }
-    }
 
     override fun <T> pinWidget(widget: Class<T>) {
         val appWidgetManager: AppWidgetManager = this.getSystemService(AppWidgetManager::class.java)

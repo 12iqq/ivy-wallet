@@ -7,7 +7,6 @@ import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.PlannedPaymentRuleDao
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.design.l0_system.Gradient
-import com.ivy.design.l0_system.Green
 import com.ivy.design.l0_system.GreenLight
 import com.ivy.design.l0_system.Ivy
 import com.ivy.design.l0_system.Orange
@@ -16,7 +15,6 @@ import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.MainTab
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.PieChartStatisticScreen
-import com.ivy.poll.data.PollRepository
 import com.ivy.ui.R
 import com.ivy.widget.transaction.AddTransactionWidgetCompact
 import javax.inject.Inject
@@ -27,7 +25,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
   private val plannedPaymentRuleDao: PlannedPaymentRuleDao,
   private val sharedPrefs: SharedPrefs,
   private val ivyContext: IvyWalletCtx,
-  private val pollRepository: PollRepository,
   private val timeProvider: TimeProvider,
 ) {
 
@@ -35,7 +32,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
     val trnCount = transactionRepository.countHappenedTransactions().value
     val plannedPaymentsCount = plannedPaymentRuleDao.countPlannedPayments()
     val deps = CustomerJourneyDeps(
-      pollRepository = pollRepository,
       timeProvider = timeProvider,
     )
 
@@ -136,22 +132,6 @@ class CustomerJourneyCardsProvider @Inject constructor(
       hasDismiss = true,
       onAction = { navigation, _, _ ->
         navigation.navigateTo(PieChartStatisticScreen(type = TransactionType.EXPENSE))
-      }
-    )
-
-    fun rateUsCard() = CustomerJourneyCardModel(
-      id = "rate_us",
-      condition = { trnCount, _, _, _ ->
-        trnCount >= 10
-      },
-      title = stringRes(R.string.review_ivy_wallet),
-      description = stringRes(R.string.review_ivy_wallet_description),
-      cta = stringRes(R.string.rate_us_on_google_play),
-      ctaIcon = R.drawable.ic_custom_star_s,
-      background = Gradient.solid(Green),
-      hasDismiss = true,
-      onAction = { _, _, ivyActivity ->
-        ivyActivity.reviewIvyWallet(dismissReviewCard = true)
       }
     )
   }

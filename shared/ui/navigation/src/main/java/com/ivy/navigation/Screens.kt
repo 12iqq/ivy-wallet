@@ -144,8 +144,6 @@ data object ReleasesScreen : Screen
 
 data object DisclaimerScreen : Screen
 
-data object PollScreen : Screen
-
 /** Settings for automatically adding transactions from bank SMS / statements. */
 data object AutoCaptureSettingsScreen : Screen {
     override val isLegacy: Boolean
