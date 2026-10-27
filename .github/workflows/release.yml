@@ -50,14 +50,26 @@ jobs:
 
       - name: Build APK
         if: steps.version.outputs.exists == 'false'
-        run: ./gradlew assembleDemo
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          SIGNING_KEY_ALIAS: release
+        run: |
+          # the private key from signing-key.yml, encrypted with the same password
+          if [ -z "$SIGNING_STORE_PASSWORD" ] || [ ! -f release-key.jks.gpg ]; then
+            echo "No signing key: add the RELEASE_KEY_PASSWORD secret and run the Create signing key workflow."
+            exit 1
+          fi
+          gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 0 \
+            --decrypt --output sign.jks release-key.jks.gpg <<< "$SIGNING_STORE_PASSWORD"
+          ./gradlew assembleRelease
 
       - name: Publish release
         if: steps.version.outputs.exists == 'false'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           APK="IvyWalletUAE-v$VERSION.apk"
-          cp app/build/outputs/apk/demo/app-demo.apk "$APK"
+          cp app/build/outputs/apk/release/app-release.apk "$APK"
 
           NOTES="docs/release-notes/v$VERSION.md"
           if [ ! -f "$NOTES" ]; then

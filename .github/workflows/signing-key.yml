@@ -1,0 +1,48 @@
+name: Create signing key
+
+# Run once, by hand. Creates the private key that signs releases, encrypts it with the
+# RELEASE_KEY_PASSWORD secret and commits it as release-key.jks.gpg. Without that
+# password the file is useless, and the key itself is never printed or uploaded.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GIT
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'adopt'
+          java-version: '18'
+
+      - name: Create, encrypt and commit the key
+        env:
+          PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$PASSWORD" ]; then
+            echo "Add the RELEASE_KEY_PASSWORD secret first (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          if [ -f release-key.jks.gpg ]; then
+            echo "release-key.jks.gpg already exists. A new key couldn't update installed apps, so it isn't replaced."
+            exit 1
+          fi
+          keytool -genkeypair -storetype PKCS12 -keystore release.jks -alias release \
+            -keyalg RSA -keysize 4096 -validity 10000 \
+            -storepass:env PASSWORD -keypass:env PASSWORD \
+            -dname "CN=Ivy Wallet UAE Edition"
+          gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 --output release-key.jks.gpg release.jks <<< "$PASSWORD"
+          rm release.jks
+          git config user.name "12iqq"
+          git config user.email "71027322+12iqq@users.noreply.github.com"
+          git add release-key.jks.gpg
+          git commit -m "Add the encrypted release signing key"
+          git push
