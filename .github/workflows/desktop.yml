@@ -35,7 +35,7 @@ jobs:
       # without downloading anything
       - name: Print the screenshots
         run: |
-          for f in build/screenshots/*-light.jpg; do
+          for f in build/screenshots/Overview-light-small.jpg build/screenshots/Reports-light-small.jpg; do
             echo "BEGIN-SCREENSHOT $(basename "$f")"
             base64 -w 8000 "$f"
             echo "END-SCREENSHOT"

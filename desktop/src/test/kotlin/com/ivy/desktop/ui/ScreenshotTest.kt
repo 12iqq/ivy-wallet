@@ -6,6 +6,8 @@ import androidx.compose.ui.unit.Density
 import com.ivy.desktop.SampleData
 import com.ivy.desktop.data.LedgerBuilder
 import org.jetbrains.skia.EncodedImageFormat
+import org.jetbrains.skia.Rect
+import org.jetbrains.skia.Surface
 import org.junit.Test
 import java.io.File
 import java.time.LocalDateTime
@@ -48,7 +50,11 @@ class ScreenshotTest {
                 scene.close()
                 val file = "$name-${if (dark) "dark" else "light"}"
                 File(out, "$file.png").writeBytes(requireNotNull(image.encodeToData(EncodedImageFormat.PNG)).bytes)
-                File(out, "$file.jpg").writeBytes(requireNotNull(image.encodeToData(EncodedImageFormat.JPEG, 80)).bytes)
+                // half size, small enough to print into the CI log
+                val small = Surface.makeRasterN32Premul(image.width / 2, image.height / 2)
+                small.canvas.drawImageRect(image, Rect.makeWH(image.width / 2f, image.height / 2f))
+                val smallJpg = small.makeImageSnapshot().encodeToData(EncodedImageFormat.JPEG, 70)
+                File(out, "$file-small.jpg").writeBytes(requireNotNull(smallJpg).bytes)
             }
         }
         assertTrue(File(out, "Reports-light.png").length() > 0)
