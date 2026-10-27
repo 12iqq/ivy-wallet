@@ -62,7 +62,7 @@ jobs:
           fi
           gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 0 \
             --decrypt --output sign.jks release-key.jks.gpg <<< "$SIGNING_STORE_PASSWORD"
-          ./gradlew assembleRelease
+          ./gradlew :app:assembleRelease
 
       - name: Check the signature
         if: steps.version.outputs.exists == 'false'
