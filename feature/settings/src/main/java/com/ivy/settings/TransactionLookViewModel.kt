@@ -89,7 +89,7 @@ class TransactionLookViewModel @Inject constructor(
 
     override fun onEvent(event: TransactionLookEvent) {
         when (event) {
-            // the same switch as "Colorful account labels" in Advanced features
+            // kept as the feature flag every transaction list already reads
             is TransactionLookEvent.SetColorAccountTags -> viewModelScope.launch {
                 features.showAccountColorsInTransactions.set(context, event.enabled)
             }

@@ -87,7 +87,7 @@ class IvyFeatures @Inject constructor() : Features {
             showCategorySearchBar,
             hideTotalBalance,
             standardKeypadLayout,
-            showAccountColorsInTransactions
+            // showAccountColorsInTransactions is switched in Settings > Transaction look, not here
             /* will be uncommented when this functionality
              * will be available across the application in up-coming PRs
             showDecimalNumber

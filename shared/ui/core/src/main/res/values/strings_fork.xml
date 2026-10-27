@@ -23,7 +23,7 @@
     <string name="auto_capture">Auto-add transactions</string>
     <string name="auto_capture_short">Auto-add</string>
     <string name="fork_open_source">Open-source · based on Ivy Wallet</string>
-    <string name="auto_capture_description">Detect transactions from your bank SMS and statements</string>
+    <string name="auto_capture_description">Detect transactions from SMS or statements</string>
     <string name="auto_capture_mode">How should transactions be added?</string>
     <string name="auto_capture_mode_off">Off</string>
     <string name="auto_capture_mode_off_desc">I\'ll keep adding everything manually</string>
@@ -260,7 +260,7 @@
 
     <!-- Find duplicates -->
     <string name="find_duplicates">Find duplicates</string>
-    <string name="find_duplicates_button_desc">Transactions entered twice, e.g. after an import</string>
+    <string name="find_duplicates_button_desc">Transactions that may be entered twice</string>
     <string name="duplicates_desc">Transactions with the same amount, account and day. Delete the extra copy, or mark a group as not duplicates if they really are two.</string>
     <string name="no_duplicates">No possible duplicates.</string>
     <string name="not_duplicates">Not duplicates</string>
