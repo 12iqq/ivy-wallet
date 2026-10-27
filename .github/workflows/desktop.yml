@@ -1,0 +1,41 @@
+name: Desktop
+
+# The Windows app on the desktop branch: runs its tests and builds the installer,
+# which you can download from the run's page under Artifacts.
+on:
+  push:
+    branches:
+      - desktop
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+    steps:
+      - name: Checkout GIT
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: ./gradlew test
+
+      - name: Build the installer
+        run: ./gradlew suggestRuntimeModules packageMsi
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: IvyWalletUAE-desktop-installer
+          path: desktop/build/compose/binaries/main/msi/*.msi

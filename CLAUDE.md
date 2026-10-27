@@ -13,3 +13,7 @@
 - Releases are signed with the private key in `release-key.jks.gpg`, which CI decrypts with the
   `RELEASE_KEY_PASSWORD` secret. Never commit a decrypted key (`sign.jks`) and never replace the key file:
   installed apps only accept updates signed with the same key.
+- The desktop app is in `desktop/`, its own Gradle build (`cd desktop && ./gradlew test`). It compiles the
+  phone's report maths from `feature/insights` (InsightsCalculator, ReportsCalculator, RecurringCharges),
+  so keep those files free of Android imports. Desktop work happens on the `desktop` branch until it's
+  merged into `main`.
