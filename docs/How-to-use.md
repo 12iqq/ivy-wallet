@@ -75,11 +75,17 @@ the usual "AED 25.00 spent at …" style, but may miss some messages. **Other ba
 
 ## Card bills
 
-When ADCB sends its monthly billing alert, the total due becomes a planned payment into the card, due on the bill's due
-date. It's paid from the account you paid that card from last time, and waits under **Upcoming** on the home screen.
+Some banks text you each card bill: the total due and the due date. When one arrives, the total becomes a planned
+payment into the card, due on the bill's due date. It's paid from the account you paid that card from last time, and
+waits under **Upcoming** on the home screen.
 
 When your payment to the card comes in through auto-add, the bill is marked paid. A smaller payment lowers what's left.
 If you pay the card some other way, tap **Pay** on the planned payment instead of adding a separate transfer.
+
+So far the app knows ADCB's bill texts. Some banks, like Emirates Islamic, don't text the bill at all; for those cards,
+set the payment due day on the card and you'll get a reminder before each payment instead. If your bank does text the
+bill, [open an issue](https://github.com/12iqq/ivy-wallet/issues/new/choose) with one of those texts (numbers changed)
+and I'll add it.
 
 You can switch this off with **Card bills become planned payments** in the auto-add settings.
 
@@ -90,6 +96,10 @@ electricity, water and gas parts, the change since the last bill, and your avera
 backups, even after you delete the texts.
 
 Turn on **Add bills as planned payments** to have each new bill wait under **Upcoming** until SEWA confirms the payment.
+
+It's SEWA only for now. If you're in Dubai and want DEWA bills too,
+[open an issue](https://github.com/12iqq/ivy-wallet/issues/new/choose) with one of DEWA's bill texts (numbers
+changed) and I'll add it.
 
 ## Planned payments, Tabby and Tamara
 

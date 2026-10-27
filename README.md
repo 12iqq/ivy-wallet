@@ -17,14 +17,19 @@ take a look.
 
 ## What it adds to Ivy Wallet
 
-- Credit card accounts, with the credit limit, statement and due dates, and a reminder before each payment is due
+- Credit cards: the credit limit, statement and due dates, a reminder before each payment is due, what you've spent
+  this statement, and what's left when you pay the card off
+- Card bills your bank sends by SMS become planned payments, and are marked paid when you pay them
+  ([which banks](docs/How-to-use.md#card-bills))
 - Transactions added from your bank's SMS alerts and from Google Wallet payments. You check them in a list first, or
   have them added straight away.
 - Works with DIB, ADCB, Emirates NBD, FAB, Mashreq, RAKBANK, Emirates Islamic, ADIB, Liv, Wio, Tabby, Tamara and
   [more](docs/How-to-use.md#banks)
 - It remembers what you call each shop and which category it goes in
-- ADCB card bills and SEWA bills become planned payments, and are marked paid when you pay them
-- Reports by month or year: spending by category, where the money went, recurring charges and utility bills
+- Utility bills from SEWA's texts: electricity, water and gas, bill by bill, and each bill can wait as a planned
+  payment until it's paid. It's SEWA only for now. If you're in Dubai and want DEWA,
+  [open an issue](https://github.com/12iqq/ivy-wallet/issues/new/choose) with one of their bill texts and I'll add it.
+- Reports by month or year: spending by category, where the money went, and recurring charges
 - Split a Tabby or Tamara purchase into its payments
 - Automatic backups, daily or weekly, to a file you choose (for example in Google Drive)
 - Budget alerts, quick-add shortcuts and a duplicate finder
