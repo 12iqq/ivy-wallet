@@ -84,6 +84,7 @@ fun BoxWithConstraintsScope.BottomBar(
     onAddPlannedPayment: () -> Unit,
 
     showAddAccountModal: () -> Unit,
+    onSearch: () -> Unit,
 ) {
     val ivyContext = ivyWalletCtx()
 
@@ -132,7 +133,8 @@ fun BoxWithConstraintsScope.BottomBar(
             selected = tab == MainTab.HOME,
             selectedColor = Ivy
         ) {
-            selectTab(MainTab.HOME)
+            // Home again opens search: easier to reach than the menu at the top
+            if (tab == MainTab.HOME) onSearch() else selectTab(MainTab.HOME)
         }
 
         Spacer(Modifier.width(FAB_BUTTON_SIZE))

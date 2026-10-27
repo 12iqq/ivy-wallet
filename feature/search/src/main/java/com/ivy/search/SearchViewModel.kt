@@ -77,6 +77,8 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             val queryResult = ioThread {
                 val filteredTransactions = allTrnsAct(Unit)
+                    // planned payments not paid yet would push the real matches down
+                    .filter { transaction -> transaction.settled }
                     .filter { transaction ->
                         transaction.title.matchesQuery(normalizedQuery) ||
                                 transaction.description.matchesQuery(normalizedQuery)

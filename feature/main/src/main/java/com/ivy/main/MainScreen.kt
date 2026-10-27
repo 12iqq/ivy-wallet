@@ -21,6 +21,7 @@ import com.ivy.legacy.utils.onScreenStart
 import com.ivy.navigation.EditPlannedScreen
 import com.ivy.navigation.EditTransactionScreen
 import com.ivy.navigation.MainScreen
+import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.navigation
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.ui.theme.modal.edit.AccountModal
@@ -111,6 +112,9 @@ private fun BoxWithConstraintsScope.UI(
                 balance = 0.0,
                 baseCurrency = baseCurrency
             )
+        },
+        onSearch = {
+            nav.navigateTo(SearchScreen)
         }
     )
 
