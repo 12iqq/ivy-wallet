@@ -89,9 +89,12 @@ private val DarkColors = darkColorScheme(
 
 /** Light or dark, following Windows. */
 @Composable
-fun IvyTheme(content: @Composable () -> Unit) {
+fun IvyTheme(
+    dark: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
+) {
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors,
+        colorScheme = if (dark) DarkColors else LightColors,
         typography = Typo,
         content = content,
     )

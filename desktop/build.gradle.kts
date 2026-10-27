@@ -78,8 +78,8 @@ compose.desktop {
             packageVersion = appVersion
             description = "Your Ivy Wallet UAE reports on your computer"
             vendor = "Ivy Wallet UAE Edition"
-            // beyond the defaults: settings (java.prefs)
-            modules("java.prefs", "jdk.unsupported")
+            // what ./gradlew suggestRuntimeModules lists, on top of the defaults
+            modules("java.instrument", "java.prefs", "jdk.unsupported")
 
             windows {
                 iconFile.set(project.file("icons/ivy-wallet-uae.ico"))

@@ -31,6 +31,16 @@ jobs:
       - name: Test
         run: ./gradlew test
 
+      # ScreenshotTest draws every page with made-up data; printed here so they can be looked at
+      # without downloading anything
+      - name: Print the screenshots
+        run: |
+          for f in build/screenshots/*-light.jpg; do
+            echo "BEGIN-SCREENSHOT $(basename "$f")"
+            base64 -w 8000 "$f"
+            echo "END-SCREENSHOT"
+          done
+
       - name: Build the installer
         run: ./gradlew suggestRuntimeModules packageMsi
 

@@ -107,36 +107,54 @@ fun DesktopApp(
         }
     }
 
+    val today = remember(state) { LocalDate.now() }
+    AppContent(
+        page = page,
+        state = state,
+        today = today,
+        onPage = { page = it },
+        onChooseFile = chooseFile,
+        modifier = modifier,
+    )
+}
+
+/** What the window shows for a [page] and [state]: pages on the left, the page on the right. */
+@Composable
+internal fun AppContent(
+    page: Page,
+    state: LoadState,
+    today: LocalDate,
+    onPage: (Page) -> Unit,
+    onChooseFile: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        Sidebar(page = page, state = state, onPage = { page = it }, onChooseFile = chooseFile)
+        Sidebar(page = page, state = state, onPage = onPage, onChooseFile = onChooseFile)
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight(),
         ) {
-            when (val current = state) {
-                LoadState.NoFile -> Welcome(onChooseFile = chooseFile)
+            when (state) {
+                LoadState.NoFile -> Welcome(onChooseFile = onChooseFile)
                 LoadState.Loading -> Centered { Note("Reading your backup…") }
                 is LoadState.Failed -> Centered {
-                    Text(text = "Couldn't read ${current.file.name}", style = MaterialTheme.typography.titleLarge)
+                    Text(text = "Couldn't read ${state.file.name}", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(8.dp))
-                    Note(current.message)
+                    Note(state.message)
                     Spacer(Modifier.height(16.dp))
-                    Button(onClick = chooseFile) { Text("Choose another file") }
+                    Button(onClick = onChooseFile) { Text("Choose another file") }
                 }
 
-                is LoadState.Ready -> {
-                    val today = remember(current) { LocalDate.now() }
-                    when (page) {
-                        Page.Overview -> OverviewPage(current.ledger, today)
-                        Page.Reports -> ReportsPage(current.ledger, today)
-                        Page.Transactions -> TransactionsPage(current.ledger, today)
-                        Page.Recurring -> RecurringPage(current.ledger, today)
-                    }
+                is LoadState.Ready -> when (page) {
+                    Page.Overview -> OverviewPage(state.ledger, today)
+                    Page.Reports -> ReportsPage(state.ledger, today)
+                    Page.Transactions -> TransactionsPage(state.ledger, today)
+                    Page.Recurring -> RecurringPage(state.ledger, today)
                 }
             }
         }
