@@ -1,146 +1,70 @@
 # Ivy Wallet UAE Edition
 
-*Same Ivy. More dirhams. Fewer surprises.*
-
 [![APK](https://github.com/12iqq/ivy-wallet/actions/workflows/apk.yml/badge.svg)](https://github.com/12iqq/ivy-wallet/actions/workflows/apk.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-A personal fork of [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet), the open-source money manager for Android.
-The original project stopped being maintained in November 2024. This fork keeps Ivy's look and feel. It fixes the bugs
-I ran into and adds features for people who bank in the **United Arab Emirates**: credit cards, and transactions added
-automatically from bank SMS alerts.
+A free money manager for Android, set up for banking in the UAE.
 
-> This is a hobby project for my own use, shared in case it helps others in the UAE. It isn't on Google Play and isn't
-> affiliated with the original Ivy Wallet team or with any bank.
+I've used [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet) to keep track of my money for years. It's open source,
+and it stopped being updated in November 2024. Instead of making yet another new app, I took Ivy Wallet, fixed the
+problems I kept running into, and added what I wanted for everyday use here, like credit cards and adding transactions
+from bank SMS.
 
-## What's different from Ivy Wallet
+It's free. There are no ads, no account to sign up for and no tracking, and your data stays on your phone.
 
-### Fixes
-- **Planned payments** now show up reliably. Upcoming occurrences are created automatically, both one-time and recurring
-  ones, and that includes transfers between accounts. Paying one no longer loses the date it was due.
+If something doesn't work, or you have an idea, [open an issue](https://github.com/12iqq/ivy-wallet/issues) and I'll
+take a look.
 
-### New features
-- **Credit card accounts** with:
-  - a credit limit, statement day and payment due day
-  - a usage bar (green, orange or red) and a "Due in N days" reminder on the card
-  - their own section in the Accounts tab
-- **Auto-add transactions from bank SMS**:
-  - picks up card and account alerts on your phone and puts them in a review list
-  - **nothing is uploaded**, every message is processed on the device
-  - you choose which banks to read, link each card (by its last 4 digits) to an account, and approve, edit or skip each one
-  - learns your name and category for each shop: rename "GALADARI ICE CREAM" to "Baskin Robbins" once and the next one is filled in for you
-  - warns about possible duplicates
-  - can optionally add transactions without review
-  - **Add note** from the notification: type what the bank's text can't say (the film, what you ordered) and it
-    becomes the transaction's description
-  - checks for new messages as they arrive, or every 1–24 hours so nothing runs in the background in between
-- **Google Wallet payments** (optional): tap-to-pay notifications are captured too, and matched to your card by its
-  last 4 digits. If the bank's SMS for the same purchase also arrives, it's added only once.
-- **Card payment reminders** a few days before each card's due date, then the day before and on the day.
-- **Card bills** (ADCB's monthly billing alert): the total due becomes a planned payment into the card, due on its
-  due date and paid from the account you paid the card from last time. Paying the card marks it paid; a smaller
-  payment lowers what's left.
-- **Credit card payments**: a transfer to a credit card shows what the card owes and what's left after the payment,
-  with *Pay all* to clear it; no category or tags needed.
-- **Statement-cycle spending** on credit cards: "Spent this statement" instead of the calendar month.
-- **Budget alerts** when a budget reaches 80% and 100%.
-- **Automatic backup**, daily or weekly, to a file you choose (for example in Google Drive).
-  Reminders, alerts and backups all run from one background job once a day, so the battery cost is negligible.
-- **Notification settings**: turn each kind of notification on or off (detected transactions, card reminders,
-  budget alerts, the daily "Did you spend today?" reminder, backup problems).
-- **Split payments for Tabby / Tamara**: turn a purchase into 2–12 payments. The first one is recorded now and the
-  rest show up as planned payments.
-- **Quick-add shortcuts** on the home screen, learned from your own history. For example "Grocery · ~10 AED":
-  tap it, confirm the amount, done.
-- **Reports** (Cashew-style, in Ivy's look): month or year view, spending or income, a category donut you can tap
-  to filter everything, spending pace vs last month, top places, the transactions behind the numbers, past months,
-  and total balance over time.
-- **Utility bills** (optional, in Reports): reads SEWA's monthly bill texts and shows electricity, water and gas
-  bill by bill, with the change since the last bill, averages and totals. Bills are kept, and backed up, after the
-  texts are deleted. SEWA's texts give amounts only, not kWh or gallons.
-  Each new bill can become a planned payment due on its due date; when SEWA confirms the payment it's marked paid,
-  and the bank's text for the same payment isn't added a second time.
-- **Recurring charges** (in Reports): subscriptions, bills and fees that come back every week, month, three months or
-  year, found in your expenses by their name. Each shows what it costs a month, when the next one is about due and
-  whether its price changed; ones that stopped are listed apart. A tap makes one a planned payment.
-- **Transaction look** (Settings): color account tags with each account's color, like category tags, and choose
-  the text size of account and category tags, with a light and a dark preview.
-- **UAE bank list**, user-selectable: DIB, ADCB, Emirates NBD, Liv, FAB, Mashreq, RAKBANK, Emirates Islamic, SIB, ADIB,
-  CBD, Wio, Ajman Bank, NBF, CBI, HSBC, Citi, Tabby, Tamara. You can add more. See [docs/Auto-Capture.md](docs/Auto-Capture.md).
-- **Find duplicates** (Settings): transactions with the same amount, account and day side by side, to delete the
-  extra copy, for example after importing a backup into an app that already had the same data.
-- A cleaner Settings screen, without the original project's community, share and rating links.
+## What it adds to Ivy Wallet
 
-Your existing Ivy Wallet backups (`.zip`) import as-is.
+- Credit card accounts, with the credit limit, statement and due dates, and a reminder before each payment is due
+- Transactions added from your bank's SMS alerts and from Google Wallet payments. You check them in a list first, or
+  have them added straight away.
+- Works with DIB, ADCB, Emirates NBD, FAB, Mashreq, RAKBANK, Emirates Islamic, ADIB, Liv, Wio, Tabby, Tamara and
+  [more](docs/How-to-use.md#banks)
+- It remembers what you call each shop and which category it goes in
+- ADCB card bills and SEWA bills become planned payments, and are marked paid when you pay them
+- Reports by month or year: spending by category, where the money went, recurring charges and utility bills
+- Split a Tabby or Tamara purchase into its payments
+- Automatic backups, daily or weekly, to a file you choose (for example in Google Drive)
+- Budget alerts, quick-add shortcuts and a duplicate finder
+
+[How to use it](docs/How-to-use.md) explains each of these step by step.
 
 ## Install
 
-1. Download the APK from the latest [release](https://github.com/12iqq/ivy-wallet/releases/latest)
-   (`IvyWalletUAE-vX.Y.Z.apk`). Newer versions install over older ones and keep your data.
-2. Android's Play Protect may block the install because the app isn't from the Play Store. Choose **More details →
-   Install anyway**. If there's no such option, temporarily turn off **Play Store → Play Protect → ⚙ → Scan apps with
-   Play Protect**, then turn it back on afterwards.
-3. To let the app read bank SMS, Android 13+ requires one more step for apps installed outside the Play Store:
-   **Settings → Apps → Ivy Wallet → ⋮ → Allow restricted settings**, then grant the SMS permission.
-4. In your old Ivy Wallet, go to **Settings → Backup data**, then in this app use **Settings → Import data**.
-   Import into an empty app: importing adds to what's already there instead of replacing it, so anything entered
-   separately would show up twice. **Settings → Delete all user data** empties the app first.
+1. Download `IvyWalletUAE-vX.Y.Z.apk` from the [latest release](https://github.com/12iqq/ivy-wallet/releases/latest)
+   and open it. Updates install over the old version and keep your data.
+2. The app isn't on the Play Store, so Play Protect may warn you. Tap **More details → Install anyway**. If that option
+   isn't there, turn off **Play Store → Play Protect → ⚙ → Scan apps with Play Protect**, install, then turn it back on.
+3. To let it read bank SMS on Android 13 or newer, first go to **Settings → Apps → Ivy Wallet UAE → ⋮ → Allow
+   restricted settings**, then turn on SMS access in the app.
 
-## Build it yourself
+Moving from the original Ivy Wallet: in Ivy Wallet go to **Settings → Backup data**, then in this app **Settings →
+Import data**. Import into an empty app, because importing adds to what's already there.
 
-- Java 17+
-- The latest stable Android Studio
+Had version 1.0.x of this app? Version 1.1.0 installs as a separate app. The
+[1.1.0 release notes](https://github.com/12iqq/ivy-wallet/releases/tag/v1.1.0) show how to move your data over.
 
-Clone the repo, open it in Android Studio, and run the `app` configuration. Use `./gradlew assembleDemo` for a debug APK.
+## Privacy
 
-### Publishing a release
+The app doesn't collect anything about you. It has no analytics or crash reporting, and it never sends your
+transactions or messages anywhere. The only thing it downloads is exchange rates. [PRIVACY.md](PRIVACY.md) explains
+what each permission is for.
 
-Bump `version-name` (and `version-code`) in `gradle/libs.versions.toml` and push to `main`. The **Release** workflow
-builds the APK and publishes it on the Releases page. Notes are taken from `docs/release-notes/v<version>.md` if it
-exists, otherwise from the commit messages.
-Contribution guidelines from the original project are in [CONTRIBUTING.md](./CONTRIBUTING.md).
+## Building it yourself
 
-## Tech Stack
+You need Java 17 and Android Studio. Open the project and run the `app` configuration, or run `./gradlew assembleDemo`
+for a test APK.
 
-### Core
+To publish a release, raise `version-name` and `version-code` in `gradle/libs.versions.toml` and push to `main`.
+GitHub Actions builds and signs the APK and publishes it with the notes in `docs/release-notes/v<version>.md`.
+How the SMS reading works, and how to add a bank, is in [docs/Auto-Capture.md](docs/Auto-Capture.md).
 
-- 100% [Kotlin](https://kotlinlang.org/)
-- 100% [Jetpack Compose](https://developer.android.com/jetpack/compose)
-- [Material3 design](https://m3.material.io/) (UI components)
-- [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html) (structured concurrency)
-- [Kotlin Flow](https://kotlinlang.org/docs/flow.html) (reactive data stream)
-- [Hilt](https://dagger.dev/hilt/) (DI)
-- [ArrowKt](https://arrow-kt.io/) (functional programming)
+## Credits and license
 
+Built on [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet) by Iliyan Germanov and its contributors, and licensed
+under [GPL-3.0](LICENSE) like the original. You're free to use, change and share it under the same license. It comes
+without any warranty.
 
-### Testing
-- [JUnit4](https://github.com/junit-team/junit4) (test framework, compatible with Android)
-- [Kotest](https://kotest.io/) (unit test assertions)
-- [Paparazzi](https://github.com/cashapp/paparazzi) (screenshot testing)
-
-### Local Persistence
-- [DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (key-value storage)
-- [Room DB](https://developer.android.com/training/data-storage/room) (SQLite ORM)
-
-### Networking
-- [Ktor client](https://ktor.io/docs/getting-started-ktor-client.html) (HTTP client)
-- [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization) (JSON serialization)
-
-### Build & CI
-- [Gradle KTS](https://docs.gradle.org/current/userguide/kotlin_dsl.html) (Kotlin DSL)
-- [Gradle convention plugins](https://docs.gradle.org/current/samples/sample_convention_plugins.html) (build logic)
-- [Gradle version catalogs](https://developer.android.com/build/migrate-to-catalogs) (dependencies versions)
-- [GitHub Actions](https://github.com/12iqq/ivy-wallet/actions) (CI/CD)
-
-### Other
-- [Firebase Crashlytics](https://firebase.google.com/products/crashlytics) (stability monitoring)
-- [Timber](https://github.com/JakeWharton/timber) (logging)
-- [Detekt](https://github.com/detekt/detekt) (linter)
-- [Ktlint](https://github.com/pinterest/ktlint) (linter)
-- [Slack's compose-lints](https://slackhq.github.io/compose-lints/) (linter)
-
-## Credits & license
-
-Built on top of [Ivy Wallet](https://github.com/Ivy-Apps/ivy-wallet) by Iliyan Germanov and the Ivy Wallet contributors.
-Licensed under [GPL-3.0](LICENSE), like the original. You're free to use, modify and share it under the same license.
-The software is provided as-is, without warranty.
+This project isn't affiliated with the Ivy Wallet team or with any bank.

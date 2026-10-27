@@ -1,0 +1,25 @@
+name: A bank message isn't read correctly
+description: An SMS from your bank is missed or read wrong.
+labels: ["bank message"]
+body:
+  - type: input
+    id: bank
+    attributes:
+      label: Bank
+      placeholder: Emirates NBD
+    validations:
+      required: true
+  - type: textarea
+    id: message
+    attributes:
+      label: The message
+      description: >
+        Paste the SMS here. Before you send it, change your card or account number, your balance and the amounts.
+        Keep the wording and the layout as they are.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should it have been?
+      description: For example "a purchase of AED 25.00 at Carrefour on the card ending 1234".

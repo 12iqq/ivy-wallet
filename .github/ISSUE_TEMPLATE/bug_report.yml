@@ -1,71 +1,28 @@
-name: Bug Report
-description: Report a bug/problem so we can fix it.
-title: "[BUG] "
+name: Something isn't working
+description: Tell me what went wrong in the app.
 labels: ["bug"]
 body:
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Please confirm the following
-      options:
-        - label: I checked [the current issues](https://github.com/Ivy-Apps/ivy-wallet/issues) for duplicate problems
-          required: true
   - type: textarea
-    id: bug-description
+    id: what-happened
     attributes:
-      label: Describe the bug
-      description: A clear and concise description of what the bug is.
-      placeholder: I clicked something and my millions are not displayed anymore!
+      label: What happened?
+      description: What did you do, and what did the app do?
     validations:
       required: true
   - type: textarea
-    id: reproduce
+    id: expected
     attributes:
-      label: To Reproduce
-      description: "Steps to reproduce the behavior:"
-      placeholder: |
-        1. Go to '...'
-        2. Click on '....'
-        3. Scroll down to '....'
-        4. See error
-      value: "1. "
-    validations:
-      required: false
-  - type: textarea
-    id: expected-behavior
-    attributes:
-      label: Expected behavior
-      description: A clear and concise description of what you expected to happen.
-      placeholder: My millions should be displayed!
-    validations:
-      required: false
-  - type: textarea
-    id: screenshots
-    attributes:
-      label: Screenshots
-      description: If applicable, add screenshots to help explain your problem.
-    validations:
-      required: false
+      label: What did you expect instead?
   - type: input
-    id: app_version
+    id: version
     attributes:
       label: App version
-      description: Specify the exact version of the Ivy Wallet app. You can see it on the top right of the Settings screen.
-      placeholder: v2024.06.07 (181) from Google Play
-    validations:
-      required: true
+      description: Shown at the top of Settings, for example 1.1.0 (219).
   - type: input
-    id: smartphone
+    id: phone
     attributes:
-      label: Smartphone
-      description: Specify the phone model and Android version.
-      placeholder: Samsung Galaxy S20 Ultra, Android 11
-    validations:
-      required: false
-  - type: textarea
-    id: additional
+      label: Phone and Android version
+      placeholder: Samsung Galaxy A55, Android 15
+  - type: markdown
     attributes:
-      label: Additional context
-      description: Add any other context about the problem here.
-    validations:
-      required: false
+      value: Screenshots help. Please hide account numbers and balances first.
