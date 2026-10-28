@@ -33,6 +33,7 @@ take a look.
 - Split a Tabby or Tamara purchase into its payments
 - Automatic backups, daily or weekly, to a file you choose (for example in Google Drive)
 - Budget alerts, quick-add shortcuts and a duplicate finder
+- A Windows app to look at your reports on a bigger screen ([see below](#on-your-computer))
 
 [How to use it](docs/How-to-use.md) explains each of these step by step.
 
@@ -51,6 +52,22 @@ Import data**. Import into an empty app, because importing adds to what's alread
 Had version 1.0.x of this app? Version 1.1.0 installs as a separate app. The
 [1.1.0 release notes](https://github.com/12iqq/ivy-wallet/releases/tag/v1.1.0) show how to move your data over.
 
+## On your computer
+
+There's also a Windows app for looking at your money on a bigger screen: your accounts and cards, monthly and yearly
+reports, all your transactions with search, and recurring charges. It reads the backup the phone app saves, so you
+keep adding transactions on the phone. You can't add or change anything on the computer yet.
+
+1. In the phone app, set **Settings → Automatic backup** to **Daily** and save the file in your Google Drive.
+2. Install [Google Drive for desktop](https://www.google.com/drive/download/) so the file is on your computer too.
+3. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
+   [latest release](https://github.com/12iqq/ivy-wallet/releases/latest) and install it. Windows may say it protected
+   your PC, because not many people have downloaded the app yet. Click **More info → Run anyway**.
+4. Open **Ivy Wallet UAE** from the Start menu and choose the backup file. When a newer backup reaches your computer,
+   the app shows it within a minute.
+
+It's Windows only for now. Mac and Linux are planned.
+
 ## Privacy
 
 The app doesn't collect anything about you. It has no analytics or crash reporting, and it never sends your
@@ -63,8 +80,10 @@ You need Java 17 and Android Studio. Open the project and run the `app` configur
 for a test APK.
 
 To publish a release, raise `version-name` and `version-code` in `gradle/libs.versions.toml` and push to `main`.
-GitHub Actions builds and signs the APK and publishes it with the notes in `docs/release-notes/v<version>.md`.
-How the SMS reading works, and how to add a bank, is in [docs/Auto-Capture.md](docs/Auto-Capture.md).
+GitHub Actions builds and signs the APK, builds the Windows installer, and publishes both with the notes in
+`docs/release-notes/v<version>.md`. How the SMS reading works, and how to add a bank, is in
+[docs/Auto-Capture.md](docs/Auto-Capture.md). The Windows app is its own Gradle build in `desktop/`, explained in
+[desktop/README.md](desktop/README.md).
 
 ## Credits and license
 

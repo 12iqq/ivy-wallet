@@ -11,6 +11,9 @@ data.
 
 Backups go only where you save them, for example a file in your own Google Drive.
 
+The Windows app only reads the backup file you choose, and remembers which file that is. It doesn't connect to the
+internet and never changes the file.
+
 ## Permissions
 
 | Permission | What it's for |

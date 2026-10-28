@@ -128,6 +128,9 @@ The backup has your accounts, transactions, categories, budgets, planned payment
 doesn't have the auto-add setup (your banks and card links), your notification choices or the transaction look, so set
 those again after importing.
 
+The daily backup in Google Drive is also what the Windows app reads, so you can see your reports on your computer.
+The [README](../README.md#on-your-computer) shows how to set it up.
+
 ## Other settings
 
 - **Find duplicates** shows transactions with the same amount, account and day side by side, so you can delete the

@@ -1,8 +1,8 @@
 name: Release
 
-# Publishes a GitHub Release with the APK whenever the app version changes.
-# To ship a new version: bump `version-name` (and `version-code`) in
-# gradle/libs.versions.toml and optionally add docs/release-notes/v<version>.md.
+# Publishes a GitHub Release with the APK and the Windows installer whenever the
+# app version changes. To ship a new version: bump `version-name` (and `version-code`)
+# in gradle/libs.versions.toml and optionally add docs/release-notes/v<version>.md.
 on:
   push:
     branches:
@@ -17,6 +17,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -97,3 +99,58 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Ivy Wallet UAE v$VERSION" \
             --notes-file "$NOTES"
+
+  # The Windows app goes into the same release. Run by hand, this also adds it to a
+  # release that doesn't have it yet.
+  windows:
+    needs: release
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VERSION: ${{ needs.release.outputs.version }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout GIT
+        uses: actions/checkout@v4
+
+      - name: Check the release
+        id: check
+        run: |
+          MSI="IvyWalletUAE-Desktop-v$VERSION.msi"
+          echo "msi=$MSI" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qxF "$MSI"; then
+            echo "v$VERSION already has $MSI, nothing to do."
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Java
+        if: steps.check.outputs.missing == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Gradle cache
+        if: steps.check.outputs.missing == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the installer
+        if: steps.check.outputs.missing == 'true'
+        working-directory: desktop
+        run: ./gradlew packageMsi
+
+      - name: Add it to the release
+        if: steps.check.outputs.missing == 'true'
+        run: |
+          MSI="${{ steps.check.outputs.msi }}"
+          cp desktop/build/compose/binaries/main/msi/*.msi "$MSI"
+          gh release upload "v$VERSION" "$MSI"
+          # the notes may have gained a part about the Windows app since the release was made
+          NOTES="docs/release-notes/v$VERSION.md"
+          if [ -f "$NOTES" ]; then
+            gh release edit "v$VERSION" --notes-file "$NOTES"
+          fi

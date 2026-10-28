@@ -15,5 +15,5 @@
   installed apps only accept updates signed with the same key.
 - The desktop app is in `desktop/`, its own Gradle build (`cd desktop && ./gradlew test`). It compiles the
   phone's report maths from `feature/insights` (InsightsCalculator, ReportsCalculator, RecurringCharges),
-  so keep those files free of Android imports. Desktop work happens on the `desktop` branch until it's
-  merged into `main`.
+  so keep those files free of Android imports. Each release also gets the Windows installer, with the same
+  version number as the phone app.
