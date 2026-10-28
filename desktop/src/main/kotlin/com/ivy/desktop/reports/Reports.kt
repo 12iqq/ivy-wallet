@@ -5,6 +5,7 @@ import com.ivy.desktop.data.Ledger
 import com.ivy.desktop.data.LedgerAccount
 import com.ivy.desktop.data.LedgerTransaction
 import com.ivy.insights.FlowKind
+import com.ivy.insights.FlowRecord
 import com.ivy.insights.InsightsCalculator
 import com.ivy.insights.MonthTotals
 import com.ivy.insights.NetWorthPoint
@@ -18,10 +19,13 @@ import com.ivy.insights.recurring.RecurringCharges
 import java.time.LocalDate
 import java.time.YearMonth
 
-/** What the Reports page is set to: a month or a year, spending or income, maybe one category. */
+/** How much a report covers: a month, a year, or everything since the first transaction. */
+enum class Span { Month, Year, AllTime }
+
+/** What the Reports page is set to: a month, a year or all time, spending or income, maybe one category. */
 @Suppress("DataClassTypedIDs")
 data class ReportChoice(
-    val mode: PeriodMode,
+    val span: Span,
     /** The month shown, or a month in the year shown */
     val month: YearMonth,
     val kind: FlowKind,
@@ -54,6 +58,20 @@ data class YearMonths(
     val totals: List<Double>,
 ) : ReportChart
 
+/** All time: the total of every month since the first transaction. */
+data class EveryMonth(
+    val months: List<YearMonth>,
+    val totals: List<Double>,
+) : ReportChart
+
+/** A year's income and spending, and how many transactions there were. */
+data class YearTotals(
+    val year: Int,
+    val income: Double,
+    val expense: Double,
+    val count: Int,
+)
+
 data class ReportView(
     val period: ReportPeriod,
     val summary: ReportSummary,
@@ -77,7 +95,7 @@ data class OverviewView(
     val totalBalance: Double,
     val accounts: List<LedgerAccount>,
     val cards: List<CardView>,
-    /** The last 12 months, oldest first */
+    /** The last 12 months, or every month since the first transaction; oldest first */
     val months: List<MonthTotals>,
     val netWorth: List<NetWorthPoint>,
     val averageMonthlySpend: Double,
@@ -89,38 +107,37 @@ data class OverviewView(
 object Reports {
     const val UNCATEGORIZED_NAME = "Uncategorized"
 
-    fun period(choice: ReportChoice): ReportPeriod = when (choice.mode) {
-        PeriodMode.Month -> ReportPeriod.month(choice.month)
-        PeriodMode.Year -> ReportPeriod.year(choice.month.year)
+    /** The days a choice covers; all time is from the first transaction to today. */
+    fun period(choice: ReportChoice, ledger: Ledger, today: LocalDate): ReportPeriod = when (choice.span) {
+        Span.Month -> ReportPeriod.month(choice.month)
+        Span.Year -> ReportPeriod.year(choice.month.year)
+        Span.AllTime -> allTime(ledger, today)
     }
 
-    /** The period before (-1) or after (+1) the one shown. */
-    fun step(choice: ReportChoice, by: Long): ReportChoice = when (choice.mode) {
-        PeriodMode.Month -> choice.copy(month = choice.month.plusMonths(by))
-        PeriodMode.Year -> choice.copy(month = choice.month.plusYears(by))
+    /** From the first transaction to today. */
+    fun allTime(ledger: Ledger, today: LocalDate): ReportPeriod =
+        ReportPeriod(minOf(ledger.since ?: today, today), today)
+
+    /** The month or year before (-1) or after (+1) the one shown. All time stays as it is. */
+    fun step(choice: ReportChoice, by: Long): ReportChoice = when (choice.span) {
+        Span.Month -> choice.copy(month = choice.month.plusMonths(by))
+        Span.Year -> choice.copy(month = choice.month.plusYears(by))
+        Span.AllTime -> choice
     }
 
     fun report(ledger: Ledger, choice: ReportChoice, today: LocalDate): ReportView {
-        val period = period(choice)
+        val period = period(choice, ledger, today)
         val records = ledger.records
         val byId = ledger.transactions.associateBy { it.id.value }
+        // all time compares with the year before the first transaction, which has nothing: no change shown
+        val mode = if (choice.span == Span.Month) PeriodMode.Month else PeriodMode.Year
         return ReportView(
             period = period,
-            summary = ReportsCalculator.summary(records, choice.kind, period, choice.mode, today, choice.categoryKey),
-            categories = ReportsCalculator.categoryShares(records, choice.kind, period).map { share ->
-                val category = ledger.categories[CategoryId(share.key)]
-                CategoryRow(
-                    key = share.key,
-                    name = category?.name ?: UNCATEGORIZED_NAME,
-                    color = category?.color,
-                    amount = share.amount,
-                    count = share.count,
-                    share = share.share,
-                )
-            },
+            summary = ReportsCalculator.summary(records, choice.kind, period, mode, today, choice.categoryKey),
+            categories = categoryRows(ledger, choice.kind, period),
             places = ReportsCalculator.topTitles(records, choice.kind, period, choice.categoryKey),
-            chart = when (choice.mode) {
-                PeriodMode.Month -> MonthPace(
+            chart = when (choice.span) {
+                Span.Month -> MonthPace(
                     current = ReportsCalculator.cumulativeByDay(
                         records,
                         choice.kind,
@@ -138,17 +155,73 @@ object Reports {
                     daysInMonth = choice.month.lengthOfMonth(),
                 )
 
-                PeriodMode.Year -> YearMonths(
+                Span.Year -> YearMonths(
                     ReportsCalculator.monthsOfYear(records, choice.kind, choice.month.year, choice.categoryKey)
                 )
+
+                Span.AllTime -> everyMonth(records, choice.kind, period, choice.categoryKey)
             },
             transactions = ReportsCalculator.transactions(records, choice.kind, period, choice.categoryKey)
                 .mapNotNull { record -> record.id?.let(byId::get) },
         )
     }
 
-    fun overview(ledger: Ledger, today: LocalDate): OverviewView {
-        val months = InsightsCalculator.monthlyTotals(ledger.records, today)
+    /** What each category adds up to in [period], biggest first. */
+    fun categoryRows(ledger: Ledger, kind: FlowKind, period: ReportPeriod): List<CategoryRow> =
+        ReportsCalculator.categoryShares(ledger.records, kind, period).map { share ->
+            val category = ledger.categories[CategoryId(share.key)]
+            CategoryRow(
+                key = share.key,
+                name = category?.name ?: UNCATEGORIZED_NAME,
+                color = category?.color,
+                amount = share.amount,
+                count = share.count,
+                share = share.share,
+            )
+        }
+
+    /** Each month from [from] to [to]. */
+    fun monthsBetween(from: YearMonth, to: YearMonth): List<YearMonth> =
+        generateSequence(from) { it.plusMonths(1) }.takeWhile { !it.isAfter(to) }.toList()
+
+    private fun everyMonth(
+        records: List<FlowRecord>,
+        kind: FlowKind,
+        period: ReportPeriod,
+        categoryKey: String?,
+    ): EveryMonth {
+        val byMonth = ReportsCalculator.select(records, kind, period, categoryKey)
+            .groupBy { YearMonth.from(it.date) }
+            .mapValues { (_, list) -> list.sumOf { it.amount } }
+        val months = monthsBetween(YearMonth.from(period.start), YearMonth.from(period.end))
+        return EveryMonth(months = months, totals = months.map { byMonth[it] ?: 0.0 })
+    }
+
+    /** Each year's income, spending and number of transactions, up to [today]; oldest first. */
+    fun years(ledger: Ledger, today: LocalDate): List<YearTotals> = ledger.records
+        .filter { !it.date.isAfter(today) }
+        .groupBy { it.date.year }
+        .toSortedMap()
+        .map { (year, list) ->
+            YearTotals(
+                year = year,
+                income = list.filter { it.kind == FlowKind.Income }.sumOf { it.amount },
+                expense = list.filter { it.kind == FlowKind.Expense }.sumOf { it.amount },
+                count = list.size,
+            )
+        }
+
+    /**
+     * Balances and cards today, and the months for the charts: the last 12, or with [allTime] every month
+     * since the first transaction.
+     */
+    fun overview(ledger: Ledger, today: LocalDate, allTime: Boolean): OverviewView {
+        val count = if (allTime) {
+            monthsBetween(YearMonth.from(ledger.since ?: today), YearMonth.from(today)).size.coerceAtLeast(2)
+        } else {
+            InsightsCalculator.DEFAULT_MONTHS
+        }
+        val months = InsightsCalculator.monthlyTotals(ledger.records, today, count)
         return OverviewView(
             totalBalance = ledger.accounts
                 .filter { it.includeInBalance && it.currency == ledger.baseCurrency }
@@ -164,7 +237,7 @@ object Reports {
                 )
             },
             months = months,
-            netWorth = InsightsCalculator.netWorth(ledger.balanceDeltas, today),
+            netWorth = InsightsCalculator.netWorth(ledger.balanceDeltas, today, count),
             averageMonthlySpend = InsightsCalculator.averageMonthlySpend(months),
             averageMonths = months.dropLast(1).count { it.expense > 0 || it.income > 0 },
         )

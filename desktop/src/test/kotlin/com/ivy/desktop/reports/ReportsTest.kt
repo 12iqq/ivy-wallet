@@ -12,7 +12,6 @@ import com.ivy.desktop.data.LedgerBuilder
 import com.ivy.desktop.data.TransactionId
 import com.ivy.desktop.data.TransactionType
 import com.ivy.insights.FlowKind
-import com.ivy.insights.PeriodMode
 import com.ivy.insights.ReportsCalculator
 import org.junit.Test
 import java.time.LocalDate
@@ -23,7 +22,7 @@ import kotlin.test.assertEquals
 class ReportsTest {
 
     private val today = LocalDate.of(2026, 10, 27)
-    private val october = ReportChoice(PeriodMode.Month, YearMonth.of(2026, 10), FlowKind.Expense, null)
+    private val october = ReportChoice(Span.Month, YearMonth.of(2026, 10), FlowKind.Expense, null)
 
     private val ledger: Ledger = LedgerBuilder.build(
         Backup(
@@ -45,6 +44,8 @@ class ReportsTest {
             ),
             plannedPaymentRules = emptyList(),
             settings = listOf(BackupSettings("AED")),
+            tags = null,
+            tagAssociations = null,
         ),
         ZoneOffset.ofHours(4),
         today.atTime(18, 0).toInstant(ZoneOffset.ofHours(4)),
@@ -74,17 +75,37 @@ class ReportsTest {
         assertEquals(150.0, food.summary.total)
         assertEquals(listOf("t3", "t1"), food.transactions.map { it.id.value })
 
-        val year = Reports.report(ledger, october.copy(mode = PeriodMode.Year), today)
+        val year = Reports.report(ledger, october.copy(span = Span.Year), today)
         assertEquals(675.0, year.summary.total)
         assertEquals(200.0, (year.chart as YearMonths).totals[8])
-        assertEquals("2026", Format.period(year.period, PeriodMode.Year))
-        assertEquals("October 2026", Format.period(Reports.period(october), PeriodMode.Month))
+        assertEquals("2026", Format.period(year.period, Span.Year))
+        assertEquals("October 2026", Format.period(Reports.period(october, ledger, today), Span.Month))
         assertEquals(YearMonth.of(2026, 9), Reports.step(october, -1).month)
     }
 
     @Test
+    fun `all time, from the first transaction to today`() {
+        val choice = october.copy(span = Span.AllTime)
+
+        val all = Reports.report(ledger, choice, today)
+
+        assertEquals(675.0, all.summary.total)
+        assertEquals(LocalDate.of(2026, 9, 14), all.period.start)
+        assertEquals(today, all.period.end)
+        val chart = all.chart as EveryMonth
+        assertEquals(listOf(YearMonth.of(2026, 9), YearMonth.of(2026, 10)), chart.months)
+        assertEquals(listOf(200.0, 475.0), chart.totals)
+        assertEquals("Since September 2026", Format.period(all.period, Span.AllTime))
+        assertEquals("since September 2026", Format.during(all.period, Span.AllTime))
+        // there's no all time before or after this one
+        assertEquals(choice, Reports.step(choice, -1))
+        assertEquals(2, Reports.overview(ledger, today, allTime = true).months.size)
+        assertEquals(listOf(YearTotals(2026, 9000.0, 675.0, 6)), Reports.years(ledger, today))
+    }
+
+    @Test
     fun `overview has balances, cards and the last months`() {
-        val overview = Reports.overview(ledger, today)
+        val overview = Reports.overview(ledger, today, allTime = false)
 
         assertEquals(9000.0 - 100 - 300 - 50 - 200 - 25, overview.totalBalance)
         assertEquals(listOf("bank"), overview.accounts.map { it.id.value })
@@ -151,6 +172,7 @@ class ReportsTest {
         toAmount = null,
         title = title,
         description = null,
+        bankDetails = null,
         dateTime = date.atTime(9, 0).toInstant(ZoneOffset.ofHours(4)).toEpochMilli(),
         categoryId = category?.let(::CategoryId),
         recurringRuleId = null,

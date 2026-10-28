@@ -49,6 +49,7 @@ import java.time.ZoneId
 enum class Page(val title: String) {
     Overview("Overview"),
     Reports("Reports"),
+    Highlights("Highlights"),
     Transactions("Transactions"),
     Recurring("Recurring charges"),
 }
@@ -157,6 +158,7 @@ internal fun AppContent(
                 is LoadState.Ready -> when (page) {
                     Page.Overview -> OverviewPage(state.ledger, today)
                     Page.Reports -> ReportsPage(state.ledger, today)
+                    Page.Highlights -> HighlightsPage(state.ledger, today)
                     Page.Transactions -> TransactionsPage(state.ledger, today)
                     Page.Recurring -> RecurringPage(state.ledger, today)
                 }

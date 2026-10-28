@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -66,6 +67,12 @@ private val TipGap = 16.dp
 private val TipWidth = 280.dp
 private val TipShape = RoundedCornerShape(12.dp)
 private const val BarShare = 0.6f
+
+/** However wide the window, a bar stays a bar */
+private val MaxBarWidth = 24.dp
+private val BarGap = 4.dp
+private const val MaxGapShare = 0.08f
+private val BarCorner = 4.dp
 private const val FillAlpha = 0.18f
 
 /** Half a slot: the middle of a bar */
@@ -118,21 +125,34 @@ internal fun BarChart(
         modifier = modifier,
     ) { area, _ ->
         val slot = area.width / labels.size
-        val bar = slot * BarShare / series.size.coerceAtLeast(1)
-        val start = (slot - bar * series.size) / 2
-        val radius = CornerRadius(bar / 2, bar / 2)
+        val count = series.size.coerceAtLeast(1)
+        val gap = if (count > 1) minOf(BarGap.toPx(), slot * MaxGapShare) else 0f
+        val bar = ((slot * BarShare - gap * (count - 1)) / count).coerceIn(1f, MaxBarWidth.toPx())
+        val group = bar * count + gap * (count - 1)
+        val corner = minOf(BarCorner.toPx(), bar / 2)
         labels.indices.forEach { index ->
+            val left = area.left + slot * index + (slot - group) / 2
             series.forEachIndexed { s, values ->
+                val x = left + (bar + gap) * s
                 val top = yOf(values.getOrElse(index) { 0.0 }, scale, area)
-                drawRoundRect(
-                    color = colors.getOrElse(s) { Gray },
-                    topLeft = Offset(area.left + slot * index + start + bar * s, top),
-                    size = Size(bar, area.bottom - top),
-                    cornerRadius = radius,
-                )
+                drawBar(colors.getOrElse(s) { Gray }, Rect(x, top, x + bar, area.bottom), corner)
             }
         }
     }
+}
+
+/** A bar standing on the bottom line: square at the bottom, a little rounded at the top. */
+private fun DrawScope.drawBar(color: Color, rect: Rect, corner: Float) {
+    if (rect.height <= 0f) return
+    val radius = CornerRadius(minOf(corner, rect.height))
+    val shape = RoundRect(
+        rect = rect,
+        topLeft = radius,
+        topRight = radius,
+        bottomRight = CornerRadius.Zero,
+        bottomLeft = CornerRadius.Zero,
+    )
+    drawPath(Path().apply { addRoundRect(shape) }, color)
 }
 
 /**

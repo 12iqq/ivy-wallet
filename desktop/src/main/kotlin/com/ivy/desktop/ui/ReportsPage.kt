@@ -37,14 +37,15 @@ import com.ivy.desktop.data.CategoryId
 import com.ivy.desktop.data.Ledger
 import com.ivy.desktop.reports.CategoryRow
 import com.ivy.desktop.reports.Csv
+import com.ivy.desktop.reports.EveryMonth
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.MonthPace
 import com.ivy.desktop.reports.ReportChoice
 import com.ivy.desktop.reports.ReportView
 import com.ivy.desktop.reports.Reports
+import com.ivy.desktop.reports.Span
 import com.ivy.desktop.reports.YearMonths
 import com.ivy.insights.FlowKind
-import com.ivy.insights.PeriodMode
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -60,9 +61,10 @@ internal fun ReportsPage(
     ledger: Ledger,
     today: LocalDate,
     modifier: Modifier = Modifier,
+    startSpan: Span = Span.Month,
 ) {
     var choice by remember {
-        mutableStateOf(ReportChoice(PeriodMode.Month, YearMonth.from(today), FlowKind.Expense, null))
+        mutableStateOf(ReportChoice(startSpan, YearMonth.from(today), FlowKind.Expense, null))
     }
     val report = remember(ledger, choice, today) { Reports.report(ledger, choice, today) }
     val listState = rememberLazyListState()
@@ -81,6 +83,7 @@ internal fun ReportsPage(
                 Summary(
                     choice = choice,
                     report = report,
+                    previous = Format.period(Reports.period(Reports.step(choice, -1), ledger, today), choice.span),
                     currency = ledger.baseCurrency,
                     categoryName = choice.categoryKey?.let { key ->
                         ledger.categories[CategoryId(key)]?.name ?: Reports.UNCATEGORIZED_NAME
@@ -168,19 +171,21 @@ private fun ReportHeader(
             onSelect = { onChoice(choice.copy(kind = it, categoryKey = null)) },
         )
         Toggle(
-            options = persistentListOf(PeriodMode.Month, PeriodMode.Year),
-            selected = choice.mode,
-            label = { it.name },
-            onSelect = { onChoice(choice.copy(mode = it)) },
+            options = persistentListOf(Span.Month, Span.Year, Span.AllTime),
+            selected = choice.span,
+            label = { if (it == Span.AllTime) "All time" else it.name },
+            onSelect = { onChoice(choice.copy(span = it)) },
         )
-        Chip(text = "‹", onClick = { onChoice(Reports.step(choice, -1)) })
+        val all = choice.span == Span.AllTime
+        // all time has no before or after
+        if (!all) Chip(text = "‹", onClick = { onChoice(Reports.step(choice, -1)) })
         Text(
-            text = Format.period(report.period, choice.mode),
+            text = Format.period(report.period, choice.span),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.width(PeriodLabelWidth),
             textAlign = TextAlign.Center,
         )
-        Chip(text = "›", onClick = { onChoice(Reports.step(choice, 1)) })
+        if (!all) Chip(text = "›", onClick = { onChoice(Reports.step(choice, 1)) })
     }
 }
 
@@ -188,12 +193,12 @@ private fun ReportHeader(
 private fun Summary(
     choice: ReportChoice,
     report: ReportView,
+    previous: String,
     currency: String,
     categoryName: String?,
     onClearCategory: () -> Unit,
 ) {
     val summary = report.summary
-    val previous = Format.period(Reports.period(Reports.step(choice, -1)), choice.mode)
     Panel(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -210,7 +215,7 @@ private fun Summary(
         Text(text = Format.money(summary.total, currency), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(6.dp))
         val change = summary.changePercent
-        if (change != null) {
+        if (change != null && choice.span != Span.AllTime) {
             // spending going up is bad news, income going up is good news
             val good = (change <= 0) == (choice.kind == FlowKind.Expense)
             Text(
@@ -220,7 +225,12 @@ private fun Summary(
                 color = if (good) Green else Red,
             )
         }
-        Note("${Format.money(summary.dailyAverage, currency)} a day on average · ${summary.count} transactions")
+        val months = (report.chart as? EveryMonth)?.months?.size
+        val perMonth = months?.let { "${Format.money(summary.total / it, currency)} a month · " }.orEmpty()
+        Note(
+            "$perMonth${Format.money(summary.dailyAverage, currency)} a day on average · " +
+                "${summary.count} transactions",
+        )
     }
 }
 
@@ -238,11 +248,11 @@ private fun Categories(
         subtitle = "Click a category to see only its transactions, and again to see all.",
     ) {
         if (rows.categories.isEmpty()) Note("Nothing here for this period.")
-        val period = Format.period(rows.period, choice.mode)
+        val period = Format.during(rows.period, choice.span)
         val what = if (choice.kind == FlowKind.Expense) "spending" else "income"
         rows.categories.forEach { row ->
             Hint(
-                text = "${row.count} transactions, ${Format.percent(row.share)} of all your $what in $period. " +
+                text = "${row.count} transactions, ${Format.percent(row.share)} of all your $what $period. " +
                     "That's ${Format.money(row.amount / row.count.coerceAtLeast(1), currency)} each on average.",
             ) {
                 CategoryLine(
@@ -324,6 +334,20 @@ private fun Chart(
                 labels = (1..days).map { day -> if (day == 1 || day % DayLabelEvery == 0) "$day" else "" }
                     .toImmutableList(),
                 tips = paceTips(choice, chart, days, color, currency),
+            )
+        }
+
+        is EveryMonth -> Panel(
+            modifier = modifier,
+            title = "Every month",
+            subtitle = "Your $what in each month ${Format.during(report.period, choice.span)}. Point at a month to " +
+                "see it.",
+        ) {
+            BarChart(
+                series = persistentListOf(chart.totals.toImmutableList()),
+                colors = persistentListOf(color),
+                labels = monthLabels(chart.months),
+                tips = everyMonthTips(choice, chart, color, currency),
             )
         }
 
@@ -415,14 +439,45 @@ internal fun yearTips(
     }.toImmutableList()
 }
 
+/** For each month since the first transaction: its total. */
+internal fun everyMonthTips(
+    choice: ReportChoice,
+    chart: EveryMonth,
+    color: Color,
+    currency: String,
+): ImmutableList<ChartTip> = chart.months.mapIndexed { index, month ->
+    ChartTip(
+        title = Format.month(month),
+        rows = persistentListOf(
+            TipRow(
+                if (choice.kind == FlowKind.Expense) "Spent" else "Received",
+                Format.money(chart.totals[index], currency),
+                color,
+            ),
+        ),
+    )
+}.toImmutableList()
+
+/** A year or a year's months: a year under each January (and the first month) when there are many. */
+internal fun monthLabels(months: List<YearMonth>): ImmutableList<String> = months.mapIndexed { index, month ->
+    when {
+        months.size <= MonthsInYear -> Format.month(month.atDay(1))
+        index == 0 || month.monthValue == 1 -> month.year.toString()
+        else -> ""
+    }
+}.toImmutableList()
+
 /** Ivy Wallet - October 2026 spending - Groceries.csv */
 private fun exportName(choice: ReportChoice, report: ReportView, ledger: Ledger): String {
     val what = if (choice.kind == FlowKind.Expense) "spending" else "income"
     val category = choice.categoryKey?.let { key ->
         " - " + (ledger.categories[CategoryId(key)]?.name ?: Reports.UNCATEGORIZED_NAME)
     }.orEmpty()
-    return "Ivy Wallet - ${Format.period(report.period, choice.mode)} $what$category.csv"
+    val span = if (choice.span == Span.AllTime) "all time" else Format.period(report.period, choice.span)
+    return "Ivy Wallet - $span $what$category.csv"
 }
+
+private const val MonthsInYear = 12
 
 private const val DayLabelEvery = 5
 private val PeriodLabelWidth = 150.dp

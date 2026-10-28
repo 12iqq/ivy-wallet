@@ -16,6 +16,7 @@ import com.ivy.desktop.SampleData
 import com.ivy.desktop.data.LedgerBuilder
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.Reports
+import com.ivy.desktop.reports.Span
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import org.jetbrains.skia.Image
@@ -83,7 +84,7 @@ class ScreenshotTest {
             SampleData.zone,
             SampleData.today.atTime(18, 0).toInstant(SampleData.zone),
         )
-        val overview = Reports.overview(ledger, SampleData.today)
+        val overview = Reports.overview(ledger, SampleData.today, allTime = false)
         val months = overview.months.map { Format.month(it.month.atDay(1)) }.toImmutableList()
         val out = File("build/screenshots").apply { mkdirs() }
         // the chart starts 20 px in; its plot from x = 68 to 880, 8 px below the top
@@ -137,6 +138,39 @@ class ScreenshotTest {
             }
         }
         assertTrue(File(out, "Chart-bars-light.png").length() > 0)
+    }
+
+    /** The Overview and Reports set to all time. */
+    @Test
+    fun `all time pages draw`() {
+        val ledger = LedgerBuilder.build(
+            SampleData.backup(),
+            SampleData.zone,
+            SampleData.today.atTime(18, 0).toInstant(SampleData.zone),
+        )
+        val out = File("build/screenshots").apply { mkdirs() }
+        listOf("Overview-all-time", "Reports-all-time").forEach { name ->
+            val scene = ImageComposeScene(width = 1280, height = 1400, density = Density(1f)) {
+                IvyTheme(dark = false) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        if (name.startsWith("Overview")) {
+                            OverviewPage(ledger, SampleData.today, startWithAllTime = true)
+                        } else {
+                            ReportsPage(ledger, SampleData.today, startSpan = Span.AllTime)
+                        }
+                    }
+                }
+            }
+            scene.render()
+            val image = scene.render(nanoTime = 1_000_000_000)
+            scene.close()
+            save(image, File(out, "$name-light.png"))
+        }
+        assertTrue(File(out, "Reports-all-time-light.png").length() > 0)
     }
 
     private fun save(image: Image, file: File) {

@@ -19,6 +19,10 @@ value class TransactionId(val value: String)
 value class RuleId(val value: String)
 
 @Serializable
+@JvmInline
+value class TagId(val value: String)
+
+@Serializable
 enum class TransactionType { INCOME, EXPENSE, TRANSFER }
 
 /**
@@ -32,6 +36,9 @@ data class Backup(
     val transactions: List<BackupTransaction>?,
     val plannedPaymentRules: List<BackupRule>?,
     val settings: List<BackupSettings>?,
+    val tags: List<BackupTag>?,
+    /** Which tags each transaction has */
+    val tagAssociations: List<BackupTagLink>?,
 )
 
 @Serializable
@@ -69,10 +76,27 @@ data class BackupTransaction(
     val toAmount: Double?,
     val title: String?,
     val description: String?,
+    /** The shop as the bank's SMS named it, for transactions added from SMS */
+    val bankDetails: String?,
     /** Epoch milliseconds. null for a planned payment that isn't paid yet. */
     val dateTime: Long?,
     val categoryId: CategoryId?,
     val recurringRuleId: RuleId?,
+    val isDeleted: Boolean?,
+)
+
+@Serializable
+data class BackupTag(
+    val id: TagId,
+    val name: String,
+    val isDeleted: Boolean?,
+)
+
+@Serializable
+data class BackupTagLink(
+    val tagId: TagId,
+    /** The transaction with the tag */
+    val associatedId: TransactionId,
     val isDeleted: Boolean?,
 )
 

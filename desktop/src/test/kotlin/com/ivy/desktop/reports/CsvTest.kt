@@ -20,16 +20,20 @@ class CsvTest {
     )
 
     @Test
-    fun `transactions as rows Excel can read`() {
+    fun `transactions as rows Excel can read, with everything about each one`() {
         val trn = LedgerTransaction(
             id = TransactionId("x"),
             type = TransactionType.EXPENSE,
             time = LocalDateTime.of(2026, 10, 3, 9, 5),
             title = "Dinner, with \"friends\"",
             description = "=SUM(A1)",
+            bankDetails = "DINNER PLACE DXB",
             accountName = "Bank",
+            byCard = true,
             toAccountName = null,
             categoryId = ledger.categories.keys.first(),
+            tags = listOf("Friends", "Weekend"),
+            planned = false,
             amount = 1234.5,
             currency = "AED",
         )
@@ -37,10 +41,15 @@ class CsvTest {
         val lines = Csv.transactions(listOf(trn), ledger).split("\r\n")
 
         // the mark that tells Excel it's UTF-8, then the header
-        assertEquals("\uFEFFDate,Time,Type,Title,Category,Account,To account,Amount,Currency,Note", lines[0])
+        assertEquals(
+            "\uFEFFDate,Time,Weekday,Month,Type,Title,Category,Amount,Money in or out,Currency,Account," +
+                "Account type,To account,Bank details,Tags,Planned payment,Note",
+            lines[0],
+        )
         val category = ledger.categories.values.first().name
         assertEquals(
-            "2026-10-03,09:05,Expense,\"Dinner, with \"\"friends\"\"\",$category,Bank,,1234.50,AED,'=SUM(A1)",
+            "2026-10-03,09:05,Saturday,2026-10,Expense,\"Dinner, with \"\"friends\"\"\",$category,1234.50," +
+                "-1234.50,AED,Bank,Credit card,,DINNER PLACE DXB,Friends; Weekend,No,'=SUM(A1)",
             lines[1],
         )
         // every line ends with a line break, Windows style
@@ -48,18 +57,49 @@ class CsvTest {
     }
 
     @Test
-    fun `the overview's months with income, spending and balance`() {
-        val overview = Reports.overview(ledger, SampleData.today)
+    fun `tags and bank details come from the backup`() {
+        val enoc = ledger.transactions.first { it.title == "ENOC" }
+        val onCard = ledger.transactions.first { it.byCard && it.type == TransactionType.EXPENSE }
 
-        val lines = Csv.months(overview).trimEnd().split("\r\n")
+        assertEquals(listOf("Work"), enoc.tags)
+        assertEquals(onCard.title?.uppercase() + " DUBAI AE", onCard.bankDetails)
+    }
+
+    @Test
+    fun `each month with its totals, then each category and account`() {
+        val overview = Reports.overview(ledger, SampleData.today, allTime = false)
+
+        val lines = Csv.months(overview, ledger).trimEnd().split("\r\n")
 
         assertEquals(13, lines.size)
-        assertTrue(lines[0].endsWith("Month,Income,Spending,Saved,Total balance at the end of the month"))
+        val header = lines[0].split(",")
+        assertEquals(
+            listOf(
+                "Month", "Income", "Spending", "Saved", "Saved %", "Total balance at the end", "Transactions",
+                "Biggest category", "Top place",
+            ),
+            header.take(9).map { it.removePrefix("\uFEFF") },
+        )
+        assertEquals("Spent on Rent", header[9])
+        assertTrue("Spent with Bank" in header)
         val october = overview.months.last()
-        val parts = lines.last().split(",")
-        assertEquals("October 2026", parts[0])
-        assertEquals("%.2f".format(Locale.ENGLISH, october.income), parts[1])
-        assertEquals("%.2f".format(Locale.ENGLISH, october.expense), parts[2])
+        val row = lines.last().split(",")
+        assertEquals("October 2026", row[0])
+        assertEquals("%.2f".format(Locale.ENGLISH, october.income), row[1])
+        assertEquals("%.2f".format(Locale.ENGLISH, october.expense), row[2])
+        assertEquals("Rent", row[7])
+        // what was spent on each category adds up to the month's spending
+        val categories = header.indices.filter { header[it].startsWith("Spent on ") }
+        assertEquals(october.expense, categories.sumOf { row[it].toDouble() }, 0.01)
+    }
+
+    @Test
+    fun `each year`() {
+        val lines = Csv.years(listOf(2025, 2026), ledger).trimEnd().split("\r\n")
+
+        assertEquals(3, lines.size)
+        assertTrue(lines[1].startsWith("2025,"))
+        assertTrue(lines[2].startsWith("2026,"))
     }
 
     @Test

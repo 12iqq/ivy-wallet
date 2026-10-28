@@ -18,7 +18,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +33,7 @@ import com.ivy.desktop.reports.Csv
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.OverviewView
 import com.ivy.desktop.reports.Reports
+import com.ivy.desktop.reports.YearTotals
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -41,8 +45,10 @@ internal fun OverviewPage(
     ledger: Ledger,
     today: LocalDate,
     modifier: Modifier = Modifier,
+    startWithAllTime: Boolean = false,
 ) {
-    val overview = remember(ledger, today) { Reports.overview(ledger, today) }
+    var allTime by remember { mutableStateOf(startWithAllTime) }
+    val overview = remember(ledger, today, allTime) { Reports.overview(ledger, today, allTime) }
     val currency = ledger.baseCurrency
     val scroll = rememberScrollState()
     Box(modifier = modifier.fillMaxSize()) {
@@ -59,7 +65,17 @@ internal fun OverviewPage(
                     subtitle = "Amounts in $currency, as of ${Format.day(today, today)}",
                     modifier = Modifier.weight(1f),
                 )
-                ExportButton(fileName = "Ivy Wallet - last 12 months.csv", csv = { Csv.months(overview) })
+                Toggle(
+                    options = persistentListOf(false, true),
+                    selected = allTime,
+                    label = { if (it) "All time" else "Last 12 months" },
+                    onSelect = { allTime = it },
+                )
+                Spacer(Modifier.width(12.dp))
+                ExportButton(
+                    fileName = if (allTime) "Ivy Wallet - every month.csv" else "Ivy Wallet - last 12 months.csv",
+                    csv = { Csv.months(overview, ledger) },
+                )
             }
             OtherCurrencies(ledger)
             Totals(overview, currency, today)
@@ -69,9 +85,13 @@ internal fun OverviewPage(
                     Cards(overview.cards.toImmutableList(), today, Modifier.weight(1f))
                 }
             }
-            IncomeAndSpending(overview, currency, today)
+            IncomeAndSpending(overview, ledger, today, allTime)
             Panel(
-                title = "Total balance over time",
+                title = if (allTime) {
+                    "Total balance since ${Format.month(overview.months.first().month)}"
+                } else {
+                    "Total balance over time"
+                },
                 subtitle = "What all your accounts added up to at the end of each month, with card debt " +
                     "taken off. This month shows today. Point at a month to see the amount.",
             ) {
@@ -85,7 +105,7 @@ internal fun OverviewPage(
                         ),
                     ),
                     length = overview.netWorth.size,
-                    labels = overview.netWorth.map { Format.month(it.month.atDay(1)) }.toImmutableList(),
+                    labels = monthLabels(overview.netWorth.map { it.month }),
                     tips = balanceTips(overview, currency, today),
                 )
             }
@@ -146,23 +166,44 @@ private fun Totals(overview: OverviewView, currency: String, today: LocalDate) {
 }
 
 @Composable
-private fun IncomeAndSpending(overview: OverviewView, currency: String, today: LocalDate) {
+private fun IncomeAndSpending(overview: OverviewView, ledger: Ledger, today: LocalDate, allTime: Boolean) {
+    val currency = ledger.baseCurrency
+    // a long history reads better a year at a time
+    val byYear = allTime && overview.months.size > MonthsBeforeYears
+    val since = Format.month(overview.months.first().month)
     Panel(
-        title = "Income and spending, last 12 months",
-        subtitle = "What came in and what you spent each month. Money moved between your own accounts isn't " +
-            "counted. Point at a month to see the amounts.",
+        title = when {
+            byYear -> "Income and spending by year"
+            allTime -> "Income and spending since $since"
+            else -> "Income and spending, last 12 months"
+        },
+        subtitle = "What came in and what you spent each ${if (byYear) "year" else "month"}. Money moved between " +
+            "your own accounts isn't counted. Point at a bar to see the amounts.",
     ) {
         Legend(persistentListOf("Income" to Green, "Spending" to Red))
         Spacer(Modifier.height(12.dp))
-        BarChart(
-            series = persistentListOf(
-                overview.months.map { it.income }.toImmutableList(),
-                overview.months.map { it.expense }.toImmutableList(),
-            ),
-            colors = persistentListOf(Green, Red),
-            labels = overview.months.map { Format.month(it.month.atDay(1)) }.toImmutableList(),
-            tips = incomeSpendingTips(overview, currency, today),
-        )
+        if (byYear) {
+            val years = remember(ledger, today) { Reports.years(ledger, today) }
+            BarChart(
+                series = persistentListOf(
+                    years.map { it.income }.toImmutableList(),
+                    years.map { it.expense }.toImmutableList(),
+                ),
+                colors = persistentListOf(Green, Red),
+                labels = years.map { it.year.toString() }.toImmutableList(),
+                tips = yearTips(years, currency, today),
+            )
+        } else {
+            BarChart(
+                series = persistentListOf(
+                    overview.months.map { it.income }.toImmutableList(),
+                    overview.months.map { it.expense }.toImmutableList(),
+                ),
+                colors = persistentListOf(Green, Red),
+                labels = monthLabels(overview.months.map { it.month }),
+                tips = incomeSpendingTips(overview, currency, today),
+            )
+        }
         Spacer(Modifier.height(12.dp))
         val income = overview.months.sumOf { it.income }
         val spent = overview.months.sumOf { it.expense }
@@ -171,9 +212,28 @@ private fun IncomeAndSpending(overview: OverviewView, currency: String, today: L
         } else {
             "spent ${Format.money(spent - income, currency)} more than came in"
         }
-        Note("In these 12 months: ${Format.money(income, currency)} in, ${Format.money(spent, currency)} out, $left.")
+        val over = if (allTime) "Since $since" else "In these 12 months"
+        Note("$over: ${Format.money(income, currency)} in, ${Format.money(spent, currency)} out, $left.")
     }
 }
+
+/** For each year: its income, spending and what was left. */
+internal fun yearTips(years: List<YearTotals>, currency: String, today: LocalDate): ImmutableList<ChartTip> =
+    years.map { year ->
+        val difference = year.income - year.expense
+        ChartTip(
+            title = year.year.toString() + if (year.year == today.year) ", so far" else "",
+            rows = persistentListOf(
+                TipRow("Income", Format.money(year.income, currency), Green),
+                TipRow("Spending", Format.money(year.expense, currency), Red),
+                if (difference >= 0) {
+                    TipRow("Saved", Format.money(difference, currency), Color.Unspecified)
+                } else {
+                    TipRow("Spent more than came in", Format.money(-difference, currency), Color.Unspecified)
+                },
+            ),
+        )
+    }.toImmutableList()
 
 /** The accounts that make up the total balance: in it, and in the main currency. */
 private fun inTotal(overview: OverviewView, currency: String): Int =
@@ -296,5 +356,8 @@ internal fun OtherCurrencies(ledger: Ledger, modifier: Modifier = Modifier) {
 }
 
 private const val UsageWarning = 0.5
+
+/** All time shows each month up to a year and a half, then each year */
+private const val MonthsBeforeYears = 18
 private const val UsageHigh = 0.8
 internal val PagePadding = 32.dp

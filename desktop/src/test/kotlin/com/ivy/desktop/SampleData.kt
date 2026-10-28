@@ -6,9 +6,12 @@ import com.ivy.desktop.data.BackupAccount
 import com.ivy.desktop.data.BackupCategory
 import com.ivy.desktop.data.BackupRule
 import com.ivy.desktop.data.BackupSettings
+import com.ivy.desktop.data.BackupTag
+import com.ivy.desktop.data.BackupTagLink
 import com.ivy.desktop.data.BackupTransaction
 import com.ivy.desktop.data.CategoryId
 import com.ivy.desktop.data.RuleId
+import com.ivy.desktop.data.TagId
 import com.ivy.desktop.data.TransactionId
 import com.ivy.desktop.data.TransactionType
 import java.time.LocalDate
@@ -45,6 +48,8 @@ object SampleData {
                 toAmount = null,
                 title = title,
                 description = null,
+                // the shop as a card's SMS would name it
+                bankDetails = if (account == "card") title?.uppercase()?.plus(" DUBAI AE") else null,
                 dateTime = date.atTime(12, 0).toInstant(zone).toEpochMilli(),
                 categoryId = category?.let(::CategoryId),
                 recurringRuleId = null,
@@ -147,6 +152,10 @@ object SampleData {
                 BackupRule(RuleId("rent"), "Rent", TransactionType.EXPENSE, oneTime = false, isDeleted = null),
             ),
             settings = listOf(BackupSettings("AED")),
+            tags = listOf(BackupTag(TagId("work"), "Work", null)),
+            tagAssociations = b.transactions
+                .filter { it.title == "ENOC" }
+                .map { BackupTagLink(TagId("work"), it.id, null) },
         )
     }
 

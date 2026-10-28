@@ -17,6 +17,7 @@ class ChartTipsTest {
             SampleData.today.atTime(18, 0).toInstant(SampleData.zone),
         ),
         SampleData.today,
+        allTime = false,
     )
 
     @Test

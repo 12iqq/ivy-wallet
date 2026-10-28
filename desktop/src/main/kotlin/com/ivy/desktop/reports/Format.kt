@@ -1,11 +1,13 @@
 package com.ivy.desktop.reports
 
-import com.ivy.insights.PeriodMode
 import com.ivy.insights.ReportPeriod
 import com.ivy.insights.recurring.Cadence
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.Period
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.YearMonth
 import java.util.Locale
 import kotlin.math.abs
@@ -19,6 +21,7 @@ object Format {
     private val shortMonth = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH)
     private val time = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)
     private const val PERCENT = 100
+    private const val NOON = 12
     private const val THOUSAND = 1_000.0
     private const val MILLION = 1_000_000.0
 
@@ -48,11 +51,45 @@ object Format {
     /** 27 Oct 2026, 14:05 */
     fun dateTime(dateTime: LocalDateTime): String = "${dateTime.format(dayMonthYear)}, ${dateTime.format(time)}"
 
-    /** October 2026, or 2026 */
-    fun period(period: ReportPeriod, mode: PeriodMode): String = when (mode) {
-        PeriodMode.Month -> period.start.format(monthYear)
-        PeriodMode.Year -> period.start.year.toString()
+    /** October 2026, 2026, or Since March 2021 */
+    fun period(period: ReportPeriod, span: Span): String = when (span) {
+        Span.Month -> period.start.format(monthYear)
+        Span.Year -> period.start.year.toString()
+        Span.AllTime -> "Since ${period.start.format(monthYear)}"
     }
+
+    /** in October 2026, in 2026, or since March 2021 */
+    fun during(period: ReportPeriod, span: Span): String = when (span) {
+        Span.AllTime -> "since ${period.start.format(monthYear)}"
+        else -> "in ${period(period, span)}"
+    }
+
+    /** Monday */
+    fun weekday(day: DayOfWeek): String = day.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+
+    /** 8 AM, 12 PM, 9 PM */
+    fun hour(hour: Int): String = when {
+        hour == 0 -> "12 AM"
+        hour < NOON -> "$hour AM"
+        hour == NOON -> "12 PM"
+        else -> "${hour - NOON} PM"
+    }
+
+    /** 4 years and 7 months, 3 months, or 12 days */
+    fun duration(from: LocalDate, to: LocalDate): String {
+        val between = Period.between(from, to)
+        val years = plural(between.years, "year")
+        val months = plural(between.months, "month")
+        return when {
+            between.years > 0 && between.months > 0 -> "$years and $months"
+            between.years > 0 -> years
+            between.months > 0 -> months
+            else -> plural(between.days + 1, "day")
+        }
+    }
+
+    /** 1 month, 2 months */
+    fun plural(count: Int, thing: String): String = if (count == 1) "1 $thing" else "$count ${thing}s"
 
     /** Oct */
     fun month(date: LocalDate): String = date.format(shortMonth)

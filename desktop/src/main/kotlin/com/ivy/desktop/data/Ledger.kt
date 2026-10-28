@@ -40,10 +40,17 @@ data class LedgerTransaction(
     val time: LocalDateTime,
     val title: String?,
     val description: String?,
+    /** The shop as the bank's SMS named it */
+    val bankDetails: String?,
     val accountName: String,
+    /** Paid with a credit card */
+    val byCard: Boolean,
     /** Transfers: where the money went */
     val toAccountName: String?,
     val categoryId: CategoryId?,
+    val tags: List<String>,
+    /** Paid as a planned payment */
+    val planned: Boolean,
     /** In [currency], the account's currency */
     val amount: Double,
     val currency: String,
@@ -52,6 +59,8 @@ data class LedgerTransaction(
 /** What the desktop app shows, built once from a backup. */
 data class Ledger(
     val baseCurrency: String,
+    /** The day of the first transaction; null without any */
+    val since: LocalDate?,
     /** In the phone's order */
     val accounts: List<LedgerAccount>,
     val categories: Map<CategoryId, LedgerCategory>,
@@ -85,9 +94,11 @@ object LedgerBuilder {
             .sortedByDescending { it.dateTime }
         val flows = Flows(byId, baseCurrency, zone, now)
         settled.forEach(flows::add)
+        val tags = tagsOf(backup)
 
         return Ledger(
             baseCurrency = baseCurrency,
+            since = settled.lastOrNull()?.let { LocalDateTime.ofInstant(it.instant(), zone).toLocalDate() },
             accounts = accounts.map { account ->
                 LedgerAccount(
                     id = account.id,
@@ -112,9 +123,13 @@ object LedgerBuilder {
                     time = LocalDateTime.ofInstant(trn.instant(), zone),
                     title = trn.title,
                     description = trn.description,
+                    bankDetails = trn.bankDetails,
                     accountName = byId[trn.accountId]?.name.orEmpty(),
+                    byCard = byId[trn.accountId]?.accountType == CREDIT_CARD,
                     toAccountName = trn.toAccountId?.let { byId[it]?.name },
                     categoryId = trn.categoryId,
+                    tags = tags[trn.id].orEmpty(),
+                    planned = trn.recurringRuleId != null,
                     amount = trn.amount,
                     currency = byId[trn.accountId]?.currency ?: baseCurrency,
                 )
@@ -125,6 +140,15 @@ object LedgerBuilder {
             plannedNames = plannedNames(backup.plannedPaymentRules.orEmpty()),
             otherCurrencies = accounts.mapNotNull { it.currency }.filter { it != baseCurrency }.toSet(),
         )
+    }
+
+    /** The names of each transaction's tags */
+    private fun tagsOf(backup: Backup): Map<TransactionId, List<String>> {
+        val names = backup.tags.orEmpty().filter { it.isDeleted != true }.associate { it.id to it.name }
+        return backup.tagAssociations.orEmpty()
+            .filter { it.isDeleted != true }
+            .groupBy({ it.associatedId }, { names[it.tagId] })
+            .mapValues { (_, tags) -> tags.filterNotNull().sorted() }
     }
 
     private fun plannedNames(rules: List<BackupRule>): Set<String> = rules
