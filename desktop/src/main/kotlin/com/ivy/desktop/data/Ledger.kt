@@ -10,6 +10,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
+// The IDs are the typed ones from Backup.kt, but DataClassTypedIDs only knows value classes from the same file
+@Suppress("DataClassTypedIDs")
 data class LedgerAccount(
     val id: AccountId,
     val name: String,
@@ -23,6 +25,7 @@ data class LedgerAccount(
     val paymentDueDay: Int?,
 )
 
+@Suppress("DataClassTypedIDs")
 data class LedgerCategory(
     val id: CategoryId,
     val name: String,
@@ -30,6 +33,7 @@ data class LedgerCategory(
 )
 
 /** A paid transaction, as the lists show it. */
+@Suppress("DataClassTypedIDs")
 data class LedgerTransaction(
     val id: TransactionId,
     val type: TransactionType,
