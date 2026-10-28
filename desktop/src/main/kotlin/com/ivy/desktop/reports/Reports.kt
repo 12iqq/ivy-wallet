@@ -81,6 +81,8 @@ data class OverviewView(
     val months: List<MonthTotals>,
     val netWorth: List<NetWorthPoint>,
     val averageMonthlySpend: Double,
+    /** How many months [averageMonthlySpend] is over: the full months before this one that have anything */
+    val averageMonths: Int,
 )
 
 /** The phone's report maths ([ReportsCalculator], [InsightsCalculator], [RecurringCharges]) on a [Ledger]. */
@@ -164,6 +166,7 @@ object Reports {
             months = months,
             netWorth = InsightsCalculator.netWorth(ledger.balanceDeltas, today),
             averageMonthlySpend = InsightsCalculator.averageMonthlySpend(months),
+            averageMonths = months.dropLast(1).count { it.expense > 0 || it.income > 0 },
         )
     }
 

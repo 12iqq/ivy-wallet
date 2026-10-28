@@ -50,7 +50,7 @@ object BackupReader {
         val utf16 = bytes.size >= 2 && (
             (bytes[0] == BOM_HIGH && bytes[1] == BOM_LOW) || (bytes[0] == BOM_LOW && bytes[1] == BOM_HIGH)
             )
-        return if (utf16) String(bytes, Charsets.UTF_16) else String(bytes, Charsets.UTF_8).removePrefix("﻿")
+        return if (utf16) String(bytes, Charsets.UTF_16) else String(bytes, Charsets.UTF_8).removePrefix("\uFEFF")
     }
 
     private const val BOM_HIGH = 0xFE.toByte()

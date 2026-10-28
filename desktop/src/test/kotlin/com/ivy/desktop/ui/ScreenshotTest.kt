@@ -1,10 +1,24 @@
 package com.ivy.desktop.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import com.ivy.desktop.SampleData
 import com.ivy.desktop.data.LedgerBuilder
+import com.ivy.desktop.reports.Format
+import com.ivy.desktop.reports.Reports
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import org.jetbrains.skia.Image
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Rect
 import org.jetbrains.skia.Surface
@@ -58,5 +72,74 @@ class ScreenshotTest {
             }
         }
         assertTrue(File(out, "Reports-light.png").length() > 0)
+    }
+
+    /** The overview's charts with the mouse over July: the tip with the month's amounts shows. */
+    @OptIn(ExperimentalComposeUiApi::class)
+    @Test
+    fun `charts show the amounts under the mouse`() {
+        val ledger = LedgerBuilder.build(
+            SampleData.backup(),
+            SampleData.zone,
+            SampleData.today.atTime(18, 0).toInstant(SampleData.zone),
+        )
+        val overview = Reports.overview(ledger, SampleData.today)
+        val months = overview.months.map { Format.month(it.month.atDay(1)) }.toImmutableList()
+        val out = File("build/screenshots").apply { mkdirs() }
+        // the chart starts 20 px in; its plot from x = 68 to 880, 8 px below the top
+        val julyBar = Offset(68 + 812f / 12 * 8.5f, 120f)
+        val julyPoint = Offset(68 + 812f / 11 * 8, 120f)
+        listOf("bars" to julyBar, "line" to julyPoint).forEach { (chart, mouse) ->
+            listOf(false, true).forEach { dark ->
+                val scene = ImageComposeScene(width = 900, height = 300, density = Density(1f)) {
+                    IvyTheme(dark = dark) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(20.dp),
+                        ) {
+                            if (chart == "bars") {
+                                BarChart(
+                                    series = persistentListOf(
+                                        overview.months.map { it.income }.toImmutableList(),
+                                        overview.months.map { it.expense }.toImmutableList(),
+                                    ),
+                                    colors = persistentListOf(Green, Red),
+                                    labels = months,
+                                    tips = incomeSpendingTips(overview, "AED", SampleData.today),
+                                )
+                            } else {
+                                LineChart(
+                                    lines = persistentListOf(
+                                        ChartLine(
+                                            values = overview.netWorth.map { it.value }.toImmutableList(),
+                                            color = Ivy,
+                                            dashed = false,
+                                            filled = true,
+                                        ),
+                                    ),
+                                    length = overview.netWorth.size,
+                                    labels = months,
+                                    tips = balanceTips(overview, "AED", SampleData.today),
+                                )
+                            }
+                        }
+                    }
+                }
+                scene.render()
+                scene.sendPointerEvent(PointerEventType.Enter, mouse)
+                scene.sendPointerEvent(PointerEventType.Move, mouse)
+                scene.render(nanoTime = 500_000_000)
+                val image = scene.render(nanoTime = 1_000_000_000)
+                scene.close()
+                save(image, File(out, "Chart-$chart-${if (dark) "dark" else "light"}.png"))
+            }
+        }
+        assertTrue(File(out, "Chart-bars-light.png").length() > 0)
+    }
+
+    private fun save(image: Image, file: File) {
+        file.writeBytes(requireNotNull(image.encodeToData(EncodedImageFormat.PNG)).bytes)
     }
 }

@@ -1,7 +1,9 @@
 package com.ivy.desktop.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -23,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,11 +42,12 @@ internal val PillShape = RoundedCornerShape(50)
 /** A color from the phone's data (ARGB), gray when there's none. */
 internal fun colorOf(argb: Int?): Color = argb?.let(::Color) ?: Gray
 
-/** A rounded card on the page. */
+/** A rounded card on the page, with a title and a line saying what's in it. */
 @Composable
 internal fun Panel(
     modifier: Modifier = Modifier,
     title: String? = null,
+    subtitle: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -52,9 +58,57 @@ internal fun Panel(
     ) {
         if (title != null) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
+            if (subtitle != null) {
+                Spacer(Modifier.height(4.dp))
+                Note(subtitle)
+            }
             Spacer(Modifier.height(12.dp))
         }
         content()
+    }
+}
+
+/** Shows [text] in a small box when the mouse rests on [content]. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun Hint(
+    text: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    TooltipArea(
+        tooltip = {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .widthIn(max = HintWidth)
+                    .shadow(elevation = 8.dp, shape = HintShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, HintShape)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        },
+        modifier = modifier,
+        delayMillis = HintDelay,
+        content = content,
+    )
+}
+
+/** A small "i" in a circle: there's more to read when you point at this. */
+@Composable
+internal fun InfoMark(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(14.dp)
+            .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "i",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -76,8 +130,7 @@ internal fun PageTitle(
     }
 }
 
-/** A number with a label above it, and an optional line below. */
-@OptIn(ExperimentalFoundationApi::class)
+/** A number with a label above it, an optional line below, and [info] when you point at it. */
 @Composable
 internal fun Stat(
     label: String,
@@ -85,13 +138,39 @@ internal fun Stat(
     modifier: Modifier = Modifier,
     note: String? = null,
     noteColor: Color = Color.Unspecified,
+    info: String? = null,
+) {
+    if (info != null) {
+        Hint(text = info, modifier = modifier) {
+            StatPanel(label, value, note, noteColor, hasInfo = true, modifier = Modifier.fillMaxWidth())
+        }
+    } else {
+        StatPanel(label, value, note, noteColor, hasInfo = false, modifier = modifier)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun StatPanel(
+    label: String,
+    value: String,
+    note: String?,
+    noteColor: Color,
+    hasInfo: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     Panel(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (hasInfo) {
+                Spacer(Modifier.width(6.dp))
+                InfoMark()
+            }
+        }
         Spacer(Modifier.height(6.dp))
         // a big balance gets smaller instead of being cut off
         BasicText(
@@ -268,3 +347,7 @@ internal fun TransactionRow(
         )
     }
 }
+
+private val HintWidth = 300.dp
+private val HintShape = RoundedCornerShape(10.dp)
+private const val HintDelay = 300

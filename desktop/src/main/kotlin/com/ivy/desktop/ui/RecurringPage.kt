@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivy.desktop.data.CategoryId
 import com.ivy.desktop.data.Ledger
+import com.ivy.desktop.reports.Csv
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.Reports
 import com.ivy.insights.recurring.Cadence
@@ -51,27 +52,41 @@ internal fun RecurringPage(
                 .padding(PagePadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            PageTitle(
-                title = "Recurring charges",
-                subtitle = "Charges that come back every week, month, three months or year, found by their name.",
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PageTitle(
+                    title = "Recurring charges",
+                    subtitle = "Charges that come back every week, month, three months or year, found by their name.",
+                    modifier = Modifier.weight(1f),
+                )
+                if (found.isNotEmpty()) {
+                    ExportButton(
+                        fileName = "Ivy Wallet - recurring charges.csv",
+                        csv = { Csv.recurring(found, ledger) },
+                    )
+                }
+            }
             if (found.isEmpty()) Note("No recurring charges found yet.")
             if (active.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Stat(
                         label = "About a month",
                         value = Format.money(perMonth, currency),
+                        info = "What the charges below cost in an average month. A yearly charge counts as a " +
+                            "twelfth of its price, a weekly one about four times.",
                         modifier = Modifier.weight(1f),
                     )
                     Stat(
                         label = "A year",
                         value = Format.money(perMonth * MONTHS, currency),
+                        info = "What the charges below add up to over a year, if they keep coming.",
                         modifier = Modifier.weight(1f),
                     )
                     Stat(
                         label = "Found",
                         value = "${active.size}",
                         note = "${active.count { !it.planned }} not planned in the phone app",
+                        info = "Charges with the same name that came on a steady schedule. The ones not " +
+                            "planned yet could be added as planned payments on the phone, so you see them coming.",
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -116,7 +131,7 @@ private fun ChargeLine(
             Text(text = charge.name, style = MaterialTheme.typography.bodyLarge)
             Note(
                 listOfNotNull(
-                    cadenceName(charge.cadence),
+                    Format.cadence(charge.cadence),
                     "Planned".takeIf { charge.planned },
                     if (charge.active) {
                         "next about ${Format.day(charge.nextDate, today)}"
@@ -141,13 +156,6 @@ private fun ChargeLine(
             }
         }
     }
-}
-
-private fun cadenceName(cadence: Cadence): String = when (cadence) {
-    Cadence.Weekly -> "Weekly"
-    Cadence.Monthly -> "Monthly"
-    Cadence.Quarterly -> "Every 3 months"
-    Cadence.Yearly -> "Yearly"
 }
 
 private const val MONTHS = 12

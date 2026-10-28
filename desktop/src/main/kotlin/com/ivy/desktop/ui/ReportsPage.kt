@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.ivy.desktop.data.CategoryId
 import com.ivy.desktop.data.Ledger
 import com.ivy.desktop.reports.CategoryRow
+import com.ivy.desktop.reports.Csv
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.MonthPace
 import com.ivy.desktop.reports.ReportChoice
@@ -44,6 +45,7 @@ import com.ivy.desktop.reports.Reports
 import com.ivy.desktop.reports.YearMonths
 import com.ivy.insights.FlowKind
 import com.ivy.insights.PeriodMode
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import java.time.LocalDate
@@ -97,16 +99,27 @@ internal fun ReportsPage(
                         },
                         modifier = Modifier.weight(1f),
                     )
-                    Chart(choice, report, Modifier.weight(1f))
+                    Chart(choice, report, ledger.baseCurrency, Modifier.weight(1f))
                 }
             }
             item { Places(choice, report, ledger.baseCurrency) }
             item {
-                Text(
-                    text = "Transactions",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Transactions",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ExportButton(
+                        fileName = exportName(choice, report, ledger),
+                        csv = { Csv.transactions(report.transactions, ledger) },
+                    )
+                }
             }
             if (report.transactions.isEmpty()) {
                 item { Note("Nothing here for this period.") }
@@ -201,7 +214,8 @@ private fun Summary(
             // spending going up is bad news, income going up is good news
             val good = (change <= 0) == (choice.kind == FlowKind.Expense)
             Text(
-                text = "${if (change >= 0) "▲" else "▼"} ${abs(change)}% vs $previous",
+                text = "${if (change >= 0) "▲" else "▼"} ${abs(change)}% vs $previous " +
+                    "(${Format.money(summary.previousTotal, currency)})",
                 style = MaterialTheme.typography.labelMedium,
                 color = if (good) Green else Red,
             )
@@ -218,15 +232,26 @@ private fun Categories(
     onCategory: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Panel(modifier = modifier, title = "By category") {
+    Panel(
+        modifier = modifier,
+        title = "By category",
+        subtitle = "Click a category to see only its transactions, and again to see all.",
+    ) {
         if (rows.categories.isEmpty()) Note("Nothing here for this period.")
+        val period = Format.period(rows.period, choice.mode)
+        val what = if (choice.kind == FlowKind.Expense) "spending" else "income"
         rows.categories.forEach { row ->
-            CategoryLine(
-                row = row,
-                currency = currency,
-                selected = row.key == choice.categoryKey,
-                onClick = { onCategory(row.key) },
-            )
+            Hint(
+                text = "${row.count} transactions, ${Format.percent(row.share)} of all your $what in $period. " +
+                    "That's ${Format.money(row.amount / row.count.coerceAtLeast(1), currency)} each on average.",
+            ) {
+                CategoryLine(
+                    row = row,
+                    currency = currency,
+                    selected = row.key == choice.categoryKey,
+                    onClick = { onCategory(row.key) },
+                )
+            }
         }
     }
 }
@@ -251,6 +276,7 @@ private fun CategoryLine(
             Dot(color)
             Spacer(Modifier.width(10.dp))
             Text(text = row.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+            Note("${row.count}×", modifier = Modifier.padding(end = 16.dp))
             Text(text = Format.money(row.amount, currency), style = NumberStyle)
             Text(
                 text = Format.percent(row.share),
@@ -269,16 +295,23 @@ private fun CategoryLine(
 private fun Chart(
     choice: ReportChoice,
     report: ReportView,
+    currency: String,
     modifier: Modifier = Modifier,
 ) {
     val color = if (choice.kind == FlowKind.Expense) Red else Green
+    val what = if (choice.kind == FlowKind.Expense) "spending" else "income"
     when (val chart = report.chart) {
-        is MonthPace -> Panel(modifier = modifier, title = "Through the month") {
+        is MonthPace -> Panel(
+            modifier = modifier,
+            title = "Through the month",
+            subtitle = "Your $what added up day by day, next to the month before (dashed). Point at a day " +
+                "to see the amounts.",
+        ) {
             val days = maxOf(chart.daysInMonth, chart.previous.size)
             Legend(
                 persistentListOf(
-                    Format.period(report.period, PeriodMode.Month) to color,
-                    Format.period(Reports.period(Reports.step(choice, -1)), PeriodMode.Month) to Gray,
+                    Format.month(choice.month) to color,
+                    Format.month(choice.month.minusMonths(1)) to Gray,
                 )
             )
             Spacer(Modifier.height(12.dp))
@@ -288,17 +321,24 @@ private fun Chart(
                     ChartLine(chart.previous.toImmutableList(), Gray, dashed = true, filled = false),
                 ),
                 length = days,
-                labels = persistentListOf("1", "${(days + 1) / 2}", "$days"),
+                labels = (1..days).map { day -> if (day == 1 || day % DayLabelEvery == 0) "$day" else "" }
+                    .toImmutableList(),
+                tips = paceTips(choice, chart, days, color, currency),
             )
         }
 
-        is YearMonths -> Panel(modifier = modifier, title = "By month") {
+        is YearMonths -> Panel(
+            modifier = modifier,
+            title = "By month",
+            subtitle = "Your $what in each month of ${choice.month.year}. Point at a month to see it.",
+        ) {
             BarChart(
                 series = persistentListOf(chart.totals.toImmutableList()),
                 colors = persistentListOf(color),
                 labels = Month.entries
                     .map { it.getDisplayName(TextStyle.SHORT, Locale.ENGLISH) }
                     .toImmutableList(),
+                tips = yearTips(choice, chart, color, currency),
             )
         }
     }
@@ -313,6 +353,7 @@ private fun Places(
     Panel(
         modifier = Modifier.fillMaxWidth(),
         title = if (choice.kind == FlowKind.Expense) "Where it went" else "Where it came from",
+        subtitle = "Added up by the transaction's name, biggest first. 3× means three transactions.",
     ) {
         if (report.places.isEmpty()) Note("Nothing here for this period.")
         val most = report.places.maxOfOrNull { it.amount }?.takeIf { it > 0 } ?: 1.0
@@ -330,5 +371,59 @@ private fun Places(
     }
 }
 
+/** For each day: the running total so far, this month and the month before. */
+internal fun paceTips(
+    choice: ReportChoice,
+    chart: MonthPace,
+    days: Int,
+    color: Color,
+    currency: String,
+): ImmutableList<ChartTip> = (0 until days).map { index ->
+    ChartTip(
+        title = "By day ${index + 1}",
+        rows = listOfNotNull(
+            chart.current.getOrNull(index)?.let {
+                TipRow(Format.month(choice.month), Format.money(it, currency), color)
+            },
+            chart.previous.getOrNull(index)?.let {
+                TipRow(Format.month(choice.month.minusMonths(1)), Format.money(it, currency), Gray)
+            },
+        ).toImmutableList(),
+    )
+}.toImmutableList()
+
+/** For each month of the year: its total, and its share of the year. */
+internal fun yearTips(
+    choice: ReportChoice,
+    chart: YearMonths,
+    color: Color,
+    currency: String,
+): ImmutableList<ChartTip> {
+    val year = chart.totals.sum()
+    return chart.totals.mapIndexed { index, total ->
+        ChartTip(
+            title = Format.month(YearMonth.of(choice.month.year, index + 1)),
+            rows = listOfNotNull(
+                TipRow(
+                    if (choice.kind == FlowKind.Expense) "Spent" else "Received",
+                    Format.money(total, currency),
+                    color,
+                ),
+                TipRow("Of the year", Format.percent(total / year), Color.Unspecified).takeIf { year > 0 },
+            ).toImmutableList(),
+        )
+    }.toImmutableList()
+}
+
+/** Ivy Wallet - October 2026 spending - Groceries.csv */
+private fun exportName(choice: ReportChoice, report: ReportView, ledger: Ledger): String {
+    val what = if (choice.kind == FlowKind.Expense) "spending" else "income"
+    val category = choice.categoryKey?.let { key ->
+        " - " + (ledger.categories[CategoryId(key)]?.name ?: Reports.UNCATEGORIZED_NAME)
+    }.orEmpty()
+    return "Ivy Wallet - ${Format.period(report.period, choice.mode)} $what$category.csv"
+}
+
+private const val DayLabelEvery = 5
 private val PeriodLabelWidth = 150.dp
 private val ShareWidth = 48.dp

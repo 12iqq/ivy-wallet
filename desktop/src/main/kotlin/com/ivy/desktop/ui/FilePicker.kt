@@ -17,3 +17,12 @@ internal fun chooseBackupFile(current: File?): File? {
     val name = dialog.file ?: return null
     return File(dialog.directory, name)
 }
+
+/** The system's save dialog, starting with [name]; adds .csv when the name chosen doesn't end with it. */
+internal fun chooseCsvFile(name: String): File? {
+    val dialog = FileDialog(null as Frame?, "Save as a spreadsheet (CSV)", FileDialog.SAVE)
+    dialog.file = name
+    dialog.isVisible = true
+    val chosen = dialog.file ?: return null
+    return File(dialog.directory, if (chosen.endsWith(".csv", ignoreCase = true)) chosen else "$chosen.csv")
+}

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.ivy.desktop.data.Ledger
+import com.ivy.desktop.data.LedgerTransaction
 import com.ivy.desktop.data.TransactionType
+import com.ivy.desktop.reports.Csv
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.Reports
 import java.time.LocalDate
@@ -45,7 +48,21 @@ internal fun TransactionsPage(
             .padding(start = PagePadding, top = PagePadding, end = PagePadding),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PageTitle(title = "Transactions", subtitle = "${results.size} transactions")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PageTitle(
+                title = "Transactions",
+                subtitle = totals(results, ledger.baseCurrency),
+                modifier = Modifier.weight(1f),
+            )
+            ExportButton(
+                fileName = if (query.isBlank()) {
+                    "Ivy Wallet - transactions.csv"
+                } else {
+                    "Ivy Wallet - transactions matching ${query.trim()}.csv"
+                },
+                csv = { Csv.transactions(results, ledger) },
+            )
+        }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -90,4 +107,13 @@ internal fun TransactionsPage(
             )
         }
     }
+}
+
+/** 12 transactions · 1,234.00 AED spent · 50.00 AED received (transfers and other currencies left out) */
+private fun totals(transactions: List<LedgerTransaction>, currency: String): String {
+    val inCurrency = transactions.filter { it.currency == currency }
+    val spent = inCurrency.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    val received = inCurrency.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+    return "${transactions.size} transactions · ${Format.money(spent, currency)} spent · " +
+        "${Format.money(received, currency)} received"
 }

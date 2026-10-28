@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.ivy.desktop.data.Ledger
 import com.ivy.desktop.data.LedgerAccount
 import com.ivy.desktop.reports.CardView
+import com.ivy.desktop.reports.Csv
 import com.ivy.desktop.reports.Format
 import com.ivy.desktop.reports.OverviewView
 import com.ivy.desktop.reports.Reports
@@ -33,6 +34,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import java.time.LocalDate
+import java.time.YearMonth
 
 @Composable
 internal fun OverviewPage(
@@ -41,6 +43,7 @@ internal fun OverviewPage(
     modifier: Modifier = Modifier,
 ) {
     val overview = remember(ledger, today) { Reports.overview(ledger, today) }
+    val currency = ledger.baseCurrency
     val scroll = rememberScrollState()
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -50,28 +53,28 @@ internal fun OverviewPage(
                 .padding(PagePadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            PageTitle(title = "Overview")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PageTitle(
+                    title = "Overview",
+                    subtitle = "Amounts in $currency, as of ${Format.day(today, today)}",
+                    modifier = Modifier.weight(1f),
+                )
+                ExportButton(fileName = "Ivy Wallet - last 12 months.csv", csv = { Csv.months(overview) })
+            }
             OtherCurrencies(ledger)
-            Totals(overview, ledger.baseCurrency)
+            Totals(overview, currency, today)
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Accounts(overview.accounts.toImmutableList(), Modifier.weight(1f))
                 if (overview.cards.isNotEmpty()) {
                     Cards(overview.cards.toImmutableList(), today, Modifier.weight(1f))
                 }
             }
-            Panel(title = "Income and spending, last 12 months") {
-                Legend(persistentListOf("Income" to Green, "Spending" to Red))
-                Spacer(Modifier.height(12.dp))
-                BarChart(
-                    series = persistentListOf(
-                        overview.months.map { it.income }.toImmutableList(),
-                        overview.months.map { it.expense }.toImmutableList(),
-                    ),
-                    colors = persistentListOf(Green, Red),
-                    labels = overview.months.map { Format.month(it.month.atDay(1)) }.toImmutableList(),
-                )
-            }
-            Panel(title = "Total balance over time") {
+            IncomeAndSpending(overview, currency, today)
+            Panel(
+                title = "Total balance over time",
+                subtitle = "What all your accounts added up to at the end of each month, with card debt " +
+                    "taken off. This month shows today. Point at a month to see the amount.",
+            ) {
                 LineChart(
                     lines = persistentListOf(
                         ChartLine(
@@ -83,6 +86,7 @@ internal fun OverviewPage(
                     ),
                     length = overview.netWorth.size,
                     labels = overview.netWorth.map { Format.month(it.month.atDay(1)) }.toImmutableList(),
+                    tips = balanceTips(overview, currency, today),
                 )
             }
         }
@@ -96,39 +100,130 @@ internal fun OverviewPage(
 }
 
 @Composable
-private fun Totals(overview: OverviewView, currency: String) {
+private fun Totals(overview: OverviewView, currency: String, today: LocalDate) {
     val thisMonth = overview.months.last()
     val lastMonth = overview.months[overview.months.size - 2]
+    val from = "1 ${Format.month(today)}"
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Stat(
             label = "Total balance",
             value = Format.money(overview.totalBalance, currency),
+            note = "Across ${inTotal(overview, currency)} accounts",
+            info = "All your accounts added up, with what you owe on credit cards taken off. Accounts you've " +
+                "left out of the total in the phone app don't count.",
             modifier = Modifier.weight(1f),
         )
         Stat(
             label = "Spent this month",
             value = Format.money(thisMonth.expense, currency),
             note = "Last month ${Format.money(lastMonth.expense, currency)}",
+            info = "Everything you spent from $from to today. Moving money between your own accounts, " +
+                "like paying off a card, isn't spending, so it's left out.",
             modifier = Modifier.weight(1f),
         )
         Stat(
             label = "Income this month",
             value = Format.money(thisMonth.income, currency),
             note = "Last month ${Format.money(lastMonth.income, currency)}",
+            info = "Everything that came in from $from to today. Money moved between your own accounts " +
+                "isn't income, so it's left out.",
             modifier = Modifier.weight(1f),
         )
+        val months = overview.averageMonths
         Stat(
             label = "Spending in an average month",
             value = Format.money(overview.averageMonthlySpend, currency),
-            note = "Over the last full months",
+            note = if (months > 0) "Over the last $months full months" else "Not enough history yet",
+            info = if (months > 0) {
+                "What you spent in the last $months full months, divided by $months. This month isn't " +
+                    "counted because it isn't over yet, and neither are months with nothing in them."
+            } else {
+                "Shows once there's a full month of transactions before this one."
+            },
             modifier = Modifier.weight(1f),
         )
     }
 }
 
 @Composable
+private fun IncomeAndSpending(overview: OverviewView, currency: String, today: LocalDate) {
+    Panel(
+        title = "Income and spending, last 12 months",
+        subtitle = "What came in and what you spent each month. Money moved between your own accounts isn't " +
+            "counted. Point at a month to see the amounts.",
+    ) {
+        Legend(persistentListOf("Income" to Green, "Spending" to Red))
+        Spacer(Modifier.height(12.dp))
+        BarChart(
+            series = persistentListOf(
+                overview.months.map { it.income }.toImmutableList(),
+                overview.months.map { it.expense }.toImmutableList(),
+            ),
+            colors = persistentListOf(Green, Red),
+            labels = overview.months.map { Format.month(it.month.atDay(1)) }.toImmutableList(),
+            tips = incomeSpendingTips(overview, currency, today),
+        )
+        Spacer(Modifier.height(12.dp))
+        val income = overview.months.sumOf { it.income }
+        val spent = overview.months.sumOf { it.expense }
+        val left = if (income >= spent) {
+            "saved ${Format.money(income - spent, currency)}"
+        } else {
+            "spent ${Format.money(spent - income, currency)} more than came in"
+        }
+        Note("In these 12 months: ${Format.money(income, currency)} in, ${Format.money(spent, currency)} out, $left.")
+    }
+}
+
+/** The accounts that make up the total balance: in it, and in the main currency. */
+private fun inTotal(overview: OverviewView, currency: String): Int =
+    overview.accounts.count { it.includeInBalance && it.currency == currency } +
+        overview.cards.count { it.account.includeInBalance && it.account.currency == currency }
+
+/** For each month: its income, spending and what was left. */
+internal fun incomeSpendingTips(
+    overview: OverviewView,
+    currency: String,
+    today: LocalDate,
+): ImmutableList<ChartTip> =
+    overview.months.map { month ->
+        val difference = month.income - month.expense
+        ChartTip(
+            title = Format.month(month.month) + if (month.month == YearMonth.from(today)) ", so far" else "",
+            rows = persistentListOf(
+                TipRow("Income", Format.money(month.income, currency), Green),
+                TipRow("Spending", Format.money(month.expense, currency), Red),
+                if (difference >= 0) {
+                    TipRow("Saved", Format.money(difference, currency), Color.Unspecified)
+                } else {
+                    TipRow("Spent more than came in", Format.money(-difference, currency), Color.Unspecified)
+                },
+            ),
+        )
+    }.toImmutableList()
+
+/** For each month: the total balance at its end, and how it changed from the month before. */
+internal fun balanceTips(overview: OverviewView, currency: String, today: LocalDate): ImmutableList<ChartTip> =
+    overview.netWorth.mapIndexed { index, point ->
+        val changeRow = overview.netWorth.getOrNull(index - 1)?.let { before ->
+            val change = point.value - before.value
+            val name = Format.month(before.month.atDay(1))
+            if (change >= 0) {
+                TipRow("Up from $name", Format.money(change, currency), Color.Unspecified)
+            } else {
+                TipRow("Down from $name", Format.money(-change, currency), Color.Unspecified)
+            }
+        }
+        ChartTip(
+            title = if (point.month == YearMonth.from(today)) "Today" else "End of ${Format.month(point.month)}",
+            rows = listOfNotNull(TipRow("Total balance", Format.money(point.value, currency), Ivy), changeRow)
+                .toImmutableList(),
+        )
+    }.toImmutableList()
+
+@Composable
 private fun Accounts(accounts: ImmutableList<LedgerAccount>, modifier: Modifier = Modifier) {
-    Panel(modifier = modifier, title = "Accounts") {
+    Panel(modifier = modifier, title = "Accounts", subtitle = "What's in each one today") {
         accounts.forEach { account ->
             Row(
                 modifier = Modifier
@@ -154,7 +249,7 @@ private fun Accounts(accounts: ImmutableList<LedgerAccount>, modifier: Modifier 
 
 @Composable
 private fun Cards(cards: ImmutableList<CardView>, today: LocalDate, modifier: Modifier = Modifier) {
-    Panel(modifier = modifier, title = "Credit cards") {
+    Panel(modifier = modifier, title = "Credit cards", subtitle = "What you owe on each card today") {
         cards.forEach { card ->
             val currency = card.account.currency
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -172,10 +267,11 @@ private fun Cards(cards: ImmutableList<CardView>, today: LocalDate, modifier: Mo
                     Spacer(Modifier.height(8.dp))
                     ShareBar(share = used, color = usageColor(used))
                 }
+                val used = card.used?.let { "${Format.percent(it)} of the limit used" }
                 val limit = card.account.creditLimit?.let { "Limit ${Format.money(it, currency)}" }
                 val due = card.nextDue?.let { "Due ${Format.day(it, today)}" }
                 Spacer(Modifier.height(6.dp))
-                Note(listOfNotNull(limit, due).joinToString(" · "))
+                Note(listOfNotNull(used, limit, due).joinToString(" · "))
             }
         }
     }
