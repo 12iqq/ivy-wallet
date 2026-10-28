@@ -96,33 +96,54 @@ function Shown($window, $type) {
 function Buttons($window) { Shown $window ([Windows.Automation.ControlType]::Button) }
 
 function Texts($window) {
-    @(Shown $window ([Windows.Automation.ControlType]::Text) | ForEach-Object { $_.Current.Name })
+    @(Shown $window ([Windows.Automation.ControlType]::Text) | ForEach-Object { Name $_ })
+}
+
+# A control's name, like a button's text, without the & that underlines a letter
+function Name($element) { $element.Current.Name -replace '&', '' }
+
+# Everything on a window, for when it isn't as expected
+function Describe($window) {
+    @($window.FindAll($scope::Descendants, [Windows.Automation.Condition]::TrueCondition) | ForEach-Object {
+        $info = $_.Current
+        "  $($info.ControlType.ProgrammaticName) '$($info.Name)' class=$($info.ClassName) " +
+            "enabled=$($info.IsEnabled) offscreen=$($info.IsOffscreen)"
+    }) -join "`n"
 }
 
 # The window with this title and a button with this name, once it's open
 function WaitFor([string] $title, [string] $button) {
-    $deadline = (Get-Date).AddMinutes(3)
+    $deadline = (Get-Date).AddMinutes(2)
     $titled = New-Object Windows.Automation.PropertyCondition($automation::NameProperty, $title)
+    $problem = ''
     while ((Get-Date) -lt $deadline) {
         foreach ($window in @($automation::RootElement.FindAll($scope::Children, $titled))) {
             try {
-                if (Buttons $window | Where-Object { $_.Current.Name -eq $button -and $_.Current.IsEnabled }) {
+                if (Buttons $window | Where-Object { (Name $_) -eq $button -and $_.Current.IsEnabled }) {
                     Write-Host "$title`: $((Texts $window) -join ' | ')"
                     return $window
                 }
             } catch {
-                # it closed while being looked at
+                # it may have closed while being looked at
+                $problem = "$_"
             }
         }
         Start-Sleep -Milliseconds 500
     }
+    $windows = @($automation::RootElement.FindAll($scope::Children, $titled))
+    $number = 0
+    foreach ($window in $windows) {
+        $number++
+        Write-Host "$title window $number`:`n$(Describe $window)"
+        Screenshot $window "timeout-$number"
+    }
     $open = @($automation::RootElement.FindAll($scope::Children, [Windows.Automation.Condition]::TrueCondition) |
         ForEach-Object { "'$($_.Current.Name)'" }) -join ', '
-    throw "No $title window with a $button button after 3 minutes. Open windows: $open"
+    throw "No $title window with a $button button after 2 minutes. Open windows: $open. $problem"
 }
 
 function Click($window, [string] $name) {
-    $button = Buttons $window | Where-Object { $_.Current.Name -eq $name -and $_.Current.IsEnabled } |
+    $button = Buttons $window | Where-Object { (Name $_) -eq $name -and $_.Current.IsEnabled } |
         Select-Object -First 1
     if (-not $button) { throw "No $name button to click" }
     $button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
