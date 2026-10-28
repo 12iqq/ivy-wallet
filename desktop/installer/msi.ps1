@@ -37,6 +37,19 @@ function Sql($db, [string] $query, [object[]] $values = @()) {
     return , $rows
 }
 
+# Runs a SELECT of several columns. Gives each row's values.
+function Rows($db, [string] $query) {
+    $view = Call $db 'OpenView' @($query)
+    [void] (Call $view 'Execute')
+    $rows = @()
+    while ($row = Call $view 'Fetch') {
+        $count = Property $row 'FieldCount'
+        $rows += , @(for ($i = 1; $i -le $count; $i++) { Property $row 'StringData' @($i) })
+    }
+    [void] (Call $view 'Close')
+    return , $rows
+}
+
 # A value from an installer's Property table, like its ProductVersion
 function MsiProperty([string] $path, [string] $name) {
     # 0: only to read

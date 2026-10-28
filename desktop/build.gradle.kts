@@ -85,6 +85,8 @@ compose.desktop {
             vendor = "Ivy Wallet UAE Edition"
             // what ./gradlew suggestRuntimeModules lists, on top of the defaults
             modules("java.instrument", "java.prefs", "jdk.unsupported")
+            // the uninstaller, from the task below
+            appResourcesRootDir.set(layout.buildDirectory.dir("appResources"))
 
             windows {
                 iconFile.set(project.file("icons/ivy-wallet-uae.ico"))
@@ -100,21 +102,27 @@ compose.desktop {
     }
 }
 
-// "Uninstall Ivy Wallet UAE.exe", which goes next to the app's own exe: a small C# program, built with the C# compiler
-// that comes with Windows
+// "Uninstall Ivy Wallet UAE.exe": a small C# program, built with the C# compiler that comes with Windows. It goes into
+// the installer with the app's resources, and finish-installer.ps1 moves it next to the app's own exe.
 val uninstaller = tasks.register<Exec>("uninstaller") {
     val source = layout.projectDirectory.file("installer/Uninstaller.cs").asFile
     val icon = layout.projectDirectory.file("icons/ivy-wallet-uae.ico").asFile
     val dir = layout.buildDirectory.dir("uninstaller").get().asFile
-    val code = dir.resolve("UpgradeCode.cs")
+    val generated = dir.resolve("Generated.cs")
     val exe = dir.resolve("Uninstall.exe")
+    val resource = layout.buildDirectory.file("appResources/windows/Uninstall $appName.exe").get().asFile
     inputs.files(source, icon)
     inputs.property("upgradeCode", upgradeCode)
-    outputs.file(exe)
+    inputs.property("version", appVersion)
+    outputs.files(exe, resource)
     doFirst {
         dir.mkdirs()
-        code.writeText(
+        generated.writeText(
             """
+            [assembly: System.Reflection.AssemblyTitle("Uninstall $appName")]
+            [assembly: System.Reflection.AssemblyProduct("$appName")]
+            [assembly: System.Reflection.AssemblyFileVersion("$appVersion")]
+
             internal static partial class Uninstaller
             {
                 private const string UpgradeCode = "{${upgradeCode.uppercase()}}";
@@ -125,22 +133,12 @@ val uninstaller = tasks.register<Exec>("uninstaller") {
     val csc = File(System.getenv("WINDIR") ?: "C:\\Windows", "Microsoft.NET/Framework64/v4.0.30319/csc.exe")
     commandLine(
         csc, "/nologo", "/target:winexe", "/optimize+", "/reference:System.Windows.Forms.dll",
-        "/win32icon:$icon", "/out:$exe", source, code,
+        "/win32icon:$icon", "/out:$exe", source, generated,
     )
+    doLast { exe.copyTo(resource, overwrite = true) }
 }
-
-// the app's folder, which jpackage makes the installer from
-tasks.matching { it.name == "createDistributable" }.configureEach {
-    if (onWindows) {
-        dependsOn(uninstaller)
-        val exe = layout.buildDirectory.file("uninstaller/Uninstall.exe")
-        val app = layout.buildDirectory.dir("compose/binaries/main/app/$appName")
-        doLast {
-            val folder = app.get().asFile
-            check(folder.resolve("$appName.exe").isFile) { "The app's folder isn't $folder" }
-            exe.get().asFile.copyTo(folder.resolve("Uninstall $appName.exe"), overwrite = true)
-        }
-    }
+tasks.matching { it.name == "prepareAppResources" }.configureEach {
+    if (onWindows) dependsOn(uninstaller)
 }
 
 // Adds to the installer what jpackage can't: "Uninstall Ivy Wallet UAE" in the Start menu, and a first page for when

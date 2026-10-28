@@ -77,10 +77,15 @@ function WaitUntilRemoved {
     ExpectInstalled ''
 }
 
-# What's shown on a window: its buttons or its text, each with its name, the text without the &
+# What's shown on a window: its buttons or its text, each with its name, the text without the &. Pages have hidden
+# ones too, like a second Install button, unless the computer has no screen to show them on.
 function Shown($window, $type) {
     $condition = New-Object Windows.Automation.PropertyCondition($automation::ControlTypeProperty, $type)
-    @($window.FindAll($scope::Descendants, $condition) | Where-Object { -not $_.Current.IsOffscreen })
+    $all = @($window.FindAll($scope::Descendants, $condition))
+    $shown = @($all | Where-Object { -not $_.Current.IsOffscreen })
+    # one by one down the pipeline
+    if ($shown.Count -gt 0) { return $shown }
+    return $all
 }
 
 function Buttons($window) { Shown $window ([Windows.Automation.ControlType]::Button) }

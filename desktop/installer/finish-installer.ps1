@@ -2,6 +2,7 @@
 Adds to the installer (.msi) jpackage makes what jpackage can't do by itself, by changing the installer's tables.
 Windows Installer reads them when it installs, updates or removes the app.
 
+- "Uninstall Ivy Wallet UAE.exe" next to the app's exe, instead of in app\resources where jpackage puts it
 - "Uninstall Ivy Wallet UAE" in the app's folder in the Start menu, next to the app
 - the version in the registry, so the next installer can say which version is installed
 - a first page for when the app is already installed. With another version installed, it offers Update (or Replace,
@@ -33,6 +34,17 @@ function Insert([string] $table, [string[]] $columns, [object[]] $values) {
 function SetCondition([string] $action, [string] $condition) {
     [void] (Sql $db 'UPDATE `InstallUISequence` SET `Condition` = ? WHERE `Action` = ?' @($condition, $action))
 }
+
+# --- "Uninstall Ivy Wallet UAE.exe" next to the app's exe
+
+# It's one of the app's resources for jpackage, so it's in app\resources until its component moves to INSTALLDIR, the
+# app's folder. A file's name is "short|long", or one name if it's short already.
+$files = Rows $db 'SELECT `Component_`, `FileName` FROM `File`'
+$uninstaller = @($files | Where-Object { ($_[1] -split '\|')[-1] -eq 'Uninstall Ivy Wallet UAE.exe' })
+if ($uninstaller.Count -ne 1) {
+    throw 'The installer has no Uninstall Ivy Wallet UAE.exe: is it in appResourcesRootDir in build.gradle.kts?'
+}
+[void] (Sql $db 'UPDATE `Component` SET `Directory_` = ? WHERE `Component` = ?' @('INSTALLDIR', $uninstaller[0][0]))
 
 # --- "Uninstall Ivy Wallet UAE" in the Start menu
 
