@@ -54,10 +54,11 @@ Had version 1.0.x of this app? Version 1.1.0 installs as a separate app. The
 
 ## On your computer
 
-There's also a Windows app for looking at your money on a bigger screen: your accounts and cards, monthly and yearly
-reports, all your transactions with search, and recurring charges. Point at a chart to see the amounts, and export
-any page to a CSV file for Excel or Google Sheets. It reads the backup the phone app saves, so you keep adding
-transactions on the phone. You can't add or change anything on the computer yet.
+There's also a Windows app for looking at your money on a bigger screen: your accounts and cards, reports for a
+month, a year or all time, fun facts about everything you've tracked, all your transactions with search, and recurring
+charges. Point at a chart to see the amounts, and export any page to a CSV file for Excel or Google Sheets. It reads
+the backup the phone app saves, so you keep adding transactions on the phone. You can't add or change anything on the
+computer yet.
 
 1. In the phone app, set **Settings → Automatic backup** to **Daily**. When it asks where to save, open Google Drive,
    make a folder called `ivywallet-uae` and save the file in it.

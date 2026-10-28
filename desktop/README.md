@@ -26,13 +26,17 @@ aren't touched.
 
 ## What it shows
 
-- **Overview:** your accounts and credit cards, this month's spending and income, and the last 12 months
-- **Reports:** a month or a year, spending or income, by category and by place, like Reports in the phone app
+- **Overview:** your accounts and credit cards, this month's spending and income, and the last 12 months or all time
+- **Reports:** a month, a year or all time, spending or income, by category and by place, like Reports in the phone
+  app
+- **Highlights:** fun facts about everything since your first transaction, like where most of your money goes, your
+  biggest purchase, your priciest month and the day of the week you spend the most, and each year side by side
 - **Transactions:** everything, newest first, with search and the total of what it finds
 - **Recurring charges:** subscriptions, bills and fees that come back regularly
 
-Point at a chart to see the amounts for that month or day, and use **Export CSV** to open what a page shows in Excel
-or Google Sheets. You can't add or change transactions on the computer yet.
+Point at a chart to see the amounts for that month or day. **Export CSV** saves what a page shows for Excel or Google
+Sheets: transactions with their category, account, tags and the bank's name for the shop, or a row for each month or
+year with what went to each category and account. You can't add or change transactions on the computer yet.
 
 ## Building it
 
