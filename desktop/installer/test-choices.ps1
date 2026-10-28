@@ -31,6 +31,12 @@ New-Item -ItemType Directory -Force -Path $Screenshots | Out-Null
 
 $automation = [Windows.Automation.AutomationElement]
 $scope = [Windows.Automation.TreeScope]
+Add-Type -Namespace Win32 -Name Window -MemberDefinition @'
+[DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, uint message, IntPtr w, IntPtr l);
+[DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr control);
+[DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr control);
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
+'@
 
 function Run([string] $file, [string[]] $arguments) {
     $process = Start-Process -FilePath $file -ArgumentList $arguments -Wait -PassThru
@@ -82,21 +88,19 @@ function WaitUntilRemoved {
     ExpectInstalled ''
 }
 
-# What's shown on a window: its buttons or its text, each with its name, the text without the &. Pages have hidden
-# ones too, like a second Install button, unless the computer has no screen to show them on.
-function Shown($window, $type) {
-    $condition = New-Object Windows.Automation.PropertyCondition($automation::ControlTypeProperty, $type)
-    $all = @($window.FindAll($scope::Descendants, $condition))
-    $shown = @($all | Where-Object { -not $_.Current.IsOffscreen })
+# What's shown on a window, by its Windows class: Button for buttons, Static for text. UI Automation doesn't know
+# Windows Installer's buttons are buttons, so it can't be asked for those. Pages have hidden ones too, like a second
+# Install button.
+function Shown($window, [string] $class) {
+    $condition = New-Object Windows.Automation.PropertyCondition($automation::ClassNameProperty, $class)
     # one by one down the pipeline
-    if ($shown.Count -gt 0) { return $shown }
-    return $all
+    @($window.FindAll($scope::Descendants, $condition)) | Where-Object { -not $_.Current.IsOffscreen }
 }
 
-function Buttons($window) { Shown $window ([Windows.Automation.ControlType]::Button) }
+function Buttons($window) { Shown $window 'Button' }
 
 function Texts($window) {
-    @(Shown $window ([Windows.Automation.ControlType]::Text) | ForEach-Object { Name $_ })
+    @(Shown $window 'Static' | ForEach-Object { Name $_ } | Where-Object { $_ })
 }
 
 # A control's name, like a button's text, without the & that underlines a letter
@@ -142,11 +146,16 @@ function WaitFor([string] $title, [string] $button) {
     throw "No $title window with a $button button after 2 minutes. Open windows: $open. $problem"
 }
 
+# Clicks a button the way Windows tells the page about a click: WM_COMMAND, with the button's id and BN_CLICKED (0)
 function Click($window, [string] $name) {
     $button = Buttons $window | Where-Object { (Name $_) -eq $name -and $_.Current.IsEnabled } |
         Select-Object -First 1
     if (-not $button) { throw "No $name button to click" }
-    $button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    $handle = [IntPtr] $button.Current.NativeWindowHandle
+    $id = [Win32.Window]::GetDlgCtrlID($handle)
+    if (-not [Win32.Window]::PostMessage([Win32.Window]::GetParent($handle), 0x0111, [IntPtr] $id, $handle)) {
+        throw "Couldn't click $name"
+    }
 }
 
 function ExpectText($window, [string] $text) {
@@ -157,7 +166,7 @@ function ExpectText($window, [string] $text) {
 }
 
 function Screenshot($window, [string] $name) {
-    try { $window.SetFocus() } catch { Write-Host "Couldn't bring the $name page to the front: $_" }
+    [void] [Win32.Window]::SetForegroundWindow([IntPtr] $window.Current.NativeWindowHandle)
     Start-Sleep -Milliseconds 500
     try {
         $area = $window.Current.BoundingRectangle
