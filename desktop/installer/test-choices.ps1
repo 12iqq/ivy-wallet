@@ -14,6 +14,11 @@ param(
     [Parameter(Mandatory = $true)][string] $Screenshots
 )
 $ErrorActionPreference = 'Stop'
+# shows where it went wrong, inside functions too
+trap {
+    Write-Host "$_`n$($_.ScriptStackTrace)"
+    exit 1
+}
 . (Join-Path $PSScriptRoot 'msi.ps1')
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Drawing
 

@@ -4,12 +4,13 @@ COM object. PowerShell can't see that object's methods and properties, so they'r
 #>
 $Installer = New-Object -ComObject WindowsInstaller.Installer
 
+# Both give what they get as it is (the , stops PowerShell from turning a list, like RelatedProducts, into its items)
 function Call($target, [string] $name, [object[]] $arguments = @()) {
-    $target.GetType().InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $target, $arguments)
+    , $target.GetType().InvokeMember($name, [Reflection.BindingFlags]::InvokeMethod, $null, $target, $arguments)
 }
 
 function Property($target, [string] $name, [object[]] $arguments = @()) {
-    $target.GetType().InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $target, $arguments)
+    , $target.GetType().InvokeMember($name, [Reflection.BindingFlags]::GetProperty, $null, $target, $arguments)
 }
 
 function SetField($record, [int] $field, $value) {

@@ -7,6 +7,11 @@ param(
     [Parameter(Mandatory = $true)][string] $MsiDir
 )
 $ErrorActionPreference = 'Stop'
+# shows where it went wrong, inside functions too
+trap {
+    Write-Host "$_`n$($_.ScriptStackTrace)"
+    exit 1
+}
 . (Join-Path $PSScriptRoot 'msi.ps1')
 
 $msi = (Get-ChildItem -Path $MsiDir -Filter '*.msi' | Select-Object -First 1).FullName
