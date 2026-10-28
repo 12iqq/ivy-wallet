@@ -5,25 +5,31 @@ transactions on the phone and look at them here on a bigger screen.
 
 ## Setting it up
 
-1. In the phone app, go to **Settings → Automatic backup**, choose **Daily**, and save the backup file in your
-   Google Drive.
-2. Install [Google Drive for desktop](https://www.google.com/drive/download/) so the file is on your computer too.
+1. In the phone app, go to **Settings → Automatic backup** and choose **Daily**. When it asks where to save, open
+   Google Drive, make a folder called `ivywallet-uae` and save the file in it.
+2. Install [Google Drive for desktop](https://www.google.com/drive/download/) and sign in with the same Google account,
+   so the folder is on your computer too.
 3. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
    [latest release](https://github.com/12iqq/ivy-wallet/releases/latest) and install it. Windows may say it protected
    your PC, because not many people have downloaded the app yet. Click **More info → Run anyway**.
-4. Open **Ivy Wallet UAE** from the Start menu and choose the backup file. When a newer backup reaches your computer,
-   the app shows it within a minute.
+4. Open **Ivy Wallet UAE** from the Start menu. It finds the newest backup in the `ivywallet-uae` folder by itself, and
+   shows each new one within a minute of it reaching your computer.
 
-The app only reads that file. It doesn't connect to the internet.
+It looks for the folder in "My Drive" on the drive Google Drive for desktop adds (G: unless that's taken), and in a
+"My Drive" folder in your user folder if you mirror files instead. If your backup is somewhere else, choose it with
+**Choose another file**.
+
+The app only reads the backup. It doesn't connect to the internet.
 
 ## What it shows
 
 - **Overview:** your accounts and credit cards, this month's spending and income, and the last 12 months
 - **Reports:** a month or a year, spending or income, by category and by place, like Reports in the phone app
-- **Transactions:** everything, newest first, with search
+- **Transactions:** everything, newest first, with search and the total of what it finds
 - **Recurring charges:** subscriptions, bills and fees that come back regularly
 
-You can't add or change transactions on the computer yet.
+Point at a chart to see the amounts for that month or day, and use **Export CSV** to open what a page shows in Excel
+or Google Sheets. You can't add or change transactions on the computer yet.
 
 ## Building it
 

@@ -106,7 +106,7 @@
     <string name="budget_alerts">Budget alerts</string>
     <string name="budget_alerts_desc">When a budget reaches 80% and 100%</string>
     <string name="auto_backup">Automatic backup</string>
-    <string name="auto_backup_desc">Saves a full backup to a file you choose. Pick a location in Google Drive to keep it off your phone.</string>
+    <string name="auto_backup_desc">Saves a full backup to a file you choose. Save it in a Google Drive folder called ivywallet-uae to keep it off your phone, and the Windows app finds it there by itself.</string>
     <string name="backup_daily">Daily</string>
     <string name="backup_weekly">Weekly</string>
     <string name="backup_file">Backup file</string>

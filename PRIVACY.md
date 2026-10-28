@@ -11,8 +11,9 @@ data.
 
 Backups go only where you save them, for example a file in your own Google Drive.
 
-The Windows app only reads the backup file you choose, and remembers which file that is. It doesn't connect to the
-internet and never changes the file.
+The Windows app only reads your backup: the newest one in your `ivywallet-uae` folder, or a file you choose, which it
+remembers. It doesn't connect to the internet and never changes the file. Files you export from it as CSV are saved
+where you choose.
 
 ## Permissions
 

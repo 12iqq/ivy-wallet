@@ -55,16 +55,19 @@ Had version 1.0.x of this app? Version 1.1.0 installs as a separate app. The
 ## On your computer
 
 There's also a Windows app for looking at your money on a bigger screen: your accounts and cards, monthly and yearly
-reports, all your transactions with search, and recurring charges. It reads the backup the phone app saves, so you
-keep adding transactions on the phone. You can't add or change anything on the computer yet.
+reports, all your transactions with search, and recurring charges. Point at a chart to see the amounts, and export
+any page to a CSV file for Excel or Google Sheets. It reads the backup the phone app saves, so you keep adding
+transactions on the phone. You can't add or change anything on the computer yet.
 
-1. In the phone app, set **Settings → Automatic backup** to **Daily** and save the file in your Google Drive.
-2. Install [Google Drive for desktop](https://www.google.com/drive/download/) so the file is on your computer too.
+1. In the phone app, set **Settings → Automatic backup** to **Daily**. When it asks where to save, open Google Drive,
+   make a folder called `ivywallet-uae` and save the file in it.
+2. Install [Google Drive for desktop](https://www.google.com/drive/download/) and sign in with the same Google account,
+   so the folder is on your computer too.
 3. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
    [latest release](https://github.com/12iqq/ivy-wallet/releases/latest) and install it. Windows may say it protected
    your PC, because not many people have downloaded the app yet. Click **More info → Run anyway**.
-4. Open **Ivy Wallet UAE** from the Start menu and choose the backup file. When a newer backup reaches your computer,
-   the app shows it within a minute.
+4. Open **Ivy Wallet UAE** from the Start menu. It finds the newest backup in your `ivywallet-uae` folder by itself, and
+   shows each new one within a minute of it reaching your computer. You can also choose a file yourself.
 
 It's Windows only for now. Mac and Linux are planned.
 

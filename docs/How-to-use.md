@@ -128,8 +128,9 @@ The backup has your accounts, transactions, categories, budgets, planned payment
 doesn't have the auto-add setup (your banks and card links), your notification choices or the transaction look, so set
 those again after importing.
 
-The daily backup in Google Drive is also what the Windows app reads, so you can see your reports on your computer.
-The [README](../README.md#on-your-computer) shows how to set it up.
+The daily backup is also what the Windows app reads, so you can see your reports on your computer. Save it in a
+Google Drive folder called `ivywallet-uae` and the Windows app finds it by itself. The
+[README](../README.md#on-your-computer) shows how to set it up.
 
 ## Other settings
 

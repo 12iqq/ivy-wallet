@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.ivy.desktop.data.BackupException
 import com.ivy.desktop.data.BackupReader
 import com.ivy.desktop.data.DesktopSettings
+import com.ivy.desktop.data.DriveFolder
 import com.ivy.desktop.data.Ledger
 import com.ivy.desktop.data.LedgerBuilder
 import com.ivy.desktop.reports.Format
@@ -75,30 +76,33 @@ fun DesktopApp(
     settings: DesktopSettings,
     modifier: Modifier = Modifier,
 ) {
-    var file by remember { mutableStateOf(settings.backupFile()) }
-    var state by remember { mutableStateOf<LoadState>(if (file == null) LoadState.NoFile else LoadState.Loading) }
+    // a file chosen with "Choose backup file"; without one, the newest backup in the ivywallet-uae folder
+    var chosen by remember { mutableStateOf(settings.backupFile()) }
+    var state by remember { mutableStateOf<LoadState>(LoadState.Loading) }
     var page by remember { mutableStateOf(Page.Overview) }
     val chooseFile: () -> Unit = {
-        chooseBackupFile(file)?.let { chosen ->
-            settings.setBackupFile(chosen)
+        chooseBackupFile((state as? LoadState.Ready)?.file ?: chosen)?.let { file ->
+            settings.setBackupFile(file)
             state = LoadState.Loading
-            file = chosen
+            chosen = file
         }
     }
 
-    // reads the file, and again whenever the phone's next backup arrives
-    LaunchedEffect(file) {
-        val current = file ?: return@LaunchedEffect
-        var loadedVersion: Long? = null
+    // finds and reads the backup, and again whenever the phone's next one arrives
+    LaunchedEffect(chosen) {
+        var loaded: Pair<File, Long>? = null
         while (true) {
-            val version = current.lastModified()
-            if (version != loadedVersion) {
-                val result = withContext(Dispatchers.IO) { load(current) }
-                val showing = state as? LoadState.Ready
+            val found = withContext(Dispatchers.IO) {
+                (chosen?.takeIf { it.isFile } ?: DriveFolder.findBackup())?.let { it to it.lastModified() }
+            }
+            if (found == null) {
+                if (state !is LoadState.Ready) state = LoadState.NoFile
+            } else if (found != loaded) {
+                val result = withContext(Dispatchers.IO) { load(found.first) }
                 if (result is LoadState.Ready) {
                     state = result
-                    loadedVersion = version
-                } else if (showing?.file != current) {
+                    loaded = found
+                } else if ((state as? LoadState.Ready)?.file != found.first) {
                     state = result
                 }
                 // otherwise keep showing the last good copy: Google Drive may still be writing the new one
@@ -141,7 +145,7 @@ internal fun AppContent(
         ) {
             when (state) {
                 LoadState.NoFile -> Welcome(onChooseFile = onChooseFile)
-                LoadState.Loading -> Centered { Note("Reading your backup…") }
+                LoadState.Loading -> Centered { Note("Looking for your backup…") }
                 is LoadState.Failed -> Centered {
                     Text(text = "Couldn't read ${state.file.name}", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(8.dp))
@@ -220,6 +224,9 @@ private fun BackupInfo(state: LoadState, onChooseFile: () -> Unit) {
         when (state) {
             is LoadState.Ready -> {
                 Note(state.file.name)
+                if (state.file.parentFile?.name.equals(DriveFolder.NAME, ignoreCase = true)) {
+                    Note("Found in your ${DriveFolder.NAME} folder")
+                }
                 val age = Duration.between(state.savedAt, LocalDateTime.now())
                 Note(
                     text = "Saved ${Format.dateTime(state.savedAt)}",
@@ -237,7 +244,7 @@ private fun BackupInfo(state: LoadState, onChooseFile: () -> Unit) {
             LoadState.Loading, LoadState.NoFile -> Unit
         }
         Spacer(Modifier.height(8.dp))
-        Chip(text = "Choose backup file", onClick = onChooseFile)
+        Chip(text = "Choose another file", onClick = onChooseFile)
     }
 }
 
@@ -248,10 +255,11 @@ private fun Welcome(onChooseFile: () -> Unit) {
         Text(text = "Your Ivy Wallet reports on your computer", style = MaterialTheme.typography.headlineLarge)
         Spacer(Modifier.height(24.dp))
         listOf(
-            "In the phone app, open Settings → Automatic backup. Choose Daily, and save the backup file " +
-                "in your Google Drive.",
-            "Install Google Drive for desktop on this computer, so the file is here too.",
-            "Choose that file below. When the phone saves a new backup, this app shows it within a minute.",
+            "In the phone app, open Settings → Automatic backup and choose Daily. When it asks where to save, " +
+                "open Google Drive, make a folder called ${DriveFolder.NAME} and save the file in it.",
+            "Install Google Drive for desktop on this computer and sign in with the same Google account.",
+            "That's all. This app finds the newest backup in that folder by itself, and shows each new one " +
+                "within a minute of it reaching this computer.",
         ).forEachIndexed { index, step ->
             Row(modifier = Modifier.padding(vertical = 6.dp)) {
                 Text(
@@ -263,8 +271,10 @@ private fun Welcome(onChooseFile: () -> Unit) {
                 Text(text = step, style = MaterialTheme.typography.bodyLarge)
             }
         }
+        Spacer(Modifier.height(16.dp))
+        Note("There's no ${DriveFolder.NAME} folder on this computer yet. This page changes by itself once there is.")
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onChooseFile) { Text("Choose backup file") }
+        Button(onClick = onChooseFile) { Text("Or choose a backup file yourself") }
         Spacer(Modifier.height(16.dp))
         Note("The app only reads the file. Nothing is sent anywhere.")
     }

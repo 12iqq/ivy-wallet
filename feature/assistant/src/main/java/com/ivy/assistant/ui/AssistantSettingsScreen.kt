@@ -202,7 +202,8 @@ private fun InfoRow(title: String, value: String, onClick: () -> Unit) {
     }
 }
 
-private const val DefaultBackupName = "IvyWalletUAE_auto_backup.zip"
+// the same name each time, so the Windows app finds it in the ivywallet-uae folder
+private const val DefaultBackupName = "ivywallet-uae.zip"
 
 private fun Context.displayName(uri: Uri): String? = runCatching {
     contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
