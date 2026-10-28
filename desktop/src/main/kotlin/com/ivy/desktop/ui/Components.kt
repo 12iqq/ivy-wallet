@@ -1,5 +1,6 @@
 package com.ivy.desktop.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ivy.desktop.data.TransactionType
 import kotlinx.collections.immutable.ImmutableList
 
@@ -73,6 +77,7 @@ internal fun PageTitle(
 }
 
 /** A number with a label above it, and an optional line below. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun Stat(
     label: String,
@@ -88,15 +93,20 @@ internal fun Stat(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(6.dp))
-        Text(text = value, style = MaterialTheme.typography.headlineMedium, maxLines = 1)
-        if (note != null) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = note,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (noteColor == Color.Unspecified) MaterialTheme.colorScheme.onSurfaceVariant else noteColor,
-            )
-        }
+        // a big balance gets smaller instead of being cut off
+        BasicText(
+            text = value,
+            style = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 28.sp),
+        )
+        Spacer(Modifier.height(4.dp))
+        // always there, even empty, so the cards in a row are the same height
+        Text(
+            text = note.orEmpty(),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (noteColor == Color.Unspecified) MaterialTheme.colorScheme.onSurfaceVariant else noteColor,
+        )
     }
 }
 

@@ -1,11 +1,13 @@
 package com.ivy.desktop.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -96,6 +98,8 @@ fun IvyTheme(
     MaterialTheme(
         colorScheme = if (dark) DarkColors else LightColors,
         typography = Typo,
-        content = content,
-    )
+    ) {
+        // text without its own color follows the theme, not black
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground, content = content)
+    }
 }
