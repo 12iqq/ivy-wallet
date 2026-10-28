@@ -16,6 +16,11 @@ val appVersion: String = file("../gradle/libs.versions.toml").readLines()
 
 version = appVersion
 
+val appName = "Ivy Wallet UAE"
+// the same for every version, so each installer replaces the version before it. Never change it.
+val upgradeCode = "2b39981e-90cc-4f06-b612-c33a00a7f058"
+val onWindows = System.getProperty("os.name").startsWith("Windows")
+
 // The phone app's report maths, compiled into the desktop app too, so both show the same numbers
 val sharedSources = tasks.register<Sync>("sharedSources") {
     from("../feature/insights/src/main/java") {
@@ -74,7 +79,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
-            packageName = "Ivy Wallet UAE"
+            packageName = appName
             packageVersion = appVersion
             description = "Your Ivy Wallet UAE reports on your computer"
             vendor = "Ivy Wallet UAE Edition"
@@ -85,21 +90,64 @@ compose.desktop {
                 iconFile.set(project.file("icons/ivy-wallet-uae.ico"))
                 // in the Start menu, and on the desktop
                 menu = true
-                menuGroup = "Ivy Wallet UAE"
+                menuGroup = appName
                 shortcut = true
                 // installs for the current user, no admin rights needed
                 perUserInstall = true
-                // the same for every version, so a new installer replaces the old version
-                upgradeUuid = "2b39981e-90cc-4f06-b612-c33a00a7f058"
+                upgradeUuid = upgradeCode
             }
         }
     }
 }
 
-// jpackage can't put an "Uninstall" shortcut in the Start menu, so it's added to the finished installer
-val addUninstallShortcut = tasks.register<Exec>("addUninstallShortcut") {
-    val script = layout.projectDirectory.file("installer/add-uninstall-shortcut.ps1").asFile
+// "Uninstall Ivy Wallet UAE.exe", which goes next to the app's own exe: a small C# program, built with the C# compiler
+// that comes with Windows
+val uninstaller = tasks.register<Exec>("uninstaller") {
+    val source = layout.projectDirectory.file("installer/Uninstaller.cs").asFile
+    val icon = layout.projectDirectory.file("icons/ivy-wallet-uae.ico").asFile
+    val dir = layout.buildDirectory.dir("uninstaller").get().asFile
+    val code = dir.resolve("UpgradeCode.cs")
+    val exe = dir.resolve("Uninstall.exe")
+    inputs.files(source, icon)
+    inputs.property("upgradeCode", upgradeCode)
+    outputs.file(exe)
+    doFirst {
+        dir.mkdirs()
+        code.writeText(
+            """
+            internal static partial class Uninstaller
+            {
+                private const string UpgradeCode = "{${upgradeCode.uppercase()}}";
+            }
+            """.trimIndent(),
+        )
+    }
+    val csc = File(System.getenv("WINDIR") ?: "C:\\Windows", "Microsoft.NET/Framework64/v4.0.30319/csc.exe")
+    commandLine(
+        csc, "/nologo", "/target:winexe", "/optimize+", "/reference:System.Windows.Forms.dll",
+        "/win32icon:$icon", "/out:$exe", source, code,
+    )
+}
+
+// the app's folder, which jpackage makes the installer from
+tasks.matching { it.name == "createDistributable" }.configureEach {
+    if (onWindows) {
+        dependsOn(uninstaller)
+        val exe = layout.buildDirectory.file("uninstaller/Uninstall.exe")
+        val app = layout.buildDirectory.dir("compose/binaries/main/app/$appName")
+        doLast {
+            val folder = app.get().asFile
+            check(folder.resolve("$appName.exe").isFile) { "The app's folder isn't $folder" }
+            exe.get().asFile.copyTo(folder.resolve("Uninstall $appName.exe"), overwrite = true)
+        }
+    }
+}
+
+// Adds to the installer what jpackage can't: "Uninstall Ivy Wallet UAE" in the Start menu, and a first page for when
+// the app is already installed, which offers to update or repair it, or to uninstall it
+val finishInstaller = tasks.register<Exec>("finishInstaller") {
+    val script = layout.projectDirectory.file("installer/finish-installer.ps1").asFile
     val msiDir = layout.buildDirectory.dir("compose/binaries/main/msi").get().asFile
     commandLine("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, msiDir)
 }
-tasks.matching { it.name == "packageMsi" }.configureEach { finalizedBy(addUninstallShortcut) }
+tasks.matching { it.name == "packageMsi" }.configureEach { finalizedBy(finishInstaller) }

@@ -148,6 +148,13 @@ jobs:
         working-directory: desktop
         run: powershell -NoProfile -ExecutionPolicy Bypass -File installer/test-install.ps1 build/compose/binaries/main/msi
 
+      - name: Try the installer's pages
+        if: steps.check.outputs.missing == 'true'
+        working-directory: desktop
+        run: >-
+          powershell -NoProfile -ExecutionPolicy Bypass -File installer/test-choices.ps1
+          build/compose/binaries/main/msi build/screenshots/installer
+
       - name: Add it to the release
         if: steps.check.outputs.missing == 'true'
         run: |
