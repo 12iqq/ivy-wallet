@@ -69,6 +69,9 @@ transactions on the phone. You can't add or change anything on the computer yet.
 4. Open **Ivy Wallet UAE** from the Start menu. It finds the newest backup in your `ivywallet-uae` folder by itself, and
    shows each new one within a minute of it reaching your computer. You can also choose a file yourself.
 
+To remove it, open **Uninstall Ivy Wallet UAE** in its Start menu folder, or use Windows Settings → Apps. That only
+removes the app; your backups stay where they are.
+
 It's Windows only for now. Mac and Linux are planned.
 
 ## Privacy

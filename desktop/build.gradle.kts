@@ -83,6 +83,8 @@ compose.desktop {
 
             windows {
                 iconFile.set(project.file("icons/ivy-wallet-uae.ico"))
+                // in the Start menu, and on the desktop
+                menu = true
                 menuGroup = "Ivy Wallet UAE"
                 shortcut = true
                 // installs for the current user, no admin rights needed
@@ -93,3 +95,11 @@ compose.desktop {
         }
     }
 }
+
+// jpackage can't put an "Uninstall" shortcut in the Start menu, so it's added to the finished installer
+val addUninstallShortcut = tasks.register<Exec>("addUninstallShortcut") {
+    val script = layout.projectDirectory.file("installer/add-uninstall-shortcut.ps1").asFile
+    val msiDir = layout.buildDirectory.dir("compose/binaries/main/msi").get().asFile
+    commandLine("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, msiDir)
+}
+tasks.matching { it.name == "packageMsi" }.configureEach { finalizedBy(addUninstallShortcut) }

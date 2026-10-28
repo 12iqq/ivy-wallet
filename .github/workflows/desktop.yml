@@ -56,6 +56,10 @@ jobs:
       - name: Build the installer
         run: ./gradlew packageMsi
 
+      # installs it on this machine, checks the Start menu shortcuts, then uninstalls it with its own shortcut
+      - name: Try the installer
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File installer/test-install.ps1 build/compose/binaries/main/msi
+
       - name: Upload the installer
         uses: actions/upload-artifact@v4
         with:

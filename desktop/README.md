@@ -21,6 +21,9 @@ It looks for the folder in "My Drive" on the drive Google Drive for desktop adds
 
 The app only reads the backup. It doesn't connect to the internet.
 
+To remove it, open **Uninstall Ivy Wallet UAE** in its Start menu folder, or use Windows Settings → Apps. Your backups
+aren't touched.
+
 ## What it shows
 
 - **Overview:** your accounts and credit cards, this month's spending and income, and the last 12 months
@@ -37,7 +40,9 @@ This is its own Gradle build, separate from the Android app. You need Java 17. F
 
 - `./gradlew run` starts it
 - `./gradlew test` runs the tests
-- `./gradlew packageMsi` builds the Windows installer (on Windows)
+- `./gradlew packageMsi` builds the Windows installer (on Windows). jpackage can't add an Uninstall shortcut, so
+  `installer/add-uninstall-shortcut.ps1` adds it to the finished installer, and CI tries installing and uninstalling
+  it with `installer/test-install.ps1`.
 
 Each release on GitHub gets the installer too, built by `.github/workflows/release.yml`.
 
