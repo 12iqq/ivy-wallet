@@ -7,6 +7,8 @@
 - Work goes straight to `main` (no pull requests). A release is published by bumping
   `version-name` / `version-code` in `gradle/libs.versions.toml`, with notes in
   `docs/release-notes/v<version>.md`.
+- Versions: a normal release raises the last number (1.2.0 → 1.2.1 → 1.2.2). Raise the middle number
+  (1.2 → 1.3) only when the owner says so, or for a really major change. `version-code` always goes up by 1.
 - Never commit personal data (backups, SMS exports, statements); keep them out of the repo.
 - No analytics, crash reporting or other libraries that send data off the phone. The app only downloads
   exchange rates; keep PRIVACY.md true.
