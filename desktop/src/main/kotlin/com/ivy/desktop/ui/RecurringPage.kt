@@ -4,6 +4,7 @@ import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -67,19 +68,26 @@ internal fun RecurringPage(
             }
             if (found.isEmpty()) Note("No recurring charges found yet.")
             if (active.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    modifier = Modifier.height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     Stat(
                         label = "About a month",
                         value = Format.money(perMonth, currency),
                         info = "What the charges below cost in an average month. A yearly charge counts as a " +
                             "twelfth of its price, a weekly one about four times.",
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                     )
                     Stat(
                         label = "A year",
                         value = Format.money(perMonth * MONTHS, currency),
                         info = "What the charges below add up to over a year, if they keep coming.",
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                     )
                     Stat(
                         label = "Found",
@@ -87,7 +95,9 @@ internal fun RecurringPage(
                         note = "${active.count { !it.planned }} not planned in the phone app",
                         info = "Charges with the same name that came on a steady schedule. The ones not " +
                             "planned yet could be added as planned payments on the phone, so you see them coming.",
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                     )
                 }
                 Panel(modifier = Modifier.fillMaxWidth()) {

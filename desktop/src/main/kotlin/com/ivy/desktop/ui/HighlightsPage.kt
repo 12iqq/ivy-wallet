@@ -110,25 +110,34 @@ internal fun HighlightsPage(
 private fun Totals(highlights: Highlights, currency: String, today: LocalDate) {
     val months = Reports.monthsBetween(YearMonth.from(highlights.since), YearMonth.from(today)).size
     val left = highlights.received - highlights.spent
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    Row(
+        modifier = Modifier.height(IntrinsicSize.Max),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Stat(
             label = "Keeping track for",
             value = Format.duration(highlights.since, today),
             note = "${highlights.days} days",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
         Stat(
             label = "Transactions",
             value = "${highlights.count}",
             note = "About ${highlights.count / months.coerceAtLeast(1)} a month",
             info = "Income and spending in $currency. Transfers between your own accounts aren't counted.",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
         Stat(
             label = "Spent in all",
             value = Format.money(highlights.spent, currency),
             note = "${Format.money(highlights.spent / months.coerceAtLeast(1), currency)} a month on average",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
         Stat(
             label = "Received in all",
@@ -139,7 +148,9 @@ private fun Totals(highlights: Highlights, currency: String, today: LocalDate) {
                 "${Format.money(-left, currency)} less than you spent"
             },
             noteColor = if (left >= 0) Green else Red,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
     }
 }

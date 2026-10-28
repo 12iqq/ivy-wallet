@@ -4,6 +4,7 @@ import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -124,14 +125,19 @@ private fun Totals(overview: OverviewView, currency: String, today: LocalDate) {
     val thisMonth = overview.months.last()
     val lastMonth = overview.months[overview.months.size - 2]
     val from = "1 ${Format.month(today)}"
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    Row(
+        modifier = Modifier.height(IntrinsicSize.Max),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Stat(
             label = "Total balance",
             value = Format.money(overview.totalBalance, currency),
             note = "Across ${inTotal(overview, currency)} accounts",
             info = "All your accounts added up, with what you owe on credit cards taken off. Accounts you've " +
                 "left out of the total in the phone app don't count.",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
         Stat(
             label = "Spent this month",
@@ -139,7 +145,9 @@ private fun Totals(overview: OverviewView, currency: String, today: LocalDate) {
             note = "Last month ${Format.money(lastMonth.expense, currency)}",
             info = "Everything you spent from $from to today. Moving money between your own accounts, " +
                 "like paying off a card, isn't spending, so it's left out.",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
         Stat(
             label = "Income this month",
@@ -147,7 +155,9 @@ private fun Totals(overview: OverviewView, currency: String, today: LocalDate) {
             note = "Last month ${Format.money(lastMonth.income, currency)}",
             info = "Everything that came in from $from to today. Money moved between your own accounts " +
                 "isn't income, so it's left out.",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
         val months = overview.averageMonths
         Stat(
@@ -160,7 +170,9 @@ private fun Totals(overview: OverviewView, currency: String, today: LocalDate) {
             } else {
                 "Shows once there's a full month of transactions before this one."
             },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
         )
     }
 }
