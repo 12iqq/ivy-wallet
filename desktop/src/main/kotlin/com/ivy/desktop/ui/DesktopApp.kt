@@ -292,11 +292,12 @@ private fun BackupInfo(
         Spacer(Modifier.height(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val place = (state as? LoadState.Ready)?.place ?: (state as? LoadState.Failed)?.place
+            // short enough to fit on one line
             if (place == BackupPlace.GoogleDrive) {
-                actions.connectDrive?.let { Chip(text = "Choose another backup", onClick = it) }
-                Chip(text = "Disconnect Google Drive", onClick = actions.disconnectDrive)
+                actions.connectDrive?.let { Chip(text = "Change backup", onClick = it) }
+                Chip(text = "Disconnect Drive", onClick = actions.disconnectDrive)
             } else {
-                actions.connectDrive?.let { Chip(text = "Connect Google Drive", onClick = it) }
+                actions.connectDrive?.let { Chip(text = "Use Google Drive", onClick = it) }
                 Chip(text = "Choose another file", onClick = actions.chooseFile)
             }
         }
