@@ -42,11 +42,38 @@ class ScreenshotTest {
             SampleData.zone,
             SampleData.today.atTime(18, 0).toInstant(SampleData.zone),
         )
-        val ready = LoadState.Ready(File("Ivy Wallet backup.zip"), LocalDateTime.of(2026, 10, 27, 6, 10), ledger)
+        val file = File("Ivy Wallet backup.zip")
+        val ready = LoadState.Ready(
+            name = file.name,
+            place = BackupPlace.Computer(file),
+            savedAt = LocalDateTime.of(2026, 10, 27, 6, 10),
+            ledger = ledger,
+            problem = null,
+        )
+        val inDrive = ready.copy(
+            name = "ivywallet-uae.zip",
+            place = BackupPlace.GoogleDrive,
+            problem = "Couldn't reach Google Drive, so there may be a newer backup.",
+        )
+        val driveGone = LoadState.Failed(
+            name = "ivywallet-uae.zip",
+            place = BackupPlace.GoogleDrive,
+            message = "Ivy Wallet UAE may not open your Google Drive anymore. Connect it again to see your backup.",
+        )
+        // an app built without its registration with Google, and one with it
+        val withoutGoogle =
+            BackupActions(chooseFile = {}, connectDrive = null, disconnectDrive = {}, cancelConnect = {})
+        val withGoogle = BackupActions(chooseFile = {}, connectDrive = {}, disconnectDrive = {}, cancelConnect = {})
         val out = File("build/screenshots").apply { mkdirs() }
-        val screens = Page.entries.map { page -> page.name to Pair(page, ready as LoadState) } +
-            ("Welcome" to Pair(Page.Overview, LoadState.NoFile))
-        screens.forEach { (name, screen) ->
+        val screens = Page.entries.map { page -> Triple(page.name, page to (ready as LoadState), withoutGoogle) } +
+            listOf(
+                Triple("Welcome", Page.Overview to LoadState.NoFile, withoutGoogle),
+                Triple("Welcome-Google", Page.Overview to LoadState.NoFile, withGoogle),
+                Triple("Connecting", Page.Overview to LoadState.Connecting, withGoogle),
+                Triple("Google-Drive", Page.Overview to inDrive, withGoogle),
+                Triple("Google-Drive-gone", Page.Overview to driveGone, withGoogle),
+            )
+        screens.forEach { (name, screen, actions) ->
             listOf(false, true).forEach { dark ->
                 val scene = ImageComposeScene(width = 1280, height = 1400, density = Density(1f)) {
                     IvyTheme(dark = dark) {
@@ -54,8 +81,8 @@ class ScreenshotTest {
                             page = screen.first,
                             state = screen.second,
                             today = SampleData.today,
+                            actions = actions,
                             onPage = {},
-                            onChooseFile = {},
                         )
                     }
                 }

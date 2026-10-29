@@ -47,8 +47,25 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
+// For "Connect Google Drive": the app's registration with Google, from these secrets in CI
+// (docs/Google-Drive-setup.md). Without them the app works as before, without the Google Drive button.
+val googleConfig = tasks.register("googleConfig") {
+    val keys = listOf("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_API_KEY", "GOOGLE_PROJECT_NUMBER")
+    val values = keys.associateWith { System.getenv(it).orEmpty().trim() }
+    val out = layout.buildDirectory.dir("generated/google")
+    // a hash, so the secrets aren't kept in Gradle's records of the build
+    inputs.property("config", values.toString().hashCode())
+    outputs.dir(out)
+    doLast {
+        val file = out.get().file("google-drive.properties").asFile
+        file.parentFile.mkdirs()
+        file.writeText(values.entries.joinToString("\n") { (key, value) -> "$key=$value" })
+    }
+}
+
 // the phone app's fonts
 tasks.processResources {
+    from(googleConfig)
     from("../shared/ui/core/src/main/res/font") {
         include(
             "raleway_bold.ttf",
@@ -76,6 +93,8 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "com.ivy.desktop.MainKt"
+        // Google Drive through the proxy set in Windows, if there is one
+        jvmArgs += "-Djava.net.useSystemProxies=true"
 
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
@@ -83,8 +102,9 @@ compose.desktop {
             packageVersion = appVersion
             description = "Your Ivy Wallet UAE reports on your computer"
             vendor = "Ivy Wallet UAE Edition"
-            // what ./gradlew suggestRuntimeModules lists, on top of the defaults
-            modules("java.instrument", "java.prefs", "jdk.unsupported")
+            // what ./gradlew suggestRuntimeModules lists, on top of the defaults; then Google Drive's: java.net.http
+            // to download the backup, jdk.httpserver for the sign-in's answer
+            modules("java.instrument", "java.prefs", "jdk.unsupported", "java.net.http", "jdk.httpserver")
             // the uninstaller, from the task below
             appResourcesRootDir.set(layout.buildDirectory.dir("appResources"))
 

@@ -40,6 +40,12 @@ jobs:
         run: ./gradlew test
 
       - name: Build the installer
+        env:
+          # the app's registration with Google, for Connect Google Drive (docs/Google-Drive-setup.md)
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_PROJECT_NUMBER: ${{ secrets.GOOGLE_PROJECT_NUMBER }}
         run: ./gradlew packageMsi
 
       # installs it on this machine and checks its shortcuts, then uninstalls it with the Uninstall shortcut and with

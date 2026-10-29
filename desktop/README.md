@@ -52,6 +52,10 @@ This is its own Gradle build, separate from the Android app. You need Java 17. F
   finished installer. CI tries installing and uninstalling it with `installer/test-install.ps1`, and clicks through
   its pages with `installer/test-choices.ps1`.
 
+**Connect Google Drive** needs the app's registration with Google, which CI builds in from four secrets:
+[docs/Google-Drive-setup.md](../docs/Google-Drive-setup.md) shows how to make them. A build without them has no Google
+Drive button, and finds the backup in the `ivywallet-uae` folder or a file you choose, as before.
+
 Each release on GitHub gets the installer too, built by `.github/workflows/release.yml`.
 
 The report maths is the phone app's own code (`feature/insights`), compiled into the desktop app too, so both show
