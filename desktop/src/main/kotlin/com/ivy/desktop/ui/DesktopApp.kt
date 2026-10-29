@@ -271,7 +271,10 @@ private fun Sidebar(
             )
         }
         Spacer(Modifier.weight(1f))
-        if (state != LoadState.Connecting) BackupInfo(state = state, actions = actions, notice = notice)
+        // the welcome page has the same buttons and note, and connecting has its own Cancel
+        if (state != LoadState.NoFile && state != LoadState.Connecting) {
+            BackupInfo(state = state, actions = actions, notice = notice)
+        }
     }
 }
 
