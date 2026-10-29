@@ -1,9 +1,7 @@
 package com.ivy.desktop.google
 
 import org.junit.Test
-import java.time.Instant
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -23,17 +21,6 @@ class PagesTest {
         assertEquals(43, verifier.length)
         assertTrue(verifier.matches(Regex("[A-Za-z0-9_-]+")))
         assertNotEquals(verifier, Pkce.verifier())
-    }
-
-    @Test
-    fun `the picker page can't be broken by what's put in it`() {
-        val config = GoogleConfig("client-1", "secret-1", "key</script><script>alert(1)", "1234")
-
-        val page = Pages.picker(config, AccessToken("access-1", Instant.EPOCH), "/chosen/state-1")
-
-        assertFalse("key</script>" in page)
-        assertTrue(""""answer":"/chosen/state-1"""" in page)
-        assertEquals(2, Regex("</script>").findAll(page).count())
     }
 
     @Test

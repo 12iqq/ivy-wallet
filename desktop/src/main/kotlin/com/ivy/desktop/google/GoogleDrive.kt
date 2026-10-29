@@ -9,7 +9,7 @@ import java.net.URI
 /** Google Drive in the app, with its registration with Google */
 class GoogleDrive(config: GoogleConfig) {
     private val api = GoogleApi(config)
-    private val signIn = GoogleConnect(config, api, ::browse)
+    private val signIn = GoogleConnect(api, ::browse)
 
     /** "Connect Google Drive": the backup chosen in the browser, or null if none was */
     suspend fun connect(): DriveConnection? = withContext(Dispatchers.IO) { signIn.connect() }

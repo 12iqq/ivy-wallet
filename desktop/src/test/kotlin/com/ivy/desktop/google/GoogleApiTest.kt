@@ -17,7 +17,7 @@ class GoogleApiTest {
     private val google = FakeGoogle()
     private val now = Instant.parse("2026-10-29T08:00:00Z")
     private val clock = Clock.fixed(now, ZoneOffset.UTC)
-    private val config = GoogleConfig("client-1", "secret-1", "key-1", "1234")
+    private val config = GoogleConfig("client-1", "secret-1")
     private val api = GoogleApi(config, google.endpoints, clock)
 
     @After
@@ -26,7 +26,7 @@ class GoogleApiTest {
     }
 
     @Test
-    fun `the sign-in asks only for the files chosen in the app, and for a refresh token`() {
+    fun `the sign-in asks only for the file chosen in Google's picker, and for a refresh token`() {
         val url = URI(api.signInUrl("http://127.0.0.1:5000/signed-in", "state-1", "challenge-1"))
         val query = FakeGoogle.form(url.rawQuery)
 
@@ -40,6 +40,10 @@ class GoogleApiTest {
         assertEquals("state-1", query["state"])
         assertEquals("offline", query["access_type"])
         assertEquals("consent", query["prompt"])
+        // then Google's file picker, for one backup
+        assertEquals("true", query["trigger_onepick"])
+        assertEquals("false", query["allow_multiple"])
+        assertEquals("application/zip,application/x-zip-compressed,application/json", query["mimetypes"])
     }
 
     @Test
@@ -64,7 +68,7 @@ class GoogleApiTest {
 
     @Test
     fun `without a client secret, none is sent`() {
-        GoogleApi(GoogleConfig("client-1", "", "key-1", "1234"), google.endpoints, clock).refresh("refresh-1")
+        GoogleApi(GoogleConfig("client-1", ""), google.endpoints, clock).refresh("refresh-1")
 
         assertFalse("client_secret" in google.tokenForms.single())
     }

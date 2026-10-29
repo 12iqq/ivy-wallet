@@ -26,7 +26,7 @@ class DriveSourceTest {
     }
     private val zone = ZoneId.of("Asia/Dubai")
     private val now = Instant.parse("2026-10-29T08:00:00Z")
-    private val api = GoogleApi(GoogleConfig("client-1", "secret-1", "key-1", "1234"), google.endpoints)
+    private val api = GoogleApi(GoogleConfig("client-1", "secret-1"), google.endpoints)
     private val connection = DriveConnection("refresh-1", DriveFileId("file-1"), "ivywallet-uae.zip")
     private val source = DriveSource(DriveBackup(api, connection), connection.fileName, zone)
 

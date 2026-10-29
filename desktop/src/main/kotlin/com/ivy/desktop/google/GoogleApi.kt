@@ -93,7 +93,10 @@ class GoogleApi(
         explicitNulls = false
     }
 
-    /** Google's sign-in page, which sends the person back to [redirect] with a code for [exchange] */
+    /**
+     * Google's sign-in page, then Google's file picker in the same tab. They send the person back to [redirect] with
+     * a code for [exchange] and the file chosen (picked_file_ids).
+     */
     fun signInUrl(redirect: String, state: String, challenge: String): String = endpoints.signIn + "?" + form(
         "client_id" to config.clientId,
         "redirect_uri" to redirect,
@@ -105,6 +108,10 @@ class GoogleApi(
         // asks for a refresh token too, so the app stays signed in
         "access_type" to "offline",
         "prompt" to "consent",
+        // Google's file picker for desktop apps, for one backup file
+        "trigger_onepick" to "true",
+        "allow_multiple" to "false",
+        "mimetypes" to BackupTypes,
     )
 
     fun exchange(code: String, redirect: String, verifier: String): Tokens {
@@ -236,6 +243,10 @@ internal fun form(fields: List<Pair<String, String>>): String =
 private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8)
 
 private const val FormType = "application/x-www-form-urlencoded"
+
+// a backup .zip, or the .json in one, as in the app's own file picker
+private const val BackupTypes = "application/zip,application/x-zip-compressed,application/json"
+
 private val Timeout: Duration = Duration.ofSeconds(30)
 
 // the backup can be a few megabytes on a slow connection

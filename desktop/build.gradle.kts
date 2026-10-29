@@ -50,13 +50,24 @@ java {
 // For "Connect Google Drive": the app's registration with Google, from these secrets in CI
 // (docs/Google-Drive-setup.md). Without them the app works as before, without the Google Drive button.
 val googleConfig = tasks.register("googleConfig") {
-    val keys = listOf("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_API_KEY", "GOOGLE_PROJECT_NUMBER")
+    val keys = listOf("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")
     val values = keys.associateWith { System.getenv(it).orEmpty().trim() }
     val out = layout.buildDirectory.dir("generated/google")
     // a hash, so the secrets aren't kept in Gradle's records of the build
     inputs.property("config", values.toString().hashCode())
     outputs.dir(out)
     doLast {
+        // says whether the app has Connect Google Drive, and stops on a secret that can't be right, without showing
+        // what's in them
+        val missing = keys.filter { values.getValue(it).isEmpty() }
+        when {
+            missing == keys -> logger.lifecycle("Connect Google Drive: off, as there are no GOOGLE_* secrets")
+            missing.isNotEmpty() -> throw GradleException("Connect Google Drive needs ${missing.joinToString()} too")
+            !values.getValue("GOOGLE_CLIENT_ID").endsWith(".apps.googleusercontent.com") -> throw GradleException(
+                "GOOGLE_CLIENT_ID isn't a Client ID: those end in .apps.googleusercontent.com",
+            )
+            else -> logger.lifecycle("Connect Google Drive: on")
+        }
         val file = out.get().file("google-drive.properties").asFile
         file.parentFile.mkdirs()
         file.writeText(values.entries.joinToString("\n") { (key, value) -> "$key=$value" })

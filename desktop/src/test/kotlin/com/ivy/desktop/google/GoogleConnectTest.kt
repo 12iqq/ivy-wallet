@@ -19,8 +19,7 @@ import kotlin.time.Duration.Companion.minutes
 /** "Connect Google Drive", with the test as the browser and [FakeGoogle] as Google */
 class GoogleConnectTest {
     private val google = FakeGoogle()
-    private val config = GoogleConfig("client-1", "secret-1", "key-1", "1234")
-    private val api = GoogleApi(config, google.endpoints)
+    private val api = GoogleApi(GoogleConfig("client-1", "secret-1"), google.endpoints)
     private val browser = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build()
 
     @After
@@ -29,37 +28,35 @@ class GoogleConnectTest {
     }
 
     @Test
-    fun `sign in, then choose the backup in the picker`() {
+    fun `sign in, and choose the backup in Google's picker`() {
         val pages = mutableListOf<String>()
         val connection = connect { signIn ->
-            val choose = get(signIn.redirect + "?code=code-1&state=${signIn.state}&scope=drive.file")
-            assertEquals(303, choose.statusCode())
-            val picker = get(signIn.app + choose.headers().firstValue("Location").get())
-            pages += picker.body()
-            val answer = post(signIn.app + "/chosen/${signIn.state}", """{"id":"file-1","name":"ivywallet-uae.zip"}""")
-            assertEquals(204, answer.statusCode())
+            // where Google's picker sends the browser
+            val answer = "?picked_file_ids=file-1&code=code-1&scope=drive.file&state=${signIn.state}"
+            val done = get(signIn.redirect + answer)
+            assertEquals(200, done.statusCode())
+            pages += done.body()
         }
 
         assertNotNull(connection)
         assertEquals("refresh-1", connection.refreshToken)
         assertEquals(DriveFileId("file-1"), connection.file)
         assertEquals("ivywallet-uae.zip", connection.fileName)
-        // the picker page has what Google's picker needs
-        assertTrue(""""token":"access-1"""" in pages.single())
-        assertTrue(""""apiKey":"key-1"""" in pages.single())
-        assertTrue(""""appId":"1234"""" in pages.single())
+        assertTrue("opening ivywallet-uae.zip now" in pages.single())
         // the code went to Google with the verifier the sign-in's challenge came from
         val form = google.tokenForms.single()
         assertEquals("code-1", form["code"])
         assertEquals(Pkce.challenge(form.getValue("code_verifier")), lastSignIn?.challenge)
+        // and the file was looked at with the access token that gave
+        assertEquals(listOf("Bearer access-1"), google.driveAuthorizations.toList())
     }
 
     @Test
     fun `an answer for another sign-in is ignored`() {
         val connection = connect { signIn ->
-            assertEquals(400, get(signIn.redirect + "?code=code-1&state=someone-else").statusCode())
-            get(signIn.redirect + "?code=code-1&state=${signIn.state}")
-            post(signIn.app + "/chosen/${signIn.state}", """{"id":"file-1","name":"ivywallet-uae.zip"}""")
+            val other = get(signIn.redirect + "?picked_file_ids=file-1&code=code-1&state=someone-else")
+            assertEquals(400, other.statusCode())
+            get(signIn.redirect + "?picked_file_ids=file-1&code=code-1&state=${signIn.state}")
         }
 
         assertEquals(DriveFileId("file-1"), connection?.file)
@@ -79,17 +76,18 @@ class GoogleConnectTest {
     @Test
     fun `closing the picker gives nothing`() {
         val connection = connect { signIn ->
-            get(signIn.redirect + "?code=code-1&state=${signIn.state}")
-            post(signIn.app + "/chosen/${signIn.state}", "{}")
+            assertEquals(200, get(signIn.redirect + "?code=code-1&state=${signIn.state}").statusCode())
         }
 
         assertNull(connection)
+        // no backup, so no need to sign in
+        assertTrue(google.tokenForms.isEmpty())
     }
 
     @Test
     fun `no answer in time gives nothing`() {
         val connection = runBlocking {
-            GoogleConnect(config, api) { }.connect(timeout = 300.milliseconds)
+            GoogleConnect(api) { }.connect(timeout = 300.milliseconds)
         }
 
         assertNull(connection)
@@ -100,9 +98,17 @@ class GoogleConnectTest {
         google.tokenAnswer = 400 to """{"error":"invalid_grant"}"""
 
         val e = assertFailsWith<GoogleException> {
-            connect { signIn -> get(signIn.redirect + "?code=code-1&state=${signIn.state}") }
+            connect { signIn -> get(signIn.redirect + "?picked_file_ids=file-1&code=code-1&state=${signIn.state}") }
         }
         assertEquals(GoogleProblem.AccessRemoved, e.problem)
+    }
+
+    @Test
+    fun `a backup the app can't open is an error`() {
+        val e = assertFailsWith<GoogleException> {
+            connect { signIn -> get(signIn.redirect + "?picked_file_ids=file-2&code=code-1&state=${signIn.state}") }
+        }
+        assertEquals(GoogleProblem.FileGone, e.problem)
     }
 
     /** What the app opened in the browser */
@@ -111,19 +117,17 @@ class GoogleConnectTest {
         val redirect: String = query.getValue("redirect_uri")
         val state: String = query.getValue("state")
         val challenge: String = query.getValue("code_challenge")
-
-        /** The app's own small web server */
-        val app: String = redirect.substringBeforeLast('/')
     }
 
     private var lastSignIn: SignIn? = null
 
-    /** Connects, with [browser] doing what the person would in the browser the app opened */
+    /** Connects, with [browser] doing what the person and Google would in the browser the app opened */
     private fun connect(browser: (SignIn) -> Unit): DriveConnection? = runBlocking {
         var failure: Throwable? = null
-        val connection = GoogleConnect(config, api) { url ->
+        var opened: Thread? = null
+        val connection = GoogleConnect(api) { url ->
             val signIn = SignIn(url).also { lastSignIn = it }
-            thread {
+            opened = thread {
                 try {
                     browser(signIn)
                 } catch (e: AssertionError) {
@@ -131,15 +135,12 @@ class GoogleConnectTest {
                 }
             }
         }.connect(timeout = 1.minutes)
+        // until the browser has the last page too
+        opened?.join()
         failure?.let { throw it }
         connection
     }
 
     private fun get(url: String): HttpResponse<String> =
         browser.send(HttpRequest.newBuilder(URI(url)).GET().build(), HttpResponse.BodyHandlers.ofString())
-
-    private fun post(url: String, body: String): HttpResponse<String> = browser.send(
-        HttpRequest.newBuilder(URI(url)).POST(HttpRequest.BodyPublishers.ofString(body)).build(),
-        HttpResponse.BodyHandlers.ofString(),
-    )
 }

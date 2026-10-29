@@ -14,7 +14,7 @@ import kotlin.test.assertNull
 
 class DriveBackupTest {
     private val google = FakeGoogle()
-    private val config = GoogleConfig("client-1", "secret-1", "key-1", "1234")
+    private val config = GoogleConfig("client-1", "secret-1")
     private val connection = DriveConnection("refresh-1", DriveFileId("file-1"), "ivywallet-uae.zip")
     private var now = Instant.parse("2026-10-29T08:00:00Z")
     private val clock = object : Clock() {
