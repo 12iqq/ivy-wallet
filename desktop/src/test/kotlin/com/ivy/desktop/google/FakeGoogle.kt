@@ -108,8 +108,9 @@ class FakeGoogle : AutoCloseable {
                 URLDecoder.decode(it.substringAfter('=', ""), Charsets.UTF_8)
         }
 
-        private fun reply(exchange: HttpExchange, status: Int, body: String) =
+        private fun reply(exchange: HttpExchange, status: Int, body: String) {
             reply(exchange, status, body.toByteArray())
+        }
 
         private fun reply(exchange: HttpExchange, status: Int, body: ByteArray) {
             exchange.sendResponseHeaders(status, if (body.isEmpty()) -1 else body.size.toLong())

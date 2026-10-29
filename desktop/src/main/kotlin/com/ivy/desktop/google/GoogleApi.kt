@@ -64,7 +64,9 @@ class Tokens(val access: AccessToken, val refresh: String)
 @JvmInline
 value class DriveFileId(val value: String)
 
+// The id is the typed DriveFileId above, but DataClassTypedIDs doesn't take it
 /** A file in Google Drive, as much as the app needs to know about it */
+@Suppress("DataClassTypedIDs")
 data class DriveFile(
     val id: DriveFileId,
     val name: String,
@@ -167,7 +169,7 @@ class GoogleApi(
         return parse(TokenResponse.serializer(), response.body())
     }
 
-    private fun accessToken(response: TokenResponse) =
+    private fun accessToken(response: TokenResponse): AccessToken =
         AccessToken(response.accessToken, clock.instant().plusSeconds(response.expiresIn))
 
     private fun get(url: String, token: AccessToken): ByteArray {
