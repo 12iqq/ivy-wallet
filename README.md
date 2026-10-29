@@ -60,15 +60,17 @@ charges. Point at a chart to see the amounts, and export any page to a CSV file 
 the backup the phone app saves, so you keep adding transactions on the phone. You can't add or change anything on the
 computer yet.
 
-1. In the phone app, set **Settings → Automatic backup** to **Daily**. When it asks where to save, open Google Drive,
-   make a folder called `ivywallet-uae` and save the file in it.
-2. Install [Google Drive for desktop](https://www.google.com/drive/download/) and sign in with the same Google account,
-   so the folder is on your computer too.
-3. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
+1. In the phone app, set **Settings → Automatic backup** to **Daily**. When it asks where to save, choose Google Drive.
+2. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
    [latest release](https://github.com/12iqq/ivy-wallet/releases/latest) and install it. Windows may say it protected
    your PC, because not many people have downloaded the app yet. Click **More info → Run anyway**.
-4. Open **Ivy Wallet UAE** from the Start menu. It finds the newest backup in your `ivywallet-uae` folder by itself, and
-   shows each new one within a minute of it reaching your computer. You can also choose a file yourself.
+3. Open **Ivy Wallet UAE** from the Start menu and click **Connect Google Drive**. Sign in with the same Google account
+   and choose your backup, `ivywallet-uae.zip`, in Google's file picker. From then on the app gets each new backup by
+   itself, within a minute of it reaching Google Drive.
+
+The app can only see the backup you choose, nothing else in your Google Drive. You can also use it without connecting
+Google: it finds the newest backup in an `ivywallet-uae` folder synced by
+[Google Drive for desktop](https://www.google.com/drive/download/), or you choose a file yourself.
 
 To update it, download the new installer and open it. It sees that you have it already, and offers **Update** or
 **Uninstall**. To remove it, open **Uninstall Ivy Wallet UAE** in its Start menu folder, or **Uninstall Ivy Wallet
@@ -80,8 +82,8 @@ It's Windows only for now. Mac and Linux are planned.
 ## Privacy
 
 The app doesn't collect anything about you. It has no analytics or crash reporting, and it never sends your
-transactions or messages anywhere. The only thing it downloads is exchange rates. [PRIVACY.md](PRIVACY.md) explains
-what each permission is for.
+transactions or messages anywhere. The only thing it downloads is exchange rates. The Windows app only downloads your
+backup, from your own Google Drive, if you connect it. [PRIVACY.md](PRIVACY.md) explains what each permission is for.
 
 ## Building it yourself
 

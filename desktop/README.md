@@ -5,21 +5,29 @@ transactions on the phone and look at them here on a bigger screen.
 
 ## Setting it up
 
-1. In the phone app, go to **Settings → Automatic backup** and choose **Daily**. When it asks where to save, open
-   Google Drive, make a folder called `ivywallet-uae` and save the file in it.
-2. Install [Google Drive for desktop](https://www.google.com/drive/download/) and sign in with the same Google account,
-   so the folder is on your computer too.
-3. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
+1. In the phone app, go to **Settings → Automatic backup** and choose **Daily**. When it asks where to save, choose
+   Google Drive.
+2. Download `IvyWalletUAE-Desktop-vX.Y.Z.msi` from the
    [latest release](https://github.com/12iqq/ivy-wallet/releases/latest) and install it. Windows may say it protected
    your PC, because not many people have downloaded the app yet. Click **More info → Run anyway**.
-4. Open **Ivy Wallet UAE** from the Start menu. It finds the newest backup in the `ivywallet-uae` folder by itself, and
-   shows each new one within a minute of it reaching your computer.
+3. Open **Ivy Wallet UAE** from the Start menu and click **Connect Google Drive**. Your browser opens Google's sign-in:
+   sign in with the same Google account, allow the app to see the files you choose, and choose your backup
+   (`ivywallet-uae.zip`) in Google's file picker. From then on the app gets each new backup by itself, within a minute
+   of it reaching Google Drive.
 
-It looks for the folder in "My Drive" on the drive Google Drive for desktop adds (G: unless that's taken), and in a
-"My Drive" folder in your user folder if you mirror files instead. If your backup is somewhere else, choose it with
-**Choose another file**.
+The app can only see the backup you choose, nothing else in your Google Drive. **Change backup** chooses another one,
+and **Disconnect Drive** signs the app out of Google. You can also remove its access in your Google account, under
+[Third-party apps & services](https://myaccount.google.com/connections). Without internet, it keeps showing the last
+backup it got.
 
-The app only reads the backup. It doesn't connect to the internet.
+### Without connecting Google
+
+If you use [Google Drive for desktop](https://www.google.com/drive/download/), save the phone's backup in a Google Drive
+folder called `ivywallet-uae` and the app finds the newest backup in it by itself. It looks for the folder in "My Drive"
+on the drive Google Drive for desktop adds (G: unless that's taken), and in a "My Drive" folder in your user folder if
+you mirror files instead. Or choose a backup file yourself.
+
+The app only reads the backup. It connects to the internet only to get it from Google Drive, when you've connected it.
 
 To update it, open the new version's installer. It sees that you have it already, and offers **Update** or
 **Uninstall** (**Repair** or **Uninstall** if you already have that version). To remove it, open **Uninstall Ivy Wallet
